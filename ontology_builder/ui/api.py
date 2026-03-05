@@ -779,19 +779,20 @@ async def update_kb(kb_id: str, req: KBUpdateRequest):
 
 @router.delete("/knowledge-bases/{kb_id}")
 async def delete_kb(kb_id: str):
-    """Delete a persisted knowledge base."""
+    """Delete a knowledge base entirely: graph JSON, metadata, and in-memory state."""
     path = _ONTOLOGY_GRAPHS / f"{kb_id}.json"
     meta_path = _ONTOLOGY_GRAPHS / f"{kb_id}.meta.json"
     if not path.exists():
         raise HTTPException(404, f"Knowledge base '{kb_id}' not found.")
     try:
         path.unlink(missing_ok=True)
-        if meta_path.exists():
-            meta_path.unlink()
+        meta_path.unlink(missing_ok=True)
         if get_current_kb_id() == kb_id:
             clear_graph_store()
             clear_qa_index()
             set_current_kb_id(None)
+            clear_last_active_kb()
+        logger.info("[DeleteKB] Deleted knowledge base kb_id=%s path=%s", kb_id, path)
         return {"status": "ok", "deleted_id": kb_id}
     except OSError as e:
         logger.exception("Failed to delete knowledge base %s", kb_id)
