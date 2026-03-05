@@ -1,6 +1,7 @@
 """Unified LLM client with retries and parallel processing. Works with LM Studio and OpenAI."""
 
 import logging
+import threading
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Any, Callable, TypeVar
@@ -12,15 +13,21 @@ from app.config import get_settings
 logger = logging.getLogger(__name__)
 
 T = TypeVar("T")
+_client: OpenAI | None = None
+_client_lock = threading.Lock()
 
 
 def _create_client() -> OpenAI:
     """Create OpenAI client from settings (works for LM Studio and OpenAI cloud)."""
-    settings = get_settings()
-    return OpenAI(
-        api_key=settings.get_llm_api_key(),
-        base_url=settings.openai_base_url,
-    )
+    global _client
+    with _client_lock:
+        if _client is None:
+            settings = get_settings()
+            _client = OpenAI(
+                api_key=settings.get_llm_api_key(),
+                base_url=settings.openai_base_url,
+            )
+        return _client
 
 
 def complete(
@@ -29,6 +36,7 @@ def complete(
     temperature: float = 0.1,
     response_format: dict[str, Any] | None = None,
     force_text_mode: bool | None = None,
+    max_tokens: int | None = None,
 ) -> str:
     """Call configured LLM with retries. Single completion.
 
@@ -42,6 +50,7 @@ def complete(
             (e.g. json_schema) for structured output.
         force_text_mode: Optional override for text mode behavior. If None,
             uses settings.llm_force_text_mode.
+        max_tokens: Optional output token cap for faster bounded responses.
 
     Returns:
         Assistant message content.
@@ -74,6 +83,8 @@ def complete(
                 temperature=temperature,
                 timeout=settings.llm_timeout_seconds,
             )
+            if max_tokens is not None and max_tokens > 0:
+                kwargs["max_tokens"] = max_tokens
             if response_format is not None:
                 # Structured output takes priority over text-mode forcing.
                 kwargs["response_format"] = response_format

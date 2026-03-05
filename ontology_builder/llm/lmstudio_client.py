@@ -11,6 +11,7 @@ def call_llm(
     temperature: float = 0.1,
     response_format: dict[str, Any] | None = None,
     force_text_mode: bool | None = None,
+    max_tokens: int | None = None,
 ) -> str:
     """Call configured LLM (LM Studio or OpenAI-compatible API) with retries.
 
@@ -20,6 +21,7 @@ def call_llm(
         temperature: Sampling temperature (default 0.1).
         response_format: Optional structured response_format payload.
         force_text_mode: Optional text-mode override.
+        max_tokens: Optional output token cap.
 
     Returns:
         Assistant message content.
@@ -33,4 +35,5 @@ def call_llm(
         temperature=temperature,
         response_format=response_format,
         force_text_mode=force_text_mode,
+        max_tokens=max_tokens,
     )
