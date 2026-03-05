@@ -65,6 +65,7 @@ def complete(system: str, user: str, temperature: float = 0.1) -> str:
                 ],
                 temperature=temperature,
                 timeout=settings.llm_timeout_seconds,
+                extra_body={"response_format": {"type": "text"}},
             )
             usage = getattr(response, "usage", None) or {}
             logger.debug(
