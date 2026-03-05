@@ -43,7 +43,7 @@ from ontology_builder.storage.graph_store import (
     set_current_kb_id,
     set_graph,
 )
-from app.config import get_settings
+from core.config import get_settings
 from ontology_builder.ui.graph_viewer import generate_visjs_html, visualize
 
 logger = logging.getLogger(__name__)

@@ -1,9 +1,13 @@
-"""PDF text extraction via pypdf. Raises PDFExtractionError for encrypted or corrupt PDFs."""
+"""PDF text extraction via pdfminer.six. Raises PDFExtractionError for encrypted or corrupt PDFs.
+
+Uses the same library as ontology_builder/pipeline/loader.py for consistent extraction
+across PDF-to-OWL and full pipeline flows.
+"""
 
 import logging
 from io import BytesIO
 
-from pypdf import PdfReader
+from pdfminer.high_level import extract_text as pdfminer_extract_text
 
 logger = logging.getLogger(__name__)
 
@@ -30,22 +34,9 @@ def extract_text_from_pdf(content: bytes) -> str:
     if not content or len(content) == 0:
         raise PDFExtractionError("Empty PDF content")
     try:
-        reader = PdfReader(BytesIO(content))
-        num_pages = len(reader.pages)
-        logger.debug("[PDF] PdfReader created | pages=%d | encrypted=%s", num_pages, reader.is_encrypted)
-        if reader.is_encrypted:
-            raise PDFExtractionError("Encrypted PDFs are not supported")
-        text_parts: list[str] = []
-        for i, page in enumerate(reader.pages):
-            try:
-                t = page.extract_text()
-                if t:
-                    text_parts.append(t)
-                    logger.debug("[PDF] Page %d/%d extracted | chars=%d", i + 1, num_pages, len(t))
-            except Exception as e:
-                raise PDFExtractionError(f"Failed to extract text from a page: {e}") from e
-        result = "\n\n".join(text_parts).strip()
-        logger.debug("[PDF] Extraction complete | total_chars=%d | pages_with_text=%d", len(result), len(text_parts))
+        text = pdfminer_extract_text(BytesIO(content))
+        result = (text or "").strip()
+        logger.debug("[PDF] Extraction complete | total_chars=%d", len(result))
         if not result:
             raise PDFExtractionError("No text could be extracted from the PDF")
         return result

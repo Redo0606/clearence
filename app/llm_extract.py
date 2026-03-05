@@ -3,7 +3,7 @@
 import json
 import logging
 
-from app.config import get_settings
+from core.config import get_settings
 from app.schemas import OntologySchema
 from ontology_builder.llm.client import complete
 
@@ -39,7 +39,7 @@ def extract_ontology_schema(text: str) -> OntologySchema:
     settings = get_settings()
     logger.info("[LLM] Extracting ontology schema | text_length=%d | model=%s | base_url=%s",
                 len(text), settings.ontology_llm_model, settings.openai_base_url)
-    if not settings.get_llm_api_key() and "localhost" not in settings.openai_base_url and "127.0.0.1" not in settings.openai_base_url:
+    if not settings.get_llm_api_key():
         raise ValueError("OPENAI_API_KEY is required when not using a local LLM (e.g. LM Studio)")
 
     if len(text) > MAX_TEXT_CHARS:

@@ -4,7 +4,7 @@ import logging
 from fastapi import APIRouter, File, HTTPException, Query, UploadFile
 from fastapi.responses import Response
 
-from app.config import get_settings
+from core.config import get_settings
 from app.llm_extract import extract_ontology_schema
 from app.ontology import build_ontology, serialize_ontology
 from app.pdf import PDFExtractionError, extract_text_from_pdf

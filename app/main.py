@@ -8,7 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from fastapi.responses import HTMLResponse
 
-from app.config import get_settings
+from core.config import get_settings
 from app.logging_config import configure_table_logging
 from app.routers import ontology
 from ontology_builder.qa.graph_index import build_index as build_qa_index, clear_index as clear_qa_index
@@ -51,7 +51,7 @@ app = FastAPI(
         "(Bakker Approach B), OWL 2 RL reasoning (Smith & Proietti), and ontology-grounded RAG "
         "(OntoRAG + OG-RAG). Supports LM Studio and OpenAI."
     ),
-    version="1.0.0",
+    version="0.1.0",
 )
 
 app.add_middleware(

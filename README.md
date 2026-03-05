@@ -10,7 +10,7 @@ FastAPI application that builds **formal, theory-grounded ontologies** from docu
 ## Quick Start
 
 ```bash
-git clone https://gitlab.com/YOUR_ORG/clearence.git
+git clone https://gitlab.com/clearence/clearence.git
 cd clearence
 cp .env.example .env
 # Edit .env if using OpenAI cloud; leave defaults for LM Studio
@@ -198,7 +198,7 @@ Interactive graph visualization in the browser using vis.js. Classes shown as bl
 ```
 app/                          # PDF -> OWL flow
 ├── main.py                   # FastAPI entry point + CORS
-├── config.py                 # Pydantic settings (cached)
+├── config.py                 # Re-exports core.config (backward compat)
 ├── schemas.py                # OWL serialization models
 ├── pdf.py                    # PDF text extraction
 ├── llm_extract.py            # LLM schema extraction
