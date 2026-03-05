@@ -17,7 +17,7 @@ from tqdm import tqdm
 class PipelineCancelledError(Exception):
     """Raised when the pipeline is cancelled (e.g. client disconnected)."""
 
-from app.config import get_settings
+from app.config import Settings, get_settings
 from ontology_builder.evaluation.metrics import ChunkStats, PipelineReport, PipelineTimer
 from ontology_builder.ontology.schema import OntologyExtraction
 from ontology_builder.pipeline.chunker import chunk_text
@@ -88,14 +88,14 @@ def process_document(
         # Step 2: Chunk
         _progress("chunk", {"message": "Chunking text"})
         logger.info("[Pipeline] Step 2/6: Chunking text")
-        chunks = chunk_text(text)
+        settings = get_settings()
+        chunks = chunk_text(text, size=settings.chunk_size, overlap=settings.chunk_overlap)
         report.total_chunks = len(chunks)
         logger.info("[Pipeline] Chunking complete | chunks=%d", len(chunks))
         _progress("chunk_done", {"total_chunks": len(chunks)})
         _check_cancel()
 
         # Step 3: Extract
-        settings = get_settings()
         graph = OntologyGraph()
 
         if sequential:
@@ -108,10 +108,11 @@ def process_document(
             graph.get_graph().number_of_nodes(),
             graph.get_graph().number_of_edges(),
         )
+        edge_count = graph.get_graph().number_of_edges()
         _progress("merge_done", {
             "classes": len(graph.get_classes()),
             "instances": len(graph.get_instances()),
-            "relations": graph.get_graph().number_of_edges(),
+            "relations": edge_count,
             "axioms": len(graph.axioms),
         })
         _check_cancel()
@@ -179,14 +180,14 @@ def _extract_sequential(
     full_text: str,
     doc_path: str,
     report: PipelineReport,
-    settings: object,
+    settings: Settings,
     verbose: bool,
     parallel: bool = True,
     progress_callback: Callable[[str, dict], None] | None = None,
     cancel_check: Callable[[], None] | None = None,
 ) -> None:
     """3-stage sequential extraction (Bakker B). Chunks processed in parallel or sequentially."""
-    workers = getattr(settings, "llm_parallel_workers", 4)
+    workers = settings.get_llm_parallel_workers()
     total = len(chunks)
     mode_label = "parallel" if parallel else "sequential"
     logger.info("[Pipeline] Step 3/6: Extraction | chunks=%d | mode=%s | workers=%d", len(chunks), mode_label, workers if parallel else 1)
@@ -195,17 +196,20 @@ def _extract_sequential(
         idx, chunk = chunk_data
         if cancel_check:
             cancel_check()
+        if (idx + 1) % 5 == 0 or idx == 0:
+            logger.info("[Pipeline] Step 3/6: Extracting | chunk %d/%d", idx + 1, total)
+        extraction = extract_ontology_sequential(chunk, source_document=doc_path)
         if progress_callback:
             progress_callback("extract", {
                 "current": idx + 1,
                 "total": total,
                 "chunk_index": idx,
-                "message": f"Extracting chunk {idx + 1}/{total}",
+                "message": f"Extracted chunk {idx + 1}/{total}",
+                "classes": len(extraction.classes),
+                "instances": len(extraction.instances),
+                "relations": len(extraction.object_properties),
+                "axioms": len(extraction.axioms),
             })
-        # Log progress periodically so logs show pipeline is alive (extraction can take minutes)
-        if (idx + 1) % 5 == 0 or idx == 0:
-            logger.info("[Pipeline] Step 3/6: Extracting | chunk %d/%d", idx + 1, total)
-        extraction = extract_ontology_sequential(chunk, source_document=doc_path)
         return idx, extraction
 
     chunk_iter = tqdm(
@@ -241,10 +245,16 @@ def _extract_sequential(
     for ext in all_extractions:
         all_classes.extend(ext.classes)
     if all_classes:
+        if progress_callback:
+            progress_callback("taxonomy", {"message": "Building taxonomy", "classes": len(all_classes)})
         logger.info("[Pipeline] Building taxonomy from %d classes", len(all_classes))
         taxonomy_classes = build_taxonomy(all_classes, full_text)
+        if progress_callback:
+            progress_callback("taxonomy_done", {"classes": len(taxonomy_classes)})
         class_parent_map = {c.name: c.parent for c in taxonomy_classes}
     else:
+        if progress_callback:
+            progress_callback("taxonomy_skip", {})
         class_parent_map = {}
 
     for ext in all_extractions:
@@ -258,7 +268,7 @@ def _extract_legacy(
     chunks: list[str],
     graph: OntologyGraph,
     report: PipelineReport,
-    settings: object,
+    settings: Settings,
     verbose: bool,
     parallel: bool = True,
     progress_callback: Callable[[str, dict], None] | None = None,
@@ -266,7 +276,7 @@ def _extract_legacy(
 ) -> None:
     """Legacy single-shot extraction."""
     total = len(chunks)
-    workers = getattr(settings, "llm_parallel_workers", 4)
+    workers = settings.get_llm_parallel_workers()
     mode_label = "parallel" if parallel else "sequential"
     logger.info("[Pipeline] Step 3/6: Legacy extraction | chunks=%d | mode=%s", len(chunks), mode_label)
 
@@ -274,16 +284,23 @@ def _extract_legacy(
         idx, chunk = chunk_data
         if cancel_check:
             cancel_check()
+        if (idx + 1) % 5 == 0 or idx == 0:
+            logger.info("[Pipeline] Step 3/6: Extracting | chunk %d/%d", idx + 1, total)
+        result = extract_ontology(chunk)
+        entities = result.get("entities", [])
+        relations = result.get("relations", [])
         if progress_callback:
             progress_callback("extract", {
                 "current": idx + 1,
                 "total": total,
                 "chunk_index": idx,
-                "message": f"Extracting chunk {idx + 1}/{total}",
+                "message": f"Extracted chunk {idx + 1}/{total}",
+                "classes": len(entities),
+                "instances": 0,
+                "relations": len(relations),
+                "axioms": 0,
             })
-        if (idx + 1) % 5 == 0 or idx == 0:
-            logger.info("[Pipeline] Step 3/6: Extracting | chunk %d/%d", idx + 1, total)
-        return extract_ontology(chunk)
+        return result
 
     chunk_iter = tqdm(
         list(enumerate(chunks)),

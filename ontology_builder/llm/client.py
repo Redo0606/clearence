@@ -23,8 +23,16 @@ def _create_client() -> OpenAI:
     with _client_lock:
         if _client is None:
             settings = get_settings()
+            api_key = settings.get_llm_api_key()
+            base_url = (settings.openai_base_url or "").lower()
+            # OpenAI cloud requires a valid API key
+            if "api.openai.com" in base_url and not (api_key and api_key.strip()):
+                raise ValueError(
+                    "OPENAI_API_KEY is required when using OpenAI cloud (api.openai.com). "
+                    "Set OPENAI_API_KEY=sk-... in .env or environment."
+                )
             _client = OpenAI(
-                api_key=settings.get_llm_api_key(),
+                api_key=api_key,
                 base_url=settings.openai_base_url,
             )
         return _client
@@ -162,7 +170,7 @@ def complete_batch(
         return results
 
     settings = get_settings()
-    workers = max_workers if max_workers is not None else settings.llm_parallel_workers
+    workers = max_workers if max_workers is not None else settings.get_llm_parallel_workers()
 
     results_tuples: list[tuple[int, str]] = []
     with ThreadPoolExecutor(max_workers=workers) as executor:

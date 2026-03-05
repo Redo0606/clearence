@@ -27,13 +27,15 @@ Return a JSON object:
     {{
       "name": "<ClassName>",
       "parent": "<ParentClassName or null>",
-      "description": "<one-sentence definition>"
+      "description": "<one-sentence definition>",
+      "synonyms": ["<alternative name 1>", "<alternative name 2>"]
     }}
   ]
 }}
 
 Rules:
 - Use CamelCase for class names.
+- Include "synonyms" only when the text uses alternative terms for the same concept (e.g. "Vehicle" -> ["Car", "Automobile"]).
 - Set "parent" only when the text explicitly states an is-a / subclass relationship.
 - Every class must have a non-empty description grounded in the text.
 

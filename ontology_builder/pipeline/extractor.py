@@ -26,6 +26,7 @@ from ontology_builder.llm.prompts import (
     EXTRACT_RELATIONS_USER,
     ONTOLOGY_EXTRACTION_PROMPT,
 )
+from ontology_builder.constants import CHARS_PER_TOKEN
 from ontology_builder.ontology.schema import (
     Axiom,
     AxiomType,
@@ -37,8 +38,6 @@ from ontology_builder.ontology.schema import (
 )
 
 logger = logging.getLogger(__name__)
-
-CHARS_PER_TOKEN = 4  # conservative estimate for English text
 
 LEGACY_EXTRACTION_RESPONSE_FORMAT = {
     "type": "json_schema",
@@ -128,6 +127,138 @@ def _truncate_for_context(text: str, max_chars: int) -> str:
     return text[:max_chars] + "\n[...truncated for context...]"
 
 
+def _parse_classes(raw: list, prov: dict) -> list[OntologyClass]:
+    """Parse raw class dicts into OntologyClass list."""
+    out = []
+    for c in raw:
+        if not isinstance(c, dict):
+            continue
+        name = c.get("name") or ""
+        if not name:
+            continue
+        syn = c.get("synonyms", [])
+        if isinstance(syn, list):
+            syn = [str(s).strip() for s in syn if s]
+        else:
+            syn = []
+        out.append(
+            OntologyClass(
+                name=name,
+                parent=c.get("parent") or None,
+                description=c.get("description") or "",
+                synonyms=syn,
+                **prov,
+            )
+        )
+    return out
+
+
+def _parse_instances(raw: list, prov: dict) -> list[OntologyInstance]:
+    """Parse raw instance dicts into OntologyInstance list."""
+    out = []
+    for i in raw:
+        if not isinstance(i, dict):
+            continue
+        name = i.get("name") or ""
+        if not name:
+            continue
+        out.append(
+            OntologyInstance(
+                name=name,
+                class_name=i.get("class_name") or "",
+                description=i.get("description") or "",
+                **prov,
+            )
+        )
+    return out
+
+
+def _parse_object_properties(data: dict, prov: dict) -> list[ObjectProperty]:
+    """Parse object_properties from stage 3 data into ObjectProperty list."""
+    out = []
+    for op in data.get("object_properties", []) or []:
+        if not isinstance(op, dict):
+            continue
+        source = op.get("source") or ""
+        target = op.get("target") or ""
+        if not source or not target:
+            continue
+        out.append(
+            ObjectProperty(
+                source=source,
+                relation=op.get("relation") or "related_to",
+                target=target,
+                domain=op.get("domain"),
+                range=op.get("range"),
+                symmetric=bool(op.get("symmetric", False)),
+                transitive=bool(op.get("transitive", False)),
+                confidence=float(op.get("confidence", 1.0) or 1.0),
+                **prov,
+            )
+        )
+    return out
+
+
+def _parse_data_properties(data: dict, prov: dict) -> list[DataProperty]:
+    """Parse data_properties from stage 3 data into DataProperty list."""
+    out = []
+    for dp in data.get("data_properties", []) or []:
+        if not isinstance(dp, dict):
+            continue
+        entity = dp.get("entity") or ""
+        attribute = dp.get("attribute") or ""
+        if not entity or not attribute:
+            continue
+        out.append(
+            DataProperty(
+                entity=entity,
+                attribute=attribute,
+                value=dp.get("value") or "",
+                datatype=dp.get("datatype") or "string",
+                **prov,
+            )
+        )
+    return out
+
+
+def _parse_axioms(data: dict, prov: dict) -> list[Axiom]:
+    """Parse axioms from stage 3 data into Axiom list."""
+    out = []
+    for ax in data.get("axioms", []) or []:
+        if not isinstance(ax, dict):
+            continue
+        try:
+            axiom_type = AxiomType(ax.get("axiom_type", "subclass"))
+            entities = ax.get("entities") or [""]
+            if not entities:
+                entities = [""]
+            out.append(
+                Axiom(
+                    axiom_type=axiom_type,
+                    entities=entities,
+                    description=ax.get("description", ""),
+                    **prov,
+                )
+            )
+        except (ValueError, TypeError):
+            continue
+    return out
+
+
+def _truncate_json_list(items: list, max_chars: int) -> tuple[list, str]:
+    """Return (kept_items, json_str) truncated to max_chars. Keeps as many items as fit."""
+    if not items:
+        return [], "[]"
+    kept: list = []
+    for item in items:
+        trial = json.dumps(kept + [item])
+        if len(trial) <= max_chars:
+            kept.append(item)
+        else:
+            break
+    return kept, json.dumps(kept) if kept else "[]"
+
+
 def _fit_chunk_to_budget(chunk: str, system: str, prompt_template: str, token_budget: int, **fmt_kwargs: str) -> str:
     """Shrink *chunk* so the assembled prompt fits within *token_budget*.
 
@@ -140,7 +271,8 @@ def _fit_chunk_to_budget(chunk: str, system: str, prompt_template: str, token_bu
     total = _estimate_tokens(system) + _estimate_tokens(user_msg)
     if total <= token_budget:
         return chunk
-    overshoot_chars = (total - token_budget) * CHARS_PER_TOKEN + 100  # extra safety margin
+    # Overshoot: (total - budget) tokens * CHARS_PER_TOKEN + 100 safety margin
+    overshoot_chars = (total - token_budget) * CHARS_PER_TOKEN + 100
     new_len = max(200, len(chunk) - overshoot_chars)
     trimmed = chunk[:new_len] + "\n[...truncated for context...]"
     logger.debug("[Extractor] Trimmed chunk %d -> %d chars to fit token budget %d", len(chunk), new_len, token_budget)
@@ -166,13 +298,16 @@ def extract_ontology(chunk: str) -> dict:
         logger.debug("[Extractor] Truncated chunk %d -> %d chars for context", len(chunk), len(chunk_for_llm))
 
     logger.debug("[Extractor] Calling LLM | chunk_len=%d", len(chunk_for_llm))
+    settings = get_settings()
     try:
         response = call_llm(
             system="You extract ontology structures. Output only valid JSON.",
             user=ONTOLOGY_EXTRACTION_PROMPT + chunk_for_llm,
             response_format=LEGACY_EXTRACTION_RESPONSE_FORMAT,
+            temperature=getattr(settings, "llm_temperature", 0.1),
         )
     except Exception as e:
+        # Fallback: some models don't support json_schema; retry in plain text and parse JSON
         if _is_structured_output_error(e):
             logger.warning(
                 "[Extractor] Structured output failed; retrying once in text mode | error=%s",
@@ -183,6 +318,7 @@ def extract_ontology(chunk: str) -> dict:
                     system="You extract ontology structures. Output only valid JSON.",
                     user=ONTOLOGY_EXTRACTION_PROMPT + chunk_for_llm,
                     force_text_mode=True,
+                    temperature=getattr(settings, "llm_temperature", 0.1),
                 )
             except Exception as fallback_err:
                 logger.warning("[Extractor] LLM text fallback failed | error=%s", fallback_err)
@@ -239,6 +375,7 @@ def extract_ontology_sequential(chunk: str, source_document: str = "") -> Ontolo
         resp1 = call_llm(
             system=EXTRACT_CLASSES_SYSTEM,
             user=EXTRACT_CLASSES_USER.format(chunk=s1_chunk),
+            temperature=getattr(settings, "llm_temperature", 0.1),
         )
         data1 = repair_json(resp1 or "")
         # LLM may return {"classes": [...]} or bare list [...]
@@ -253,21 +390,9 @@ def extract_ontology_sequential(chunk: str, source_document: str = "") -> Ontolo
         classes_raw = []
 
     classes_list = [c for c in classes_raw if isinstance(c, dict)]
-    classes_json = json.dumps(classes_list)
-
-    # Truncate classes_json if huge (stage 2/3 context overflow on 4K models)
-    max_json_chars = 1000
-    if len(classes_json) > max_json_chars:
-        kept = []
-        for c in classes_list:
-            trial = json.dumps(kept + [c])
-            if len(trial) <= max_json_chars:
-                kept.append(c)
-            else:
-                break
-        classes_json = json.dumps(kept) if kept else "[]"
-        if len(kept) < len(classes_list):
-            logger.debug("[Extractor] Truncated classes %d -> %d for context", len(classes_list), len(kept))
+    kept_classes, classes_json = _truncate_json_list(classes_list, get_settings().llm_max_classes_json_chars)
+    if len(kept_classes) < len(classes_list):
+        logger.debug("[Extractor] Truncated classes %d -> %d for context", len(classes_list), len(kept_classes))
 
     try:
         # Stage 2: Extract instances given classes
@@ -278,6 +403,7 @@ def extract_ontology_sequential(chunk: str, source_document: str = "") -> Ontolo
         resp2 = call_llm(
             system=EXTRACT_INSTANCES_SYSTEM,
             user=EXTRACT_INSTANCES_USER.format(classes_json=classes_json, chunk=s2_chunk),
+            temperature=getattr(settings, "llm_temperature", 0.1),
         )
         data2 = repair_json(resp2 or "")
         # LLM may return {"instances": [...]} or bare list [...]
@@ -292,21 +418,11 @@ def extract_ontology_sequential(chunk: str, source_document: str = "") -> Ontolo
         instances_raw = []
 
     instances_list = [i for i in instances_raw if isinstance(i, dict)]
-    instances_json = json.dumps(instances_list)
-
-    # Truncate instances_json if huge (stage 3 context overflow on 4K models)
-    max_inst_chars = 800
-    if len(instances_json) > max_inst_chars:
-        kept = []
-        for i in instances_list:
-            trial = json.dumps(kept + [i])
-            if len(trial) <= max_inst_chars:
-                kept.append(i)
-            else:
-                break
-        instances_json = json.dumps(kept) if kept else "[]"
-        if len(kept) < len(instances_list):
-            logger.debug("[Extractor] Truncated instances %d -> %d for context", len(instances_list), len(kept))
+    kept_instances, instances_json = _truncate_json_list(
+        instances_list, get_settings().llm_max_instances_json_chars
+    )
+    if len(kept_instances) < len(instances_list):
+        logger.debug("[Extractor] Truncated instances %d -> %d for context", len(instances_list), len(kept_instances))
 
     try:
         # Stage 3: Extract relations, data properties, axioms
@@ -321,6 +437,7 @@ def extract_ontology_sequential(chunk: str, source_document: str = "") -> Ontolo
                 instances_json=instances_json,
                 chunk=s3_chunk,
             ),
+            temperature=getattr(settings, "llm_temperature", 0.1),
         )
         data3 = repair_json(resp3 or "")
         if not isinstance(data3, dict):
@@ -329,103 +446,10 @@ def extract_ontology_sequential(chunk: str, source_document: str = "") -> Ontolo
         logger.warning("[Extractor] Stage 3 (relations) failed | error=%s", e)
         data3 = {}
 
-    def make_classes():
-        out = []
-        for c in classes_raw:
-            if not isinstance(c, dict):
-                continue
-            name = c.get("name") or ""
-            if not name:
-                continue
-            out.append(OntologyClass(
-                name=name,
-                parent=c.get("parent") or None,
-                description=c.get("description") or "",
-                **prov,
-            ))
-        return out
-
-    def make_instances():
-        out = []
-        for i in instances_raw:
-            if not isinstance(i, dict):
-                continue
-            name = i.get("name") or ""
-            if not name:
-                continue
-            out.append(OntologyInstance(
-                name=name,
-                class_name=i.get("class_name") or "",
-                description=i.get("description") or "",
-                **prov,
-            ))
-        return out
-
-    def make_object_properties():
-        out = []
-        for op in data3.get("object_properties", []) or []:
-            if not isinstance(op, dict):
-                continue
-            source = op.get("source") or ""
-            target = op.get("target") or ""
-            if not source or not target:
-                continue
-            out.append(ObjectProperty(
-                source=source,
-                relation=op.get("relation") or "related_to",
-                target=target,
-                domain=op.get("domain"),
-                range=op.get("range"),
-                symmetric=bool(op.get("symmetric", False)),
-                transitive=bool(op.get("transitive", False)),
-                confidence=float(op.get("confidence", 1.0) or 1.0),
-                **prov,
-            ))
-        return out
-
-    def make_data_properties():
-        out = []
-        for dp in data3.get("data_properties", []) or []:
-            if not isinstance(dp, dict):
-                continue
-            entity = dp.get("entity") or ""
-            attribute = dp.get("attribute") or ""
-            value = dp.get("value") or ""
-            if not entity or not attribute:
-                continue
-            out.append(DataProperty(
-                entity=entity,
-                attribute=attribute,
-                value=value,
-                datatype=dp.get("datatype") or "string",
-                **prov,
-            ))
-        return out
-
-    def make_axioms():
-        out = []
-        for ax in data3.get("axioms", []) or []:
-            if not isinstance(ax, dict):
-                continue
-            try:
-                axiom_type = AxiomType(ax.get("axiom_type", "subclass"))
-                entities = ax.get("entities") or [""]
-                if not entities:
-                    entities = [""]
-                out.append(Axiom(
-                    axiom_type=axiom_type,
-                    entities=entities,
-                    description=ax.get("description", ""),
-                    **prov,
-                ))
-            except (ValueError, TypeError):
-                continue
-        return out
-
     return OntologyExtraction(
-        classes=make_classes(),
-        instances=make_instances(),
-        object_properties=make_object_properties(),
-        data_properties=make_data_properties(),
-        axioms=make_axioms(),
+        classes=_parse_classes(classes_raw, prov),
+        instances=_parse_instances(instances_raw, prov),
+        object_properties=_parse_object_properties(data3, prov),
+        data_properties=_parse_data_properties(data3, prov),
+        axioms=_parse_axioms(data3, prov),
     )

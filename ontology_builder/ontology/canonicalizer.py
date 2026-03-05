@@ -6,14 +6,14 @@ import threading
 import numpy as np
 from sentence_transformers import SentenceTransformer
 
+from ontology_builder.constants import SIMILARITY_THRESHOLD
+
 logger = logging.getLogger(__name__)
 
 # Load once; reuse across calls
 _model: SentenceTransformer | None = None
 _lock = threading.Lock()
 entity_vectors: dict[str, np.ndarray] = {}
-# Cosine similarity >= 0.9 maps to same canonical name; below adds new entity to cache
-SIMILARITY_THRESHOLD = 0.9
 
 
 def _get_model() -> SentenceTransformer:
@@ -52,3 +52,22 @@ def canonicalize(entity_name: str) -> str:
         entity_vectors[name] = emb
         logger.debug("[Canonicalizer] New entity added to cache: %r | cache_size=%d", name, len(entity_vectors))
         return name
+
+
+def seed_from_entities(entity_names: list[str]) -> None:
+    """Pre-populate the canonicalizer cache with known entity names.
+
+    Call when loading a KB so that enrichment matches against existing entities.
+    Ensures consistent canonicalization across restarts.
+    """
+    if not entity_names:
+        return
+    model = _get_model()
+    with _lock:
+        for name in entity_names:
+            n = (name or "").strip()
+            if not n or n in entity_vectors:
+                continue
+            emb = model.encode(n, convert_to_numpy=True)
+            entity_vectors[n] = emb
+        logger.debug("[Canonicalizer] Seeded %d entities | cache_size=%d", len(entity_names), len(entity_vectors))

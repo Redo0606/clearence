@@ -12,6 +12,7 @@ import json
 import logging
 from difflib import SequenceMatcher
 
+from app.config import get_settings
 from ontology_builder.llm.json_repair import repair_json
 from ontology_builder.llm.lmstudio_client import call_llm
 from ontology_builder.llm.prompts import TAXONOMY_SYSTEM, TAXONOMY_USER
@@ -21,16 +22,24 @@ logger = logging.getLogger(__name__)
 
 
 def _deduplicate_classes(classes: list[OntologyClass]) -> list[OntologyClass]:
-    """Merge classes with the same (case-insensitive) name, keeping the richer entry."""
+    """Merge classes with the same (case-insensitive) name, keeping the richer entry.
+
+    When merging duplicates: prefer the one with a parent (taxonomy info); otherwise
+    prefer the longer description.
+    """
     seen: dict[str, OntologyClass] = {}
     for cls in classes:
         key = cls.name.strip().lower()
         if key in seen:
             existing = seen[key]
-            if len(cls.description) > len(existing.description):
-                seen[key] = cls
             if cls.parent and not existing.parent:
-                seen[key] = cls.model_copy(update={"description": max(cls.description, existing.description, key=len)})
+                seen[key] = cls.model_copy(
+                    update={"description": max(cls.description, existing.description, key=len)}
+                )
+            elif len(cls.description) > len(existing.description):
+                seen[key] = cls
+            else:
+                seen[key] = existing
         else:
             seen[key] = cls
     return list(seen.values())
@@ -43,7 +52,8 @@ def _grounding_check(
 ) -> list[dict]:
     """Filter out classes whose name cannot be fuzzy-matched in the source text.
 
-    Uses SequenceMatcher ratio against sliding windows of the lowered source.
+    Keeps a class if: (1) name appears in source, (2) any token >3 chars appears,
+    or (3) SequenceMatcher ratio >= threshold. Removes hallucinated classes.
     """
     if not source_text:
         return classes
@@ -60,6 +70,7 @@ def _grounding_check(
         if any(t in source_lower for t in tokens if len(t) > 3):
             grounded.append(cls)
             continue
+        # SequenceMatcher ratio against full source; threshold filters hallucinated classes
         ratio = SequenceMatcher(None, name, source_lower).ratio()
         if ratio >= threshold:
             grounded.append(cls)
@@ -88,8 +99,7 @@ def build_taxonomy(
     class_names = [c.name for c in classes]
     classes_data = [{"name": c.name, "description": c.description} for c in classes]
     classes_json = json.dumps(classes_data)
-    # Truncate if too large for 4K context models
-    max_json_chars = 2500
+    max_json_chars = get_settings().llm_max_taxonomy_chars
     if len(classes_json) > max_json_chars:
         kept = []
         for c in classes_data:

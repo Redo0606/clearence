@@ -28,11 +28,10 @@ from ontology_builder.reasoning.rules import (
     InferenceStep,
     RuleType,
 )
+from ontology_builder.constants import MAX_REASONING_ITERATIONS
 from ontology_builder.storage.graphdb import OntologyGraph
 
 logger = logging.getLogger(__name__)
-
-MAX_ITERATIONS = 20
 
 
 @dataclass
@@ -240,7 +239,7 @@ def run_inference(graph: OntologyGraph, subject: str | None = None) -> Reasoning
         graph.get_graph().number_of_edges(),
     )
 
-    for iteration in range(1, MAX_ITERATIONS + 1):
+    for iteration in range(1, MAX_REASONING_ITERATIONS + 1):
         added_this_round = 0
         added_this_round += _apply_transitive_subsumption(graph, trace)
         added_this_round += _apply_inheritance(graph, trace)

@@ -5,6 +5,7 @@ Supports both legacy dict format and the new structured OntologyExtraction.
 
 import logging
 import sys
+from pathlib import Path
 
 from tqdm import tqdm
 
@@ -13,6 +14,14 @@ from ontology_builder.ontology.schema import OntologyExtraction
 from ontology_builder.storage.graphdb import OntologyGraph
 
 logger = logging.getLogger(__name__)
+
+
+def _norm_source_doc(path_or_name: str) -> str:
+    """Normalize path or document name to basename for provenance storage."""
+    s = (path_or_name or "").strip()
+    if not s:
+        return ""
+    return Path(s).name or s
 
 
 def update_graph(graph: OntologyGraph, extraction: dict | OntologyExtraction, verbose: bool = True) -> None:
@@ -56,26 +65,48 @@ def update_graph(graph: OntologyGraph, extraction: dict | OntologyExtraction, ve
             graph.add_relation(src_canonical, relation, tgt_canonical, confidence=confidence)
 
 
+def _get_extraction_source_doc(extraction: OntologyExtraction) -> str:
+    """Get normalized source document from first available element."""
+    for cls in extraction.classes:
+        if cls.source_document:
+            return _norm_source_doc(cls.source_document)
+    for inst in extraction.instances:
+        if inst.source_document:
+            return _norm_source_doc(inst.source_document)
+    for op in extraction.object_properties:
+        if op.source_document:
+            return _norm_source_doc(op.source_document)
+    for dp in extraction.data_properties:
+        if dp.source_document:
+            return _norm_source_doc(dp.source_document)
+    return ""
+
+
 def _update_graph_structured(graph: OntologyGraph, extraction: OntologyExtraction, verbose: bool) -> None:
-    """Merge a structured OntologyExtraction with canonicalization."""
+    """Merge a structured OntologyExtraction with canonicalization and provenance."""
+    fallback_doc = _get_extraction_source_doc(extraction)
     for cls in tqdm(extraction.classes, desc="Adding classes", disable=not verbose, unit="cls", file=sys.stderr, dynamic_ncols=True, mininterval=0.5):
         canonical = canonicalize(cls.name)
         parent = canonicalize(cls.parent) if cls.parent else None
-        graph.add_class(canonical, cls.description, parent)
+        doc = _norm_source_doc(cls.source_document) or fallback_doc
+        graph.add_class(canonical, cls.description, parent, synonyms=cls.synonyms or None, source_document=doc or None)
 
     for inst in tqdm(extraction.instances, desc="Adding instances", disable=not verbose, unit="inst", file=sys.stderr, dynamic_ncols=True, mininterval=0.5):
         canonical = canonicalize(inst.name)
         class_canonical = canonicalize(inst.class_name)
-        graph.add_instance(canonical, class_canonical, inst.description)
+        doc = _norm_source_doc(inst.source_document) or fallback_doc
+        graph.add_instance(canonical, class_canonical, inst.description, source_document=doc or None)
 
     for op in tqdm(extraction.object_properties, desc="Adding relations", disable=not verbose, unit="rel", file=sys.stderr, dynamic_ncols=True, mininterval=0.5):
         src = canonicalize(op.source)
         tgt = canonicalize(op.target)
-        graph.add_relation(src, op.relation, tgt, confidence=op.confidence)
+        doc = _norm_source_doc(op.source_document) or fallback_doc
+        graph.add_relation(src, op.relation, tgt, confidence=op.confidence, source_document=doc or None)
 
     for dp in extraction.data_properties:
         entity = canonicalize(dp.entity)
-        graph.add_data_property(entity, dp.attribute, dp.value, dp.datatype)
+        doc = _norm_source_doc(dp.source_document) or fallback_doc
+        graph.add_data_property(entity, dp.attribute, dp.value, dp.datatype, source_document=doc or None)
 
     for ax in extraction.axioms:
         graph.add_axiom(ax.model_dump())
