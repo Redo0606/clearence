@@ -1,4 +1,7 @@
-"""Thin wrapper for LLM calls. Delegates to unified client with retries."""
+"""Re-export complete as call_llm for backward compatibility.
+
+Prefer using ontology_builder.llm.client.complete directly.
+"""
 
 from typing import Any
 
@@ -13,22 +16,7 @@ def call_llm(
     force_text_mode: bool | None = None,
     max_tokens: int | None = None,
 ) -> str:
-    """Call configured LLM (LM Studio or OpenAI-compatible API) with retries.
-
-    Args:
-        system: System prompt.
-        user: User message.
-        temperature: Sampling temperature (default 0.1).
-        response_format: Optional structured response_format payload.
-        force_text_mode: Optional text-mode override.
-        max_tokens: Optional output token cap.
-
-    Returns:
-        Assistant message content.
-
-    Raises:
-        RuntimeError: If response is empty or all retries fail.
-    """
+    """Deprecated: use ontology_builder.llm.client.complete instead."""
     return complete(
         system=system,
         user=user,

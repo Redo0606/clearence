@@ -35,7 +35,7 @@ def test_extract_ontology_legacy_mock(monkeypatch):
     from ontology_builder.pipeline import extractor
     monkeypatch.setattr(
         extractor,
-        "call_llm",
+        "complete",
         lambda system, user, temperature=0.1, response_format=None, force_text_mode=None: response,
     )
 
@@ -71,7 +71,7 @@ def test_extract_ontology_sequential_mock(monkeypatch):
             })
 
     from ontology_builder.pipeline import extractor
-    monkeypatch.setattr(extractor, "call_llm", mock_llm)
+    monkeypatch.setattr(extractor, "complete", mock_llm)
 
     result = extract_ontology_sequential("Text about vehicles")
     assert len(result.classes) == 1
@@ -86,7 +86,7 @@ def test_extract_ontology_sequential_mock(monkeypatch):
 def test_extract_ontology_sequential_llm_failure(monkeypatch):
     """Sequential extraction gracefully handles LLM failure."""
     from ontology_builder.pipeline import extractor
-    monkeypatch.setattr(extractor, "call_llm", lambda *a, **kw: (_ for _ in ()).throw(RuntimeError("LLM down")))
+    monkeypatch.setattr(extractor, "complete", lambda *a, **kw: (_ for _ in ()).throw(RuntimeError("LLM down")))
 
     result = extract_ontology_sequential("Text")
     assert len(result.classes) == 0
@@ -106,7 +106,7 @@ def test_extract_ontology_sends_json_schema_response_format(monkeypatch):
         seen["force_text_mode"] = force_text_mode
         return response
 
-    monkeypatch.setattr(extractor, "call_llm", mock_llm)
+    monkeypatch.setattr(extractor, "complete", mock_llm)
     extract_ontology("Some text")
 
     assert seen["response_format"]["type"] == "json_schema"
@@ -128,7 +128,7 @@ def test_extract_ontology_falls_back_to_text_mode_once(monkeypatch):
         calls["second_force_text_mode"] = force_text_mode
         return response
 
-    monkeypatch.setattr(extractor, "call_llm", mock_llm)
+    monkeypatch.setattr(extractor, "complete", mock_llm)
     result = extract_ontology("Some text")
 
     assert calls["count"] == 2

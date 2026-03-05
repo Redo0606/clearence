@@ -17,7 +17,7 @@ from tqdm import tqdm
 class PipelineCancelledError(Exception):
     """Raised when the pipeline is cancelled (e.g. client disconnected)."""
 
-from app.config import Settings, get_settings
+from core.config import Settings, get_settings
 from ontology_builder.evaluation.metrics import ChunkStats, PipelineReport, PipelineTimer
 from ontology_builder.ontology.schema import OntologyExtraction
 from ontology_builder.pipeline.chunker import chunk_text

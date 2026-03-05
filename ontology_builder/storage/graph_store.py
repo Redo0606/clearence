@@ -4,8 +4,13 @@ Provides get/set/clear for the active graph and its node-link export. Optional
 save/load to JSON for persistence. Supports multiple knowledge bases via
 metadata sidecar files (.meta.json).
 
-Note: Uses module-level globals (_current_graph, _current_export, etc.) for
-simplicity. Not thread-safe for concurrent writes.
+Thread-safety:
+    Uses module-level globals (_current_graph, _current_export, etc.) for
+    simplicity. This store is single-writer: concurrent writes (e.g. multiple
+    build_ontology requests modifying the graph simultaneously) are NOT
+    supported. Reads (get_graph, get_export) are safe when no write is in
+    progress. For production multi-tenant use, consider a per-session or
+    per-request graph store with proper locking.
 """
 import json
 import logging

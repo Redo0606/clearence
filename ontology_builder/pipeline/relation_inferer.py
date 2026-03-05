@@ -7,7 +7,7 @@ import json
 import logging
 import re
 
-from app.config import get_settings
+from core.config import get_settings
 from ontology_builder.llm.client import complete_batch
 from ontology_builder.llm.prompts import INFERENCE_PROMPT
 from ontology_builder.constants import CONFIDENCE_THRESHOLD

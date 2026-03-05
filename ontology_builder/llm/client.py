@@ -2,13 +2,13 @@
 
 import logging
 import threading
-import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Any, Callable, TypeVar
 
 from openai import OpenAI
+from tenacity import retry, retry_if_exception, stop_after_attempt, wait_exponential
 
-from app.config import get_settings
+from core.config import get_settings
 
 logger = logging.getLogger(__name__)
 
@@ -38,6 +38,12 @@ def _create_client() -> OpenAI:
         return _client
 
 
+def _should_retry(e: BaseException) -> bool:
+    """Skip retry on context overflow (retrying won't help)."""
+    err_str = str(e).lower()
+    return "context size" not in err_str and "context length" not in err_str
+
+
 def complete(
     system: str,
     user: str,
@@ -49,87 +55,67 @@ def complete(
     """Call configured LLM with retries. Single completion.
 
     Uses OpenAI-compatible /v1/chat/completions for both LM Studio and OpenAI cloud.
-
-    Args:
-        system: System prompt.
-        user: User message.
-        temperature: Sampling temperature (default 0.1).
-        response_format: Optional OpenAI-compatible response_format payload
-            (e.g. json_schema) for structured output.
-        force_text_mode: Optional override for text mode behavior. If None,
-            uses settings.llm_force_text_mode.
-        max_tokens: Optional output token cap for faster bounded responses.
-
-    Returns:
-        Assistant message content.
-
-    Raises:
-        RuntimeError: If all retries fail or response is empty.
+    Retries use tenacity with exponential backoff; context overflow aborts immediately.
     """
     settings = get_settings()
     max_retries = settings.llm_max_retries
 
-    last_error: Exception | None = None
+    @retry(
+        stop=stop_after_attempt(max_retries + 1),
+        retry=retry_if_exception(_should_retry),
+        wait=wait_exponential(multiplier=1, min=1, max=8),
+        reraise=True,
+        before_sleep=lambda rs: logger.warning("[LLM] Retrying | attempt=%d", rs.attempt_number),
+    )
+    def _do_complete() -> str:
+        logger.debug(
+            "[LLM] Attempt | model=%s | user_len=%d | system_len=%d",
+            settings.ontology_llm_model,
+            len(user),
+            len(system),
+        )
+        client = _create_client()
+        kwargs = dict(
+            model=settings.ontology_llm_model,
+            messages=[
+                {"role": "system", "content": system},
+                {"role": "user", "content": user},
+            ],
+            temperature=temperature,
+            timeout=settings.llm_timeout_seconds,
+        )
+        if max_tokens is not None and max_tokens > 0:
+            kwargs["max_tokens"] = max_tokens
+        if response_format is not None:
+            kwargs["response_format"] = response_format
+        else:
+            should_force_text = (
+                getattr(settings, "llm_force_text_mode", True)
+                if force_text_mode is None
+                else force_text_mode
+            )
+            if should_force_text:
+                kwargs["response_format"] = {"type": "text"}
+        response = client.chat.completions.create(**kwargs)
+        usage = getattr(response, "usage", None) or {}
+        logger.debug(
+            "[LLM] Response received | prompt_tokens=%s | completion_tokens=%s",
+            getattr(usage, "prompt_tokens", None),
+            getattr(usage, "completion_tokens", None),
+        )
+        choices = response.choices or []
+        if not choices:
+            raise RuntimeError("Empty LLM response")
+        message = choices[0].message if choices else None
+        content = (message.content or "").strip() if message else ""
+        return content
 
-    for attempt in range(max_retries + 1):
-        try:
-            logger.debug(
-                "[LLM] Attempt %d/%d | model=%s | user_len=%d | system_len=%d",
-                attempt + 1,
-                max_retries + 1,
-                settings.ontology_llm_model,
-                len(user),
-                len(system),
-            )
-            client = _create_client()
-            kwargs = dict(
-                model=settings.ontology_llm_model,
-                messages=[
-                    {"role": "system", "content": system},
-                    {"role": "user", "content": user},
-                ],
-                temperature=temperature,
-                timeout=settings.llm_timeout_seconds,
-            )
-            if max_tokens is not None and max_tokens > 0:
-                kwargs["max_tokens"] = max_tokens
-            if response_format is not None:
-                # Structured output takes priority over text-mode forcing.
-                kwargs["response_format"] = response_format
-            else:
-                should_force_text = (
-                    getattr(settings, "llm_force_text_mode", True)
-                    if force_text_mode is None
-                    else force_text_mode
-                )
-                if should_force_text:
-                    kwargs["response_format"] = {"type": "text"}
-            response = client.chat.completions.create(**kwargs)
-            usage = getattr(response, "usage", None) or {}
-            logger.debug(
-                "[LLM] Response received | prompt_tokens=%s | completion_tokens=%s",
-                getattr(usage, "prompt_tokens", None),
-                getattr(usage, "completion_tokens", None),
-            )
-            choices = response.choices or []
-            if not choices:
-                raise RuntimeError("Empty LLM response")
-            message = choices[0].message if choices else None
-            content = (message.content or "").strip() if message else ""
-            return content
-        except Exception as e:
-            last_error = e
-            err_str = str(e).lower()
-            logger.warning("[LLM] Attempt %d failed | error=%s", attempt + 1, e)
-            if "context size" in err_str or "context length" in err_str:
-                logger.warning("[LLM] Context overflow — retrying won't help, aborting immediately")
-                break
-            if attempt < max_retries:
-                delay = 2**attempt  # 1s, 2s, 4s
-                logger.debug("[LLM] Retrying in %ds", delay)
-                time.sleep(delay)
-
-    raise RuntimeError(f"LLM request failed after {max_retries + 1} attempts: {last_error}") from last_error
+    try:
+        return _do_complete()
+    except Exception as e:
+        if not _should_retry(e):
+            logger.warning("[LLM] Context overflow — aborting immediately")
+        raise RuntimeError(f"LLM request failed: {e}") from e
 
 
 def complete_batch(

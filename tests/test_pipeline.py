@@ -87,7 +87,7 @@ def test_extract_ontology_mock(monkeypatch):
         return fixed_response
 
     from ontology_builder.pipeline import extractor
-    monkeypatch.setattr(extractor, "call_llm", fake_call)
+    monkeypatch.setattr(extractor, "complete", fake_call)
     result = extract_ontology("Some chunk text")
     assert len(result["entities"]) == 1
     assert result["entities"][0]["name"] == "A"
@@ -109,7 +109,7 @@ def test_process_document_verbose_false(monkeypatch, tmp_path):
         return fixed_response
 
     from ontology_builder.pipeline import extractor
-    monkeypatch.setattr(extractor, "call_llm", fake_call)
+    monkeypatch.setattr(extractor, "complete", fake_call)
 
     from ontology_builder.pipeline.run_pipeline import process_document
     graph, report = process_document(str(doc), run_inference=False, verbose=False, sequential=False, run_reasoning=False)
@@ -144,10 +144,10 @@ def test_process_document_parallel_sequential_mode(monkeypatch, tmp_path):
 
     from ontology_builder.pipeline import extractor
     from ontology_builder.pipeline import taxonomy_builder
-    monkeypatch.setattr(extractor, "call_llm", fake_call)
+    monkeypatch.setattr(extractor, "complete", fake_call)
     monkeypatch.setattr(
         taxonomy_builder,
-        "call_llm",
+        "complete",
         lambda *a, **kw: json.dumps({"taxonomy": [{"name": "Layer", "parent": None}, {"name": "Neuron", "parent": "Layer"}]}),
     )
 

@@ -9,8 +9,8 @@ import re
 import logging
 from dataclasses import dataclass, field
 
-from app.config import get_settings
-from ontology_builder.llm.lmstudio_client import call_llm
+from core.config import get_settings
+from ontology_builder.llm.client import complete
 from ontology_builder.qa.prompts import QA_SYSTEM, build_qa_user_prompt
 
 logger = logging.getLogger(__name__)
@@ -79,7 +79,7 @@ def answer_question(
         context = context[:max_context_chars] + "\n[... truncated ...]"
 
     user = build_qa_user_prompt(context, question, ontological_context)
-    answer_text = call_llm(system=QA_SYSTEM, user=user, temperature=0.2, max_tokens=1400)
+    answer_text = complete(system=QA_SYSTEM, user=user, temperature=0.2, max_tokens=1400)
     logger.info("[QA] Answer generated | length=%d chars | facts=%d", len(answer_text), len(context_snippets))
 
     # Strip any raw source IDs the LLM may have echoed (safety net)

@@ -12,9 +12,9 @@ import json
 import logging
 from difflib import SequenceMatcher
 
-from app.config import get_settings
+from core.config import get_settings
 from ontology_builder.llm.json_repair import repair_json
-from ontology_builder.llm.lmstudio_client import call_llm
+from ontology_builder.llm.client import complete
 from ontology_builder.llm.prompts import TAXONOMY_SYSTEM, TAXONOMY_USER
 from ontology_builder.ontology.schema import OntologyClass
 
@@ -114,7 +114,7 @@ def build_taxonomy(
 
     logger.info("[Taxonomy] Organizing %d classes into hierarchy", len(classes))
     try:
-        raw = call_llm(system=TAXONOMY_SYSTEM, user=prompt)
+        raw = complete(system=TAXONOMY_SYSTEM, user=prompt)
     except Exception as e:
         logger.warning("[Taxonomy] LLM call failed: %s — returning flat list", e)
         return classes

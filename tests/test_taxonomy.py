@@ -71,7 +71,7 @@ def test_build_taxonomy_organizes_hierarchy(monkeypatch):
             ]
         })
 
-    monkeypatch.setattr(taxonomy_builder, "call_llm", mock_llm)
+    monkeypatch.setattr(taxonomy_builder, "complete", mock_llm)
 
     classes = [
         OntologyClass(name="Animal", description="Living creature"),

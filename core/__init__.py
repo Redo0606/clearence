@@ -1,5 +1,6 @@
-"""Re-export from core.constants for backward compatibility."""
+"""Shared core package: config, constants."""
 
+from core.config import Settings, get_settings
 from core.constants import (
     CHARS_PER_TOKEN,
     CONFIDENCE_THRESHOLD,
@@ -10,6 +11,8 @@ from core.constants import (
 )
 
 __all__ = [
+    "Settings",
+    "get_settings",
     "CHARS_PER_TOKEN",
     "CONFIDENCE_THRESHOLD",
     "ENCODE_BATCH_SIZE",

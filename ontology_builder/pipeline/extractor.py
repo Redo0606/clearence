@@ -14,9 +14,9 @@ Expected return structure (legacy extraction):
 import json
 import logging
 
-from app.config import get_settings
+from core.config import get_settings
 from ontology_builder.llm.json_repair import repair_json
-from ontology_builder.llm.lmstudio_client import call_llm
+from ontology_builder.llm.client import complete
 from ontology_builder.llm.prompts import (
     EXTRACT_CLASSES_SYSTEM,
     EXTRACT_CLASSES_USER,
@@ -300,7 +300,7 @@ def extract_ontology(chunk: str) -> dict:
     logger.debug("[Extractor] Calling LLM | chunk_len=%d", len(chunk_for_llm))
     settings = get_settings()
     try:
-        response = call_llm(
+        response = complete(
             system="You extract ontology structures. Output only valid JSON.",
             user=ONTOLOGY_EXTRACTION_PROMPT + chunk_for_llm,
             response_format=LEGACY_EXTRACTION_RESPONSE_FORMAT,
@@ -314,7 +314,7 @@ def extract_ontology(chunk: str) -> dict:
                 e,
             )
             try:
-                response = call_llm(
+                response = complete(
                     system="You extract ontology structures. Output only valid JSON.",
                     user=ONTOLOGY_EXTRACTION_PROMPT + chunk_for_llm,
                     force_text_mode=True,
@@ -372,7 +372,7 @@ def extract_ontology_sequential(chunk: str, source_document: str = "") -> Ontolo
             chunk_for_llm, EXTRACT_CLASSES_SYSTEM, EXTRACT_CLASSES_USER,
             token_budget,
         )
-        resp1 = call_llm(
+        resp1 = complete(
             system=EXTRACT_CLASSES_SYSTEM,
             user=EXTRACT_CLASSES_USER.format(chunk=s1_chunk),
             temperature=getattr(settings, "llm_temperature", 0.1),
@@ -400,7 +400,7 @@ def extract_ontology_sequential(chunk: str, source_document: str = "") -> Ontolo
             chunk_for_llm, EXTRACT_INSTANCES_SYSTEM, EXTRACT_INSTANCES_USER,
             token_budget, classes_json=classes_json,
         )
-        resp2 = call_llm(
+        resp2 = complete(
             system=EXTRACT_INSTANCES_SYSTEM,
             user=EXTRACT_INSTANCES_USER.format(classes_json=classes_json, chunk=s2_chunk),
             temperature=getattr(settings, "llm_temperature", 0.1),
@@ -430,7 +430,7 @@ def extract_ontology_sequential(chunk: str, source_document: str = "") -> Ontolo
             chunk_for_llm, EXTRACT_RELATIONS_SYSTEM, EXTRACT_RELATIONS_USER,
             token_budget, classes_json=classes_json, instances_json=instances_json,
         )
-        resp3 = call_llm(
+        resp3 = complete(
             system=EXTRACT_RELATIONS_SYSTEM,
             user=EXTRACT_RELATIONS_USER.format(
                 classes_json=classes_json,
