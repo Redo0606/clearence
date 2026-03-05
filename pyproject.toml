@@ -3,11 +3,22 @@ requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "ontology-graph"
+name = "clearence"
 version = "0.1.0"
-description = "FastAPI app that converts PDF field documentation into OWL/RDF ontologies using LLM extraction"
+description = "Clearence: Theory-grounded ontology graph builder from documents using LLM extraction, OWL 2 RL reasoning, and ontology-grounded RAG"
 readme = "README.md"
+license = {text = "MIT"}
 requires-python = ">=3.10"
+keywords = ["ontology", "llm", "rag", "owl", "knowledge-graph", "nlp"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
 dependencies = [
     "fastapi>=0.95.0",
     "uvicorn[standard]>=0.21.0",
@@ -28,11 +39,16 @@ dependencies = [
     "tenacity>=8.0.0",
 ]
 
+[project.urls]
+Homepage = "https://gitlab.com/YOUR_ORG/clearence"
+Repository = "https://gitlab.com/YOUR_ORG/clearence"
+Documentation = "https://gitlab.com/YOUR_ORG/clearence/-/blob/main/README.md"
+
 [project.optional-dependencies]
 dev = ["pytest>=7.0.0", "pytest-asyncio>=0.21.0", "httpx>=0.25.0", "ruff>=0.1.0"]
 
 [project.scripts]
-ontology-app = "app.main:run"
+clearence = "app.main:run"
 
 [tool.setuptools.packages.find]
 where = ["."]

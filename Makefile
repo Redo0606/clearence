@@ -1,10 +1,10 @@
-# ONTOLOGY_GRAPH - Common development tasks
+# Clearence - Common development tasks
 # Run `make help` for available targets
 
 .PHONY: help install run test lint format clean docker-build docker-up docker-down
 
 help:
-	@echo "ONTOLOGY_GRAPH - Available targets:"
+	@echo "Clearence - Available targets:"
 	@echo "  make install       - Install package with dev dependencies (editable)"
 	@echo "  make run           - Run the FastAPI app with uvicorn (reload)"
 	@echo "  make test          - Run pytest"
