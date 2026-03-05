@@ -1098,19 +1098,27 @@ def generate_chat_ui_html() -> str:
       appendMessage('user', q);
       showLoading(true);
       setInputsEnabled(false);
+      const controller = new AbortController();
+      const qaTimeoutMs = 90000;
+      const timeoutId = setTimeout(() => controller.abort(), qaTimeoutMs);
       try {{
         const res = await fetch(API + '/qa/ask', {{
           method: 'POST',
           headers: {{ 'Content-Type': 'application/json' }},
-          body: JSON.stringify({{ question: q }})
+          body: JSON.stringify({{ question: q }}),
+          signal: controller.signal,
         }});
         const data = await res.json().catch(() => ({{}}));
         if (!res.ok) throw new Error(parseError(data) || res.statusText);
         const sourceTags = (data.source_labels && data.source_labels.length) ? data.source_labels : (data.source_refs || []);
         appendMessage('assistant', data.answer, sourceTags, data.num_facts_used);
       }} catch (e) {{
-        appendMessage('assistant', 'Error: ' + e.message);
+        const msg = e && e.name === 'AbortError'
+          ? 'Request timed out. The model may be overloaded; try again.'
+          : e.message;
+        appendMessage('assistant', 'Error: ' + msg);
       }} finally {{
+        clearTimeout(timeoutId);
         showLoading(false);
         setInputsEnabled(true);
       }}
