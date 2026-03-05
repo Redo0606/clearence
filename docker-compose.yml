@@ -1,0 +1,32 @@
+# ONTOLOGY_GRAPH - Docker Compose
+# Run: docker compose up -d
+# LM Studio: Use host.docker.internal when LLM runs on host (Mac/Windows).
+# Linux: extra_hosts enables host.docker.internal.
+
+services:
+  ontology-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ontology-graph-api
+    ports:
+      - "8000:8000"
+    environment:
+      # LM Studio on host: use host.docker.internal (Mac/Windows) or host IP (Linux)
+      OPENAI_BASE_URL: ${OPENAI_BASE_URL:-http://host.docker.internal:1234/v1}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      ONTOLOGY_LLM_MODEL: ${ONTOLOGY_LLM_MODEL:-phi-3-medium-128k-instruct}
+      UPLOAD_MAX_SIZE_MB: ${UPLOAD_MAX_SIZE_MB:-20}
+      LLM_TIMEOUT_SECONDS: ${LLM_TIMEOUT_SECONDS:-120}
+    env_file:
+      - path: .env
+        required: false
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s

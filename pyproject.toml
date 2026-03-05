@@ -1,0 +1,37 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ontology-graph"
+version = "0.1.0"
+description = "FastAPI app that converts PDF field documentation into OWL/RDF ontologies using LLM extraction"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "fastapi>=0.95.0",
+    "uvicorn[standard]>=0.21.0",
+    "pydantic>=1.10.0",
+    "pydantic-settings>=2.0.0",
+    "pypdf>=4.0.0",
+    "rdflib>=7.0.0",
+    "openai>=1.0.0",
+    "python-multipart>=0.0.6",
+    "networkx>=3.0",
+    "sentence-transformers>=2.2.0",
+    "matplotlib>=3.7.0",
+    "pdfminer.six>=20221105",
+    "python-docx>=1.0.0",
+    "requests>=2.28.0",
+    "tqdm>=4.65.0",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=7.0.0", "pytest-asyncio>=0.21.0", "httpx>=0.25.0", "ruff>=0.1.0"]
+
+[project.scripts]
+ontology-app = "app.main:run"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["app*", "ontology_builder*"]

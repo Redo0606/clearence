@@ -1,0 +1,66 @@
+# ONTOLOGY_GRAPH - Docker build context exclusions
+# Prevents venv, secrets, and dev artifacts from being copied into the image
+
+# Virtual environments (never copy local venv into image)
+venv/
+.venv/
+env/
+.env/
+*.venv/
+
+# Environment and secrets (use docker-compose env_file at runtime)
+.env
+.env.*
+!.env.example
+
+# Python cache and bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+.eggs/
+dist/
+build/
+*.egg
+
+# Test and dev artifacts
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.nox/
+.ruff_cache/
+.mypy_cache/
+*.log
+
+# IDE and editor
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# Docker (avoid recursive copy)
+Dockerfile*
+docker-compose*
+.docker/
+
+# Documentation and plans (not needed at runtime)
+docs/
+*.md
+
+# Continue / Cursor
+.continue/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Temporary uploads (runtime-generated)
+documents/

@@ -1,0 +1,47 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg-info/
+.eggs/
+dist/
+build/
+*.egg
+
+# Virtual environments
+venv/
+.venv/
+env/
+
+# Environment and secrets
+.env
+
+# Test and dev artifacts
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.nox/
+.ruff_cache/
+.mypy_cache/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Continue / Cursor
+.continue/
+
+# Temporary uploads
+documents/raw/*.pdf
+documents/raw/*.docx
+documents/raw/*.txt
+documents/raw/*.md
+documents/ontology_graphs/
