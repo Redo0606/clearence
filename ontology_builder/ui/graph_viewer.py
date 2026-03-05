@@ -89,133 +89,9 @@ def visualize(graph: "OntologyGraph", save_path: str | None = None) -> io.BytesI
     return buf
 
 
-_HIERARCHY_RELATIONS = {"subClassOf", "parent_of", "type", "contains"}
-
-
-def _compute_organic_layout(
-    g: nx.DiGraph, scale: float = 600.0,
-) -> dict[str, tuple[float, float]]:
-    """Kamada-Kawai layout – minimises edge-length variance / crossings."""
-    n = g.number_of_nodes()
-    if n == 0:
-        return {}
-    if n <= 2:
-        return {node: (i * scale * 0.5, 0.0) for i, node in enumerate(g.nodes())}
-    try:
-        pos = nx.kamada_kawai_layout(g.to_undirected(), scale=scale)
-    except Exception:
-        pos = nx.spring_layout(g.to_undirected(), seed=42, k=3.5, iterations=200, scale=scale)
-    return {node: (float(xy[0]), float(xy[1])) for node, xy in pos.items()}
-
-
-def _compute_hierarchical_layout(
-    g: nx.DiGraph, scale: float = 600.0,
-) -> dict[str, tuple[float, float]]:
-    """Top-down layered layout driven by subClassOf / parent_of / type edges.
-
-    Roots (classes with no parent) sit at the top; depth increases downward.
-    Within each layer nodes are ordered by the barycenter of their parents
-    to reduce edge crossings (simplified Sugiyama).
-    """
-    from collections import deque
-
-    children_of: dict[str, list[str]] = {}
-    parent_set: set[str] = set()
-    child_set: set[str] = set()
-
-    for u, v, d in g.edges(data=True):
-        rel = d.get("relation", "")
-        if rel == "subClassOf":
-            children_of.setdefault(v, []).append(u)
-            parent_set.add(v)
-            child_set.add(u)
-        elif rel in ("parent_of", "contains"):
-            children_of.setdefault(u, []).append(v)
-            parent_set.add(u)
-            child_set.add(v)
-        elif rel == "type":
-            children_of.setdefault(v, []).append(u)
-            parent_set.add(v)
-            child_set.add(u)
-
-    roots = [n for n in g.nodes() if n in parent_set and n not in child_set]
-    if not roots:
-        roots = sorted(parent_set - child_set) or list(g.nodes())[:1]
-
-    depth: dict[str, int] = {}
-    queue: deque[str] = deque()
-    for r in roots:
-        if r not in depth:
-            depth[r] = 0
-            queue.append(r)
-    while queue:
-        node = queue.popleft()
-        for child in children_of.get(node, []):
-            new_d = depth[node] + 1
-            if child not in depth or new_d > depth[child]:
-                depth[child] = new_d
-                queue.append(child)
-
-    max_d = max(depth.values(), default=0)
-    for n in g.nodes():
-        if n not in depth:
-            depth[n] = max_d + 1
-
-    layers: dict[int, list[str]] = {}
-    for n, d in depth.items():
-        layers.setdefault(d, []).append(n)
-
-    node_gap = max(220, scale * 0.38)
-    layer_gap = max(180, scale * 0.30)
-
-    pos: dict[str, tuple[float, float]] = {}
-    prev_x: dict[str, float] = {}
-
-    for d in sorted(layers.keys()):
-        layer = layers[d]
-
-        if prev_x:
-            def _bary(node: str) -> float:
-                xs = []
-                for parent, ch_list in children_of.items():
-                    if node in ch_list and parent in prev_x:
-                        xs.append(prev_x[parent])
-                return sum(xs) / len(xs) if xs else 0.0
-            layer.sort(key=_bary)
-
-        count = len(layer)
-        total_w = (count - 1) * node_gap
-        start_x = -total_w / 2.0
-
-        for i, n in enumerate(layer):
-            x = start_x + i * node_gap
-            y = d * layer_gap
-            pos[n] = (x, y)
-            prev_x[n] = x
-
-    return {n: (float(xy[0]), float(xy[1])) for n, xy in pos.items()}
-
-
-def _compute_layouts(
-    g: nx.DiGraph, scale: float = 600.0,
-) -> dict[str, dict[str, dict[str, float]]]:
-    """Return ``{layout_name: {node_id: {x, y}}}`` for every layout."""
-    organic = _compute_organic_layout(g, scale)
-    hierarchy = _compute_hierarchical_layout(g, scale)
-
-    def _fmt(pos: dict[str, tuple[float, float]]) -> dict[str, dict[str, float]]:
-        return {nid: {"x": xy[0], "y": xy[1]} for nid, xy in pos.items()}
-
-    return {"organic": _fmt(organic), "hierarchy": _fmt(hierarchy)}
-
-
 def generate_visjs_html(graph: "OntologyGraph") -> str:
     """Generate standalone HTML page with interactive vis.js graph viewer."""
     g = graph.get_graph()
-
-    all_layouts = _compute_layouts(g)
-    initial_layout = "organic"
-    initial_pos = all_layouts.get(initial_layout, {})
 
     vis_nodes: list[dict[str, Any]] = []
     for node in g.nodes():
@@ -224,7 +100,6 @@ def generate_visjs_html(graph: "OntologyGraph") -> str:
         label = node
         desc = data.get("description", "")
         accent = "#ec4899" if kind == "class" else "#38bdf8" if kind == "instance" else "#8a8a94"
-        xy = initial_pos.get(node, {"x": 0.0, "y": 0.0})
         vis_nodes.append({
             "id": node,
             "baseLabel": label,
@@ -232,9 +107,6 @@ def generate_visjs_html(graph: "OntologyGraph") -> str:
             "kind": kind,
             "accent": accent,
             "description": desc,
-            "x": xy["x"],
-            "y": xy["y"],
-            "fixed": True,
         })
 
     vis_edges: list[dict[str, Any]] = []
@@ -250,7 +122,7 @@ def generate_visjs_html(graph: "OntologyGraph") -> str:
             "arrows": {"to": {"enabled": True, "scaleFactor": 0.7}},
             "color": {"color": color, "opacity": 0.96, "highlight": color, "hover": color},
             "width": 1.8,
-            "smooth": {"type": "curvedCW", "roundness": 0.12},
+            "smooth": {"type": "continuous"},
             "font": {
                 "size": 11,
                 "align": "middle",
@@ -263,7 +135,6 @@ def generate_visjs_html(graph: "OntologyGraph") -> str:
 
     nodes_json = json.dumps(vis_nodes)
     edges_json = json.dumps(vis_edges)
-    layouts_json = json.dumps(all_layouts)
     stats = graph.export().get("stats", {})
     edges_count = stats.get("edges")
     if edges_count is None:
@@ -283,7 +154,7 @@ def generate_visjs_html(graph: "OntologyGraph") -> str:
 <head>
   <meta charset="UTF-8">
   <title>Ontology Graph Viewer</title>
-  <script src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
+  <script src="https://unpkg.com/vis-network@9.1.9/standalone/umd/vis-network.min.js" onerror="window.__viewerScriptError=true"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -358,6 +229,22 @@ def generate_visjs_html(graph: "OntologyGraph") -> str:
     #node-tooltip .rels {{ margin-top: 6px; display:flex; flex-wrap:wrap; gap:4px; }}
     #node-tooltip .rel-pill {{ font-size:10px; font-family:'JetBrains Mono', monospace; color:#f1c0dc; background:rgba(236,72,153,0.14); border:1px solid rgba(236,72,153,0.28); border-radius:999px; padding:2px 6px; }}
     #node-tooltip .desc {{ color: #c7c5d0; }}
+    #viewer-init-error {{
+      position: absolute;
+      z-index: 25;
+      top: 24px;
+      left: 24px;
+      right: 24px;
+      padding: 12px 14px;
+      border-radius: 10px;
+      border: 1px solid rgba(236, 72, 153, 0.45);
+      background: rgba(30, 10, 22, 0.95);
+      color: #ffd9e8;
+      font-size: 12px;
+      line-height: 1.45;
+      display: none;
+    }}
+    #viewer-init-error.visible {{ display: block; }}
   </style>
 </head>
 <body>
@@ -371,8 +258,7 @@ def generate_visjs_html(graph: "OntologyGraph") -> str:
         <div class="ctrl-item"><div class="legend-dot" style="background:#ec4899"></div> Class</div>
         <div class="ctrl-item"><div class="legend-dot" style="background:#38bdf8"></div> Instance</div>
         <div class="ctrl-sep"></div>
-        <button class="ctrl-item ctrl-btn layout-btn active" data-layout="organic" type="button">Organic</button>
-        <button class="ctrl-item ctrl-btn layout-btn" data-layout="hierarchy" type="button">Hierarchy</button>
+        <button id="fit-btn" class="ctrl-item ctrl-btn" type="button">Fit</button>
         <div class="ctrl-sep"></div>
         <button id="edge-label-toggle" class="ctrl-item ctrl-btn" type="button">Labels: ON</button>
       </div>
@@ -381,20 +267,35 @@ def generate_visjs_html(graph: "OntologyGraph") -> str:
       <div id="spotlight-bg"></div>
       <div id="graph"></div>
       <div id="node-tooltip"></div>
+      <div id="viewer-init-error"></div>
     </div>
   </div>
   <script>
+    var initError = document.getElementById("viewer-init-error");
+    var graphContainer = document.getElementById("graph");
+    function showInitError(message) {{
+      if (initError) {{
+        initError.textContent = message;
+        initError.classList.add("visible");
+      }}
+      if (graphContainer) {{
+        graphContainer.style.opacity = "1";
+        graphContainer.style.transform = "none";
+      }}
+    }}
+    if (typeof vis === "undefined" || !vis.DataSet || !vis.Network) {{
+      showInitError("Graph viewer assets failed to load. Check network access to unpkg.com and refresh the page.");
+      throw new Error("vis-network library unavailable");
+    }}
+
     var nodes = new vis.DataSet({nodes_json});
     var edges = new vis.DataSet({edges_json});
-    var layouts = {layouts_json};
-    var currentLayout = "organic";
-    var isAnimating = false;
 
     var container = document.getElementById("graph");
     var tooltip = document.getElementById("node-tooltip");
     var edgeLabelToggle = document.getElementById("edge-label-toggle");
+    var fitBtn = document.getElementById("fit-btn");
     var spotlightBg = document.getElementById("spotlight-bg");
-    var layoutBtns = document.querySelectorAll(".layout-btn");
     var data = {{ nodes: nodes, edges: edges }};
     var showEdgeLabels = true;
     var focusedNodeId = null;
@@ -436,57 +337,33 @@ def generate_visjs_html(graph: "OntologyGraph") -> str:
       }};
     }});
 
-    /* ── Layout transition animation ─────────────────────────── */
-
-    function animateToLayout(name, done) {{
-      var target = layouts[name];
-      if (!target || isAnimating) return;
-      isAnimating = true;
-
-      var startPos = {{}};
-      nodes.forEach(function(n) {{
-        var p = network.getPositions([n.id])[n.id];
-        startPos[n.id] = {{ x: p.x, y: p.y }};
-      }});
-
-      var duration = 620;
-      var t0 = performance.now();
-
-      function tick(now) {{
-        var raw = Math.min(1, (now - t0) / duration);
-        var t = easeInOutCubic(raw);
-        nodes.forEach(function(n) {{
-          var from = startPos[n.id];
-          var to = target[n.id];
-          if (!from || !to) return;
-          network.moveNode(n.id, from.x + (to.x - from.x) * t, from.y + (to.y - from.y) * t);
-        }});
-        if (raw < 1) {{
-          requestAnimationFrame(tick);
-        }} else {{
-          nodes.forEach(function(n) {{
-            var to = target[n.id];
-            if (to) network.moveNode(n.id, to.x, to.y);
-          }});
-          isAnimating = false;
-          network.fit({{ animation: {{ duration: 280, easingFunction: "easeInOutCubic" }} }});
-          if (done) done();
-        }}
-      }}
-      requestAnimationFrame(tick);
-    }}
-
     /* ── Network setup ───────────────────────────────────────── */
 
     var options = {{
       autoResize: true,
-      physics: false,
+      physics: {{
+        enabled: true,
+        barnesHut: {{
+          gravitationalConstant: -3000,
+          centralGravity: 0.3,
+          springLength: 160,
+          springConstant: 0.05,
+          damping: 0.09,
+          avoidOverlap: 0.2,
+        }},
+        stabilization: {{
+          enabled: true,
+          iterations: 600,
+          updateInterval: 25,
+          fit: true,
+        }},
+      }},
       interaction: {{
         hover: true,
         tooltipDelay: 999999,
         navigationButtons: false,
         keyboard: true,
-        dragNodes: false,
+        dragNodes: true,
         zoomView: true,
         dragView: true,
       }},
@@ -498,7 +375,6 @@ def generate_visjs_html(graph: "OntologyGraph") -> str:
         font: {{ color: "#e8e6e3", size: 13, face: "Space Grotesk" }},
         borderWidth: 1.2,
         borderWidthSelected: 2.2,
-        fixed: true,
         color: {{
           background: "#1e1e28",
           border: "#2a2a3a",
@@ -507,7 +383,7 @@ def generate_visjs_html(graph: "OntologyGraph") -> str:
         }}
       }},
       edges: {{
-        smooth: {{ type: "curvedCW", roundness: 0.12 }},
+        smooth: {{ type: "continuous" }},
         width: 1.8,
         hoverWidth: 2.4,
         selectionWidth: 2.2,
@@ -519,18 +395,13 @@ def generate_visjs_html(graph: "OntologyGraph") -> str:
     }};
     var network = new vis.Network(container, data, options);
 
-    /* ── Layout buttons ──────────────────────────────────────── */
+    /* ── Fit button ──────────────────────────────────────────── */
 
-    layoutBtns.forEach(function(btn) {{
-      btn.addEventListener("click", function() {{
-        var name = btn.getAttribute("data-layout");
-        if (name === currentLayout || isAnimating) return;
-        currentLayout = name;
-        layoutBtns.forEach(function(b) {{ b.classList.remove("active"); }});
-        btn.classList.add("active");
-        animateToLayout(name);
+    if (fitBtn) {{
+      fitBtn.addEventListener("click", function() {{
+        network.fit({{ animation: {{ duration: 350, easingFunction: "easeInOutCubic" }} }});
       }});
-    }});
+    }}
 
     /* ── Edge-label toggle ───────────────────────────────────── */
 
@@ -838,12 +709,16 @@ def generate_visjs_html(graph: "OntologyGraph") -> str:
 
     applyEdgeLabelMode();
     resetHighlight();
-    setTimeout(function() {{
+    network.on("stabilizationIterationsDone", function() {{
+      network.setOptions({{ physics: {{ enabled: false }} }});
       network.fit({{ animation: {{ duration: 350, easingFunction: "easeInOutCubic" }} }});
       requestAnimationFrame(function() {{
         container.classList.add("ready");
       }});
-    }}, 50);
+    }});
+    setTimeout(function() {{
+      container.classList.add("ready");
+    }}, 3000);
   </script>
 </body>
 </html>"""
