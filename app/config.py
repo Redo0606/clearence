@@ -25,8 +25,8 @@ class Settings(BaseSettings):
     )
 
     openai_api_key: str = ""
-    ontology_llm_model: str = "gpt-4o-mini"
-    log_level: str = "DEBUG"
+    ontology_llm_model: str = "phi-3-mini-4k-instruct"
+    log_level: str = "INFO"
     # Default: LM Studio local server. Override with OPENAI_BASE_URL for OpenAI cloud.
     openai_base_url: str = "http://localhost:1234/v1"
 

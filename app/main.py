@@ -1,49 +1,45 @@
 """FastAPI app entry point. Mounts PDF-to-OWL and living-ontology routers."""
 
 import logging
-import sys
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from fastapi.responses import HTMLResponse
+
 from app.config import get_settings
+from app.logging_config import configure_table_logging
 from app.routers import ontology
 from ontology_builder.ui.api import router as graph_router
+from ontology_builder.ui.chat_ui import generate_chat_ui_html
 
 logger = logging.getLogger(__name__)
 
 
-class FlushingStreamHandler(logging.StreamHandler):
-    """StreamHandler that flushes after each emit for immediate output in Docker."""
-
-    def emit(self, record: logging.LogRecord) -> None:
-        super().emit(record)
-        self.flush()
-
-
 def _configure_logging() -> None:
-    """Configure application-wide logging with detailed format for step-by-step tracing."""
+    """Configure application-wide logging with table format. INFO by default."""
     settings = get_settings()
-    level = getattr(logging, settings.log_level.upper(), logging.DEBUG)
-    format_str = (
-        "%(asctime)s | %(levelname)-8s | %(name)s:%(lineno)d | %(message)s"
-    )
-    handler = FlushingStreamHandler(sys.stdout)
-    handler.setFormatter(logging.Formatter(format_str, datefmt="%Y-%m-%d %H:%M:%S"))
-    root = logging.getLogger()
-    root.setLevel(level)
-    if not root.handlers:
-        root.addHandler(handler)
-    # Reduce noise from third-party libs
+    level = getattr(logging, settings.log_level.upper(), logging.INFO)
+    configure_table_logging(level=level)
+    # Suppress noisy loggers
     logging.getLogger("httpx").setLevel(logging.WARNING)
     logging.getLogger("httpcore").setLevel(logging.WARNING)
     logging.getLogger("openai").setLevel(logging.WARNING)
     logging.getLogger("urllib3").setLevel(logging.WARNING)
-    # Suppress verbose pdfminer DEBUG (PS parser, PDF interpreter)
     logging.getLogger("pdfminer").setLevel(logging.WARNING)
+    logging.getLogger("uvicorn.access").setLevel(logging.WARNING)  # Skip GET /health spam
+    logging.getLogger("ontology_builder.llm.client").setLevel(logging.INFO)
 
 
-app = FastAPI(title="PDF to Ontology API", description="Convert PDF field documentation to OWL/RDF via LLM (LM Studio or OpenAI)")
+app = FastAPI(
+    title="Theory-Grounded Ontology Graph API",
+    description=(
+        "Build formal, theory-grounded ontologies from documents using sequential LLM extraction "
+        "(Bakker Approach B), OWL 2 RL reasoning (Smith & Proietti), and ontology-grounded RAG "
+        "(OntoRAG + OG-RAG). Supports LM Studio and OpenAI."
+    ),
+    version="1.0.0",
+)
 
 app.add_middleware(
     CORSMiddleware,
@@ -69,7 +65,13 @@ async def startup_event():
 @app.get("/")
 async def read_root():
     """Return service info: name, docs URL, health URL."""
-    return {"service": "PDF to Ontology", "docs": "/docs", "health": "/health"}
+    return {"service": "PDF to Ontology", "docs": "/docs", "health": "/health", "app": "/app"}
+
+
+@app.get("/app", response_class=HTMLResponse)
+async def chat_app():
+    """Serve the ontology chat UI."""
+    return HTMLResponse(content=generate_chat_ui_html())
 
 
 @app.get("/health")
