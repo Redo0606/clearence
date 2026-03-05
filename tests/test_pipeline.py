@@ -112,6 +112,7 @@ def test_process_document_verbose_false(monkeypatch, tmp_path):
     monkeypatch.setattr(extractor, "call_llm", fake_call)
 
     from ontology_builder.pipeline.run_pipeline import process_document
-    graph = process_document(str(doc), run_inference=False, verbose=False)
+    graph, report = process_document(str(doc), run_inference=False, verbose=False, sequential=False, run_reasoning=False)
     assert graph.get_graph().number_of_nodes() >= 2
     assert graph.get_graph().number_of_edges() >= 1
+    assert report.total_chunks >= 1
