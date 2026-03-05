@@ -99,7 +99,7 @@ LM Studio on host is accessed via `host.docker.internal`. For OpenAI cloud, set 
 | `UPLOAD_MAX_SIZE_MB`     | `20`                       | Max upload size (MB)        |
 | `LLM_TIMEOUT_SECONDS`    | `120`                      | LLM request timeout         |
 | `LLM_MAX_RETRIES`        | `3`                        | LLM retry count             |
-| `LLM_PARALLEL_WORKERS`   | `2`                        | Parallel extraction workers |
+| `LLM_PARALLEL_WORKERS`   | auto (2 local, 30 ChatGPT) | Parallel workers; max throughput for gpt-4o-mini |
 | `LLM_MAX_CHUNK_CHARS`   | `600`                      | Max chars per chunk (0=no truncation)  |
 | `LLM_MAX_PROMPT_TOKENS` | `3000`                     | Soft token budget for prompts        |
 | `LLM_FORCE_TEXT_MODE`   | `true`                     | Force text output when no explicit `response_format` is provided |

@@ -1,0 +1,439 @@
+% Theory-Grounded Ontology Graph — Full Architecture Decision Record
+% Compile with: pdflatex ADR-full.tex (run twice for TOC)
+
+\documentclass[11pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{geometry}
+\usepackage{hyperref}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{enumitem}
+\usepackage{parskip}
+\usepackage{xcolor}
+\usepackage{fancyhdr}
+\usepackage{titlesec}
+
+\geometry{margin=2.5cm}
+\hypersetup{colorlinks=true, linkcolor=blue, urlcolor=blue, citecolor=blue}
+
+\title{\textbf{Architecture Decision Record}\\[0.5em]
+Theory-Grounded Ontology Graph MVP}
+\author{Ontology Graph Project}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+\tableofcontents
+\newpage
+
+%=============================================================================
+\section{Executive Summary}
+%=============================================================================
+
+The Theory-Grounded Ontology Graph is a FastAPI application that builds \textbf{formal, theory-grounded ontologies} from documents using LLM extraction, OWL~2~RL reasoning, and ontology-grounded RAG (Retrieval-Augmented Generation). The system integrates concepts from seven academic papers into a cohesive pipeline that supports both a lightweight PDF-to-OWL flow and a full theory-grounded extraction pipeline.
+
+\textbf{Key architectural decisions} documented herein include: the sequential 6-step pipeline (Bakker Approach B), the Guarino O=\{C,R,I,P\} schema, NetworkX for ontology graphs with OG-RAG hypergraphs for retrieval, OpenAI-compatible LLM integration (LM Studio and cloud), dual retrieval RAG with OntoRAG context enrichment, in-memory graph storage with JSON persistence, and Docker-based deployment.
+
+%=============================================================================
+\section{Status and Context}
+%=============================================================================
+
+\subsection{Status}
+\begin{itemize}[noitemsep]
+    \item \textbf{Status:} Accepted
+    \item \textbf{Date:} 2025
+    \item \textbf{ADR Reference:} ADR-001 (living ontology pipeline)
+\end{itemize}
+
+\subsection{Context}
+Organizations need to extract structured knowledge from unstructured documents (PDFs, DOCX, text) and query it with formal guarantees. Traditional approaches either lack theoretical grounding or do not integrate reasoning with retrieval. This system addresses both by:
+
+\begin{enumerate}[noitemsep]
+    \item Adopting a formal ontology schema (Guarino)
+    \item Using a sequential extraction pipeline validated in the literature (Bakker)
+    \item Applying OWL~2~RL reasoning for transitive closure and consistency (Smith \& Proietti)
+    \item Combining hypergraph retrieval (OG-RAG) with ontological context (OntoRAG) for RAG
+\end{enumerate}
+
+The application must support local development (LM Studio) and cloud deployment (OpenAI), document upload and streaming progress, multiple knowledge bases, and interactive graph visualization.
+
+%=============================================================================
+\section{Architecture Overview}
+%=============================================================================
+
+\subsection{High-Level Architecture}
+
+The system comprises two main flows:
+
+\begin{enumerate}
+    \item \textbf{PDF-to-OWL flow} (\texttt{app/}): Lightweight path for PDF $\rightarrow$ OWL/Turtle/JSON-LD via rdflib. Single-shot LLM extraction, no pipeline.
+    \item \textbf{Theory-grounded pipeline} (\texttt{ontology\_builder/}): Full 6-step pipeline with sequential extraction, taxonomy building, graph merge, OWL~2~RL reasoning, and ontology-grounded RAG.
+\end{enumerate}
+
+\subsection{Layered Design}
+
+\begin{center}
+\begin{tabular}{@{}ll@{}}
+\toprule
+\textbf{Layer} & \textbf{Responsibility} \\
+\midrule
+API & FastAPI routers, request/response models, CORS \\
+Pipeline & Orchestration, progress callbacks, cancellation \\
+Extraction & LLM calls, 3-stage sequential or legacy single-shot \\
+Ontology & Schema (Guarino), canonicalization, rules \\
+Storage & OntologyGraph, HyperGraph, graph\_store \\
+Reasoning & OWL~2~RL rules, fixpoint iteration, trace \\
+RAG/QA & Index, dual retrieval, answer generation \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\subsection{Project Structure}
+
+\begin{verbatim}
+app/                          # PDF -> OWL flow
+├── main.py                   # FastAPI entry point + CORS
+├── config.py                 # Pydantic settings (cached)
+├── schemas.py                # OWL serialization models
+├── pdf.py                    # PDF text extraction
+├── llm_extract.py            # LLM schema extraction
+├── ontology.py               # rdflib Graph + OWL/Turtle/JSON-LD
+└── routers/ontology.py       # POST /api/v1/ontology/from-pdf
+
+ontology_builder/             # Theory-grounded pipeline
+├── pipeline/                 # Load, chunk, extract, taxonomy, merge, infer
+├── ontology/                 # Schema, canonicalizer, rules
+├── llm/                      # Unified client, LM Studio, JSON repair
+├── storage/                  # OntologyGraph, HyperGraph, graph_store
+├── reasoning/                # OWL 2 RL engine
+├── qa/                       # Graph index, answer generation
+├── evaluation/               # Metrics, PipelineReport
+├── export/                   # OWL/RDF export
+└── ui/                       # API routes, chat UI, graph viewer
+\end{verbatim}
+
+%=============================================================================
+\section{Architectural Decisions}
+%=============================================================================
+
+\subsection{ADR-001: Sequential 6-Step Pipeline (Bakker Approach B)}
+\label{sec:adr-pipeline}
+
+\textbf{Context:} Document-based ontology extraction can be done in a single LLM call or in stages. Single-shot extraction is simpler but produces flatter, less structured output.
+
+\textbf{Decision:} Adopt a sequential 6-step pipeline:
+\begin{enumerate}
+    \item \textbf{Load} --- \texttt{load\_document()} for PDF, DOCX, TXT, MD
+    \item \textbf{Chunk} --- \texttt{chunk\_text()} with configurable overlap
+    \item \textbf{Extract} --- 3-stage sequential: classes $\rightarrow$ instances $\rightarrow$ relations + axioms (or legacy single-shot)
+    \item \textbf{Merge} --- \texttt{update\_graph()} with canonicalization
+    \item \textbf{Inference} --- LLM relation inference (optional)
+    \item \textbf{Reasoning} --- OWL~2~RL fixpoint (optional)
+\end{enumerate}
+
+\textbf{Consequences:}
+\begin{itemize}
+    \item More API calls per document but higher quality extraction
+    \item Supports parallel chunk processing for throughput
+    \item \texttt{PipelineReport} enables reproducibility and evaluation
+\end{itemize}
+
+%-----------------------------------------------------------------------------
+\subsection{ADR-002: Formal Ontology Schema (Guarino O=\{C,R,I,P\})}
+\label{sec:adr-schema}
+
+\textbf{Context:} Flat entity-relation models do not distinguish classes (universals) from instances (particulars) or support axioms (meaning postulates).
+
+\textbf{Decision:} Use Guarino's formal ontology definition O = \{C, R, I, P\}:
+\begin{itemize}
+    \item \textbf{C} (Classes): Concepts/universals with parent, description, synonyms
+    \item \textbf{R} (Relations): Object properties (binary relations) with domain/range
+    \item \textbf{I} (Instances): Individuals typed by classes
+    \item \textbf{P} (Properties): Data properties (attribute-value pairs)
+\end{itemize}
+
+Axioms (AxiomType: disjointness, symmetry, transitivity, etc.) capture meaning postulates. All elements carry provenance (source document, chunk, confidence).
+
+\textbf{Consequences:}
+\begin{itemize}
+    \item Enables OWL~2~RL reasoning and proper inheritance
+    \item Backward-compatible \texttt{to\_legacy\_dict()} for older code paths
+\end{itemize}
+
+%-----------------------------------------------------------------------------
+\subsection{ADR-003: NetworkX DiGraph for Ontology; OG-RAG Hypergraph for RAG}
+\label{sec:adr-graph}
+
+\textbf{Context:} Ontology graphs need efficient traversal and export; RAG retrieval benefits from hypergraph structure (OG-RAG) for multi-node factual blocks.
+
+\textbf{Decision:}
+\begin{itemize}
+    \item \textbf{OntologyGraph}: NetworkX DiGraph for classes, instances, relations, axioms, data properties
+    \item \textbf{HyperGraph}: H=(N,E) from factual blocks for OG-RAG dual retrieval
+    \item Node-link JSON export for persistence and visualization
+\end{itemize}
+
+\textbf{Consequences:}
+\begin{itemize}
+    \item NetworkX provides mature graph algorithms and export formats
+    \item Hypergraph enables greedy set cover over hyperedges for retrieval
+\end{itemize}
+
+%-----------------------------------------------------------------------------
+\subsection{ADR-004: OpenAI-Compatible LLM Client (LM Studio + OpenAI)}
+\label{sec:adr-llm}
+
+\textbf{Context:} Local development prefers LM Studio; production may use OpenAI cloud. Different models have different capabilities (structured output, context size).
+
+\textbf{Decision:}
+\begin{itemize}
+    \item Single OpenAI-compatible client (\texttt{openai.OpenAI})
+    \item Default \texttt{OPENAI\_BASE\_URL=http://localhost:1234/v1} for LM Studio
+    \item Override for OpenAI cloud with \texttt{OPENAI\_API\_KEY}
+    \item Auto \texttt{host.docker.internal} rewrite when running in Docker
+    \item Structured output (\texttt{response\_format}) with text-mode fallback for models without JSON schema support
+    \item Retries, timeouts, parallel workers (2 local, 30 cloud)
+\end{itemize}
+
+\textbf{Consequences:}
+\begin{itemize}
+    \item One code path for all LLM providers
+    \item gpt-4o-mini gets larger chunk/context defaults via \texttt{Settings} validator
+\end{itemize}
+
+%-----------------------------------------------------------------------------
+\subsection{ADR-005: Dual Retrieval RAG (OntoRAG + OG-RAG)}
+\label{sec:adr-rag}
+
+\textbf{Context:} Plain vector retrieval loses ontological structure. OntoRAG enriches with taxonomy; OG-RAG uses hypergraph dual retrieval.
+
+\textbf{Decision:}
+\begin{itemize}
+    \item \textbf{Dual retrieval}: Embed both keys and values; combine with concept boost
+    \item \textbf{OntoRAG context}: Parents, children, definitions for retrieved concepts
+    \item \textbf{Greedy set cover}: Over hyperedges for OG-RAG mode
+    \item \textbf{Retrieval modes}: \texttt{context} (OntoRAG enriched, default), \texttt{hyperedges} (OG-RAG), \texttt{snippets}
+\end{itemize}
+
+\textbf{Consequences:}
+\begin{itemize}
+    \item sentence-transformers (all-MiniLM-L6-v2) for embeddings; CPU-only by default
+    \item Fact-level attribution in QA responses
+\end{itemize}
+
+%-----------------------------------------------------------------------------
+\subsection{ADR-006: In-Memory Graph Store with JSON Persistence}
+\label{sec:adr-storage}
+
+\textbf{Context:} Reasoning and QA need fast access to the current graph. Persistence is needed for multiple knowledge bases.
+
+\textbf{Decision:}
+\begin{itemize}
+    \item \textbf{graph\_store}: Module-level globals (\texttt{\_current\_graph}, \texttt{\_current\_export})
+    \item \textbf{Persistence}: JSON in \texttt{documents/ontology\_graphs/} with \texttt{.meta.json} sidecar (name, description, documents, stats)
+    \item \textbf{Activation}: Load JSON into graph\_store; rebuild QA index
+\end{itemize}
+
+\textbf{Consequences:}
+\begin{itemize}
+    \item Simple, no database dependency
+    \item Not thread-safe for concurrent writes; not horizontally scalable
+\end{itemize}
+
+%-----------------------------------------------------------------------------
+\subsection{ADR-007: OWL 2 RL Reasoning Engine}
+\label{sec:adr-reasoning}
+
+\textbf{Context:} Extracted ontologies need transitive subsumption, inheritance, domain/range propagation, and disjointness checks.
+
+\textbf{Decision:} Implement OWL~2~RL rules (Smith \& Proietti) with fixpoint iteration:
+\begin{itemize}
+    \item Transitive subsumption
+    \item Inheritance (instance $\rightarrow$ class $\rightarrow$ parent)
+    \item Domain/range propagation
+    \item Disjointness consistency check
+\end{itemize}
+
+Full inference trace returned for explainability. Re-runnable via \texttt{POST /api/v1/reasoning/apply}.
+
+%-----------------------------------------------------------------------------
+\subsection{ADR-008: FastAPI + Uvicorn; Docker Multi-Stage}
+\label{sec:adr-deployment}
+
+\textbf{Context:} Need async API, streaming support, and containerized deployment.
+
+\textbf{Decision:}
+\begin{itemize}
+    \item FastAPI with uvicorn ASGI server
+    \item CORS enabled for all origins (development-friendly)
+    \item Docker multi-stage build; Python 3.11-slim; non-root user
+    \item \texttt{docker-compose.yml}: volumes for dev reload; \texttt{--reload-exclude} for \texttt{api.py} to avoid killing long pipeline runs
+    \item Health check via \texttt{/health}
+\end{itemize}
+
+%=============================================================================
+\section{Data Flow}
+%=============================================================================
+
+\subsection{Build Ontology Flow}
+
+\begin{verbatim}
+Document (PDF/DOCX/TXT/MD)
+  -> loader.load_document()
+  -> chunker.chunk_text()
+  -> extractor.extract_ontology_sequential() [per chunk]
+  -> taxonomy_builder.build_taxonomy()
+  -> ontology_builder.update_graph() [canonicalize, merge]
+  -> relation_inferer.infer_relations() [optional]
+  -> reasoning.engine.run_inference() [optional]
+  -> OntologyGraph
+  -> graph_store.set_graph()
+  -> qa.graph_index.build_index()
+  -> save_to_path_with_metadata()
+\end{verbatim}
+
+\subsection{QA Flow}
+
+\begin{verbatim}
+Question
+  -> graph_index.retrieve_with_context() or retrieve_hyperedges()
+  -> Dual retrieval (key + value embeddings) + concept boost
+  -> OntoRAG ontological context (parents, children, definitions)
+  -> qa.answer.answer_question()
+  -> LLM answer + attribution
+\end{verbatim}
+
+%=============================================================================
+\section{Technology Stack}
+%=============================================================================
+
+\begin{center}
+\begin{longtable}{@{}ll@{}}
+\toprule
+\textbf{Technology} & \textbf{Use} \\
+\midrule
+\endfirsthead
+
+\midrule
+\textbf{Technology} & \textbf{Use} \\
+\midrule
+\endhead
+
+FastAPI & Web framework, async endpoints \\
+Pydantic / pydantic-settings & Config, schemas, validation \\
+NetworkX & Ontology graph (DiGraph) \\
+OpenAI SDK & LLM client (LM Studio + OpenAI) \\
+sentence-transformers & Embeddings (all-MiniLM-L6-v2) \\
+rdflib & OWL/RDF export \\
+PyPDF / pdfminer.six / python-docx & Document loading \\
+uvicorn & ASGI server \\
+tqdm & Progress bars \\
+NumPy & Embedding similarity \\
+\bottomrule
+\end{longtable}
+\end{center}
+
+%=============================================================================
+\section{Configuration}
+%=============================================================================
+
+Configuration is loaded from \texttt{.env} and environment variables via Pydantic \texttt{Settings}. Cached with \texttt{@functools.lru\_cache(maxsize=1)}.
+
+\begin{center}
+\begin{tabular}{@{}llp{5cm}@{}}
+\toprule
+\textbf{Variable} & \textbf{Default} & \textbf{Purpose} \\
+\midrule
+\texttt{OPENAI\_BASE\_URL} & \texttt{http://localhost:1234/v1} & LLM API (LM Studio) \\
+\texttt{OPENAI\_API\_KEY} & (empty) & Required for OpenAI cloud \\
+\texttt{ONTOLOGY\_LLM\_MODEL} & \texttt{phi-3-mini-4k-instruct} & Model name \\
+\texttt{LOG\_LEVEL} & \texttt{INFO} & Logging \\
+\texttt{UPLOAD\_MAX\_SIZE\_MB} & 20 & Max upload size \\
+\texttt{LLM\_TIMEOUT\_SECONDS} & 120 & LLM timeout \\
+\texttt{LLM\_PARALLEL\_WORKERS} & auto (2 local, 30 cloud) & Parallel extraction \\
+\texttt{CHUNK\_SIZE} / \texttt{CHUNK\_OVERLAP} & 1200 / 200 & Chunking \\
+\texttt{LLM\_FORCE\_TEXT\_MODE} & \texttt{true} & Text fallback when no structured output \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+%=============================================================================
+\section{API Endpoints}
+%=============================================================================
+
+\begin{center}
+\begin{tabular}{@{}llp{5.5cm}@{}}
+\toprule
+\textbf{Method} & \textbf{Path} & \textbf{Description} \\
+\midrule
+GET & \texttt{/} & Service info \\
+GET & \texttt{/app} & Chat UI \\
+GET & \texttt{/health} & Health check \\
+POST & \texttt{/api/v1/ontology/from-pdf} & PDF $\rightarrow$ OWL/Turtle/JSON-LD \\
+POST & \texttt{/api/v1/build\_ontology} & Document $\rightarrow$ theory-grounded ontology \\
+POST & \texttt{/api/v1/build\_ontology\_stream} & Same, streams progress via SSE \\
+POST & \texttt{/api/v1/knowledge-bases/\{id\}/extend\_stream} & Extend KB with new document \\
+POST & \texttt{/api/v1/cancel\_job/\{job\_id\}} & Cancel active pipeline job \\
+GET & \texttt{/api/v1/knowledge-bases} & List persisted knowledge bases \\
+POST & \texttt{/api/v1/knowledge-bases/\{id\}/activate} & Load and activate KB \\
+DELETE & \texttt{/api/v1/knowledge-bases/\{id\}} & Delete persisted KB \\
+GET & \texttt{/api/v1/graph} & Current graph (node-link JSON) \\
+GET & \texttt{/api/v1/graph/image} & Graph as PNG \\
+GET & \texttt{/api/v1/graph/viewer} & Interactive vis.js graph viewer \\
+POST & \texttt{/api/v1/reasoning/apply} & Re-run OWL~2~RL reasoning \\
+POST & \texttt{/api/v1/qa/ask} & Ontology-grounded RAG Q\&A \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+%=============================================================================
+\section{Theoretical Foundations}
+%=============================================================================
+
+\begin{center}
+\begin{tabular}{@{}lll@{}}
+\toprule
+\textbf{Paper} & \textbf{Contribution} & \textbf{Codebase Layer} \\
+\midrule
+Guarino et al. & O = \{C,R,I,P\}, meaning postulates & Schema, Reasoning \\
+OG-RAG (Sharma et al.) & Hypergraph, dual retrieval, greedy set cover & Graph, RAG \\
+Bakker et al. & Sequential extraction (Approach B), P/R/F1 & Extraction, Evaluation \\
+Smith \& Proietti & OWL~2~RL logic programming & Reasoning \\
+OntoRAG (ICLR) & OntoGen taxonomy, ontological context & Extraction, RAG \\
+Gajderowicz et al. & RAG+KG integration patterns & RAG \\
+Huettemann et al. & Information foraging, semantic enrichment & UI/UX \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+%=============================================================================
+\section{Trade-offs and Consequences}
+%=============================================================================
+
+\begin{itemize}
+    \item \textbf{In-memory state}: Simple and fast, but not horizontally scalable. For multi-instance deployment, a shared store (e.g., Redis, database) would be needed.
+    \item \textbf{Module-level globals}: \texttt{graph\_store} and \texttt{graph\_index} use globals; not thread-safe for concurrent writes. Single-worker deployment is assumed.
+    \item \textbf{Sentence-transformers on CPU}: Slower than GPU but no GPU required; suitable for MVP and local development.
+    \item \textbf{Dual flows}: PDF-to-OWL and theory-grounded pipeline coexist; some code duplication but clear separation of concerns.
+    \item \textbf{Structured output fallback}: Models without JSON schema support get one text-mode retry; may reduce reliability for smaller models.
+\end{itemize}
+
+%=============================================================================
+\section{References}
+%=============================================================================
+
+\begin{enumerate}
+    \item Guarino, N., \& Welty, C. (2002). What Is an Ontology?
+    \item Sharma, M. et al. OG-RAG: Ontology-Grounded RAG.
+    \item Bakker, E. et al. Ontology Learning from Text.
+    \item Smith, B., \& Proietti, D. OWL~2~RL Logic Programming.
+    \item OntoRAG (ICLR). OntoGen taxonomy pipeline.
+    \item Gajderowicz, B. et al. RAG and Ontologies.
+    \item Huettemann, A. et al. Ontology-based Search.
+\end{enumerate}
+
+\end{document}
