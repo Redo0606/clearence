@@ -40,7 +40,8 @@ ARG APP_GID=1000
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PATH="/opt/venv/bin:$PATH" \
-    PYTHONPATH="/app"
+    PYTHONPATH="/app" \
+    MPLCONFIGDIR=/tmp/matplotlib
 
 # Create app user and group (no login shell, no home dir)
 RUN groupadd --gid ${APP_GID} app \
