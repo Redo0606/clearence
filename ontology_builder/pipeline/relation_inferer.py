@@ -32,6 +32,11 @@ def infer_relations(graph: OntologyGraph) -> list[dict]:
     try:
         graph_data = graph.export()
         graph_text = json.dumps(graph_data, indent=2)
+        # Truncate if too large for 4K context models
+        max_graph_chars = 3000
+        if len(graph_text) > max_graph_chars:
+            graph_text = graph_text[:max_graph_chars] + "\n... [truncated for context]"
+            logger.warning("[RelationInferer] Truncated graph to %d chars for context", max_graph_chars)
         logger.debug("[RelationInferer] Graph serialized | json_len=%d", len(graph_text))
     except Exception as e:
         logger.warning("[RelationInferer] Failed to export graph | error=%s", e)

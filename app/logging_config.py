@@ -78,3 +78,8 @@ def configure_table_logging(level: int = logging.INFO) -> None:
     handler = FlushingStreamHandler(sys.stdout)
     handler.setFormatter(TableFormatter(datefmt="%H:%M:%S"))
     root.addHandler(handler)
+    # Force uvicorn loggers to propagate to root so they use our table formatter
+    for name in ("uvicorn", "uvicorn.error", "uvicorn.access"):
+        uv_logger = logging.getLogger(name)
+        uv_logger.handlers.clear()
+        uv_logger.propagate = True

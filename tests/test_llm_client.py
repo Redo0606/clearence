@@ -9,7 +9,7 @@ def test_complete_retries_then_raises(monkeypatch):
     """Verify complete retries then raises RuntimeError after all attempts fail."""
     call_count = 0
 
-    def mock_chat_create(model, messages, temperature, timeout):
+    def mock_chat_create(**kwargs):
         nonlocal call_count
         call_count += 1
         raise ConnectionError("Persistent failure")
@@ -34,6 +34,45 @@ def test_complete_retries_then_raises(monkeypatch):
     with pytest.raises(RuntimeError, match="failed after 3 attempts"):
         complete(system="sys", user="user")
     assert call_count == 3
+
+
+def test_complete_sends_explicit_response_format(monkeypatch):
+    """Explicit response_format should be forwarded to chat completions."""
+    seen = {}
+
+    class _Message:
+        content = '{"ok": true}'
+
+    class _Choice:
+        message = _Message()
+
+    class _Response:
+        choices = [_Choice()]
+        usage = None
+
+    def mock_chat_create(**kwargs):
+        seen.update(kwargs)
+        return _Response()
+
+    def mock_client():
+        return type("Client", (), {"chat": type("Chat", (), {
+            "completions": type("Completions", (), {
+                "create": staticmethod(mock_chat_create),
+            })()
+        })()})()
+
+    monkeypatch.setattr("ontology_builder.llm.client._create_client", mock_client)
+    monkeypatch.setattr("ontology_builder.llm.client.get_settings", lambda: type("S", (), {
+        "llm_max_retries": 0,
+        "llm_timeout_seconds": 60,
+        "ontology_llm_model": "test",
+        "llm_force_text_mode": True,
+    })())
+
+    schema = {"type": "json_schema", "json_schema": {"name": "x", "schema": {"type": "object"}}}
+    complete(system="sys", user="user", response_format=schema)
+
+    assert seen["response_format"] == schema
 
 
 def test_complete_batch_returns_in_order(monkeypatch):

@@ -138,14 +138,11 @@ Text:
 # ---------------------------------------------------------------------------
 
 ONTOLOGY_EXTRACTION_PROMPT = """\
-You are an ontology engineer.
+You are an ontology engineer. Extract ontology components from the text.
 
-Extract ontology components from the text.
-
-Return valid JSON only (no markdown, no code fences).
-The JSON object must have two keys:
-- "entities": an array of objects, each with "name" (string), "type" (string), and "description" (string).
-- "relations": an array of objects, each with "source" (string), "relation" (string), "target" (string), and "confidence" (number between 0 and 1).
+Return valid JSON only (no markdown, no code fences). Use exactly two top-level keys:
+- entities: array of objects, each with name, type, and description
+- relations: array of objects, each with source, relation, target, and confidence (0 to 1)
 
 Extract all important concepts as entities and relationships between them as relations.
 
@@ -157,17 +154,10 @@ Text:
 # ---------------------------------------------------------------------------
 
 INFERENCE_PROMPT = """\
-Given an ontology graph, infer:
+Given an ontology graph, infer subclass relations, causal relations, dependencies, rules, and missing connections.
 
-- subclass relations
-- causal relations
-- dependencies
-- rules
-- missing connections
-
-Return new relations as valid JSON only (no markdown, no code fences).
-The JSON object must have one key:
-- "relations": an array of objects, each with "source" (string), "relation" (string), "target" (string), and "confidence" (number between 0 and 1).
+Return valid JSON only (no markdown, no code fences). Use one top-level key:
+- relations: array of objects, each with source, relation, target, and confidence (0 to 1)
 
 Ontology graph:
 """

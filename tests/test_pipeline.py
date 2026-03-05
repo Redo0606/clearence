@@ -83,7 +83,7 @@ def test_extract_ontology_mock(monkeypatch):
         "relations": [{"source": "A", "relation": "r", "target": "B", "confidence": 0.8}],
     })
 
-    def fake_call(system, user, temperature=0.1):
+    def fake_call(system, user, temperature=0.1, response_format=None, force_text_mode=None):
         return fixed_response
 
     from ontology_builder.pipeline import extractor
@@ -105,7 +105,7 @@ def test_process_document_verbose_false(monkeypatch, tmp_path):
         "relations": [{"source": "Layer", "relation": "contains", "target": "Neuron", "confidence": 0.9}],
     })
 
-    def fake_call(system, user, temperature=0.1):
+    def fake_call(system, user, temperature=0.1, response_format=None, force_text_mode=None):
         return fixed_response
 
     from ontology_builder.pipeline import extractor

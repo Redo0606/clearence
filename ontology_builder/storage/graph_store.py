@@ -146,7 +146,14 @@ def _graph_from_export(data: dict[str, Any]) -> OntologyGraph:
     """
     graph = OntologyGraph()
     nodes_data = data.get("nodes", [])
-    links_data = data.get("links", [])
+    # NetworkX node-link payloads may use either "links" or "edges"
+    # depending on version/configuration. Support both to avoid losing
+    # relationships when loading persisted knowledge bases.
+    links_data = data.get("links")
+    if not isinstance(links_data, list):
+        links_data = data.get("edges")
+    if not isinstance(links_data, list):
+        links_data = []
     index_to_id: list[str] = []
     for n in nodes_data:
         if not isinstance(n, dict):

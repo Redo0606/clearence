@@ -15,20 +15,25 @@ services:
     ports:
       - "8000:8000"
     environment:
+      PYTHONUNBUFFERED: "1"
       # Matplotlib: use writable dir (avoids permission warning in non-root container)
       MPLCONFIGDIR: /tmp/matplotlib
+      # Sentence-transformers / HuggingFace: use /tmp (writable in non-root container)
+      HF_HOME: /tmp/huggingface
+      TRANSFORMERS_CACHE: /tmp/huggingface
       # LM Studio on host: use host.docker.internal (Mac/Windows) or host IP (Linux)
       OPENAI_BASE_URL: ${OPENAI_BASE_URL:-http://host.docker.internal:1234/v1}
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
       ONTOLOGY_LLM_MODEL: ${ONTOLOGY_LLM_MODEL:-phi-3-mini-4k-instruct}
       UPLOAD_MAX_SIZE_MB: ${UPLOAD_MAX_SIZE_MB:-20}
       LLM_TIMEOUT_SECONDS: ${LLM_TIMEOUT_SECONDS:-120}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
     env_file:
       - path: .env
         required: false
     extra_hosts:
       - "host.docker.internal:host-gateway"
-    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload", "--reload-dir", "/app/app", "--reload-dir", "/app/ontology_builder", "--log-level", "warning"]
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]

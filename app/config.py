@@ -40,7 +40,14 @@ class Settings(BaseSettings):
     upload_max_size_mb: int = 20
     llm_timeout_seconds: int = 120
     llm_max_retries: int = 3
-    llm_parallel_workers: int = 4
+    llm_parallel_workers: int = 2
+    # Max chars per chunk sent to LLM (avoids context overflow). 0 = no truncation.
+    llm_max_chunk_chars: int = 600
+    # Soft token budget for entire prompt (system + user). Prevents context overflow.
+    llm_max_prompt_tokens: int = 3000
+    # Force plain-text responses when no explicit response_format is provided.
+    # Structured calls that pass response_format (e.g. json_schema) take priority.
+    llm_force_text_mode: bool = True
 
     def get_llm_api_key(self) -> str:
         """Return API key for LLM. Uses placeholder for local LM Studio when key is empty."""

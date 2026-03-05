@@ -10,9 +10,9 @@ from __future__ import annotations
 
 import json
 import logging
-import re
 from difflib import SequenceMatcher
 
+from ontology_builder.llm.json_repair import repair_json
 from ontology_builder.llm.lmstudio_client import call_llm
 from ontology_builder.llm.prompts import TAXONOMY_SYSTEM, TAXONOMY_USER
 from ontology_builder.ontology.schema import OntologyClass
@@ -86,7 +86,20 @@ def build_taxonomy(
         return classes
 
     class_names = [c.name for c in classes]
-    classes_json = json.dumps([{"name": c.name, "description": c.description} for c in classes])
+    classes_data = [{"name": c.name, "description": c.description} for c in classes]
+    classes_json = json.dumps(classes_data)
+    # Truncate if too large for 4K context models
+    max_json_chars = 2500
+    if len(classes_json) > max_json_chars:
+        kept = []
+        for c in classes_data:
+            trial = json.dumps(kept + [c])
+            if len(trial) <= max_json_chars:
+                kept.append(c)
+            else:
+                break
+        classes_json = json.dumps(kept) if kept else "[]"
+        logger.warning("[Taxonomy] Truncated %d -> %d classes for context", len(classes_data), len(kept))
     prompt = TAXONOMY_USER.format(classes_json=classes_json)
 
     logger.info("[Taxonomy] Organizing %d classes into hierarchy", len(classes))
@@ -96,15 +109,10 @@ def build_taxonomy(
         logger.warning("[Taxonomy] LLM call failed: %s — returning flat list", e)
         return classes
 
-    content = (raw or "").strip()
-    if content.startswith("```"):
-        content = re.sub(r"^```\w*\n?", "", content)
-        content = re.sub(r"\n?```\s*$", "", content)
-
     try:
-        data = json.loads(content)
-    except json.JSONDecodeError:
-        logger.warning("[Taxonomy] Invalid JSON from LLM")
+        data = repair_json(raw or "")
+    except json.JSONDecodeError as e:
+        logger.warning("[Taxonomy] Invalid JSON from LLM | error=%s | preview=%r", e, (raw or "")[:120])
         return classes
 
     taxonomy_raw = data.get("taxonomy", [])

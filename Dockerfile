@@ -41,7 +41,9 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PATH="/opt/venv/bin:$PATH" \
     PYTHONPATH="/app" \
-    MPLCONFIGDIR=/tmp/matplotlib
+    MPLCONFIGDIR=/tmp/matplotlib \
+    HF_HOME=/tmp/huggingface \
+    TRANSFORMERS_CACHE=/tmp/huggingface
 
 # Create app user and group (no login shell, no home dir)
 RUN groupadd --gid ${APP_GID} app \
@@ -70,5 +72,5 @@ EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
     CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')" || exit 1
 
-# Run uvicorn
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Run uvicorn (--log-level warning: app configures its own table-formatted logging)
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--log-level", "warning"]

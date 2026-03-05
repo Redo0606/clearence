@@ -5,6 +5,7 @@ Supports both simple (list[str]) and structured (RetrievalResult) context.
 
 from __future__ import annotations
 
+import re
 import logging
 from dataclasses import dataclass, field
 
@@ -15,6 +16,9 @@ logger = logging.getLogger(__name__)
 
 MAX_CONTEXT_CHARS = 4000
 
+# Match [node:...], [edge:...], [dp:...] so we can strip them from the answer if the LLM echoes them
+_RAW_ID_PATTERN = re.compile(r"\s*\[(?:node|edge|dp):[^\]]+\]\s*", re.IGNORECASE)
+
 
 @dataclass
 class QAResult:
@@ -24,6 +28,23 @@ class QAResult:
     sources: list[str] = field(default_factory=list)
     ontological_context: str = ""
     num_facts_used: int = 0
+
+
+def source_ref_to_label(ref: str) -> str:
+    """Convert node:X, edge:A-R-B, dp:E-A to human-readable labels for UI display."""
+    if not ref:
+        return ref
+    if ref.startswith("node:"):
+        return ref[5:].strip()
+    if ref.startswith("edge:"):
+        rest = ref[5:].strip()
+        parts = rest.split("-", 2)
+        if len(parts) == 3:
+            return f"{parts[0]} → {parts[2]}"
+        return rest.replace("-", " → ")
+    if ref.startswith("dp:"):
+        return ref[3:].strip().replace("-", " = ")
+    return ref
 
 
 def answer_question(
@@ -46,9 +67,10 @@ def answer_question(
     if source_refs is None:
         source_refs = [f"fact:{i}" for i in range(len(context_snippets))]
 
+    # Use numeric refs in context so the LLM does not see node:/edge:/dp: and echo them
     annotated_facts = []
-    for fact, ref in zip(context_snippets, source_refs):
-        annotated_facts.append(f"[{ref}] {fact}")
+    for i, (fact, ref) in enumerate(zip(context_snippets, source_refs), start=1):
+        annotated_facts.append(f"[{i}] {fact}")
 
     context = "\n".join(annotated_facts)
     if len(context) > MAX_CONTEXT_CHARS:
@@ -58,6 +80,11 @@ def answer_question(
     user = build_qa_user_prompt(context, question, ontological_context)
     answer_text = call_llm(system=QA_SYSTEM, user=user, temperature=0.2)
     logger.info("[QA] Answer generated | length=%d chars | facts=%d", len(answer_text), len(context_snippets))
+
+    # Strip any raw source IDs the LLM may have echoed (safety net)
+    answer_text = _RAW_ID_PATTERN.sub(" ", answer_text)
+    answer_text = re.sub(r"[ \t]+", " ", answer_text).strip()
+    answer_text = re.sub(r"\n\s*\n\s*\n+", "\n\n", answer_text)  # at most one blank line
 
     return QAResult(
         answer=answer_text,

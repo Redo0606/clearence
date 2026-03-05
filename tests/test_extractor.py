@@ -33,7 +33,11 @@ def test_extract_ontology_legacy_mock(monkeypatch):
     })
 
     from ontology_builder.pipeline import extractor
-    monkeypatch.setattr(extractor, "call_llm", lambda system, user, temperature=0.1: response)
+    monkeypatch.setattr(
+        extractor,
+        "call_llm",
+        lambda system, user, temperature=0.1, response_format=None, force_text_mode=None: response,
+    )
 
     result = extract_ontology("Some text")
     assert len(result["entities"]) == 1
@@ -45,7 +49,7 @@ def test_extract_ontology_sequential_mock(monkeypatch):
     """Sequential extraction returns structured OntologyExtraction."""
     call_count = 0
 
-    def mock_llm(system, user, temperature=0.1):
+    def mock_llm(system, user, temperature=0.1, response_format=None, force_text_mode=None):
         nonlocal call_count
         call_count += 1
         if call_count == 1:
@@ -88,3 +92,45 @@ def test_extract_ontology_sequential_llm_failure(monkeypatch):
     assert len(result.classes) == 0
     assert len(result.instances) == 0
     assert len(result.object_properties) == 0
+
+
+def test_extract_ontology_sends_json_schema_response_format(monkeypatch):
+    """Legacy extraction should request structured JSON schema output."""
+    from ontology_builder.pipeline import extractor
+
+    seen = {}
+    response = json.dumps({"entities": [], "relations": []})
+
+    def mock_llm(system, user, temperature=0.1, response_format=None, force_text_mode=None):
+        seen["response_format"] = response_format
+        seen["force_text_mode"] = force_text_mode
+        return response
+
+    monkeypatch.setattr(extractor, "call_llm", mock_llm)
+    extract_ontology("Some text")
+
+    assert seen["response_format"]["type"] == "json_schema"
+    assert "json_schema" in seen["response_format"]
+    assert seen["force_text_mode"] is None
+
+
+def test_extract_ontology_falls_back_to_text_mode_once(monkeypatch):
+    """On structured output errors, extractor retries once with force_text_mode=True."""
+    from ontology_builder.pipeline import extractor
+
+    calls = {"count": 0, "second_force_text_mode": None}
+    response = json.dumps({"entities": [], "relations": []})
+
+    def mock_llm(system, user, temperature=0.1, response_format=None, force_text_mode=None):
+        calls["count"] += 1
+        if calls["count"] == 1:
+            raise RuntimeError("Invalid JSON Schema: Unrecognized schema")
+        calls["second_force_text_mode"] = force_text_mode
+        return response
+
+    monkeypatch.setattr(extractor, "call_llm", mock_llm)
+    result = extract_ontology("Some text")
+
+    assert calls["count"] == 2
+    assert calls["second_force_text_mode"] is True
+    assert result == {"entities": [], "relations": []}

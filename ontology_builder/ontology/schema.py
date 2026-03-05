@@ -59,7 +59,7 @@ class OntologyInstance(Provenance):
     """An individual / particular, typed by a class."""
 
     name: str
-    class_name: str
+    class_name: str = ""
     description: str = ""
 
 
@@ -80,8 +80,8 @@ class DataProperty(Provenance):
     """Attribute-value pair attached to an entity."""
 
     entity: str
-    attribute: str
-    value: str
+    attribute: str = ""
+    value: str = ""
     datatype: str = "string"
 
 

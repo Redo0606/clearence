@@ -206,6 +206,25 @@ class OntologyGraph:
     # Compatibility
     # ------------------------------------------------------------------
 
+    def merge_from(self, other: "OntologyGraph") -> None:
+        """Merge another OntologyGraph into this one (nodes, edges, axioms, data props)."""
+        for node, attrs in other.graph.nodes(data=True):
+            if node not in self.graph:
+                self.graph.add_node(node, **attrs)
+        for src, tgt, data in other.graph.edges(data=True):
+            if not self.graph.has_edge(src, tgt):
+                self.graph.add_edge(src, tgt, **data)
+        existing_axioms = {str(a) for a in self._axioms}
+        for axiom in other._axioms:
+            if str(axiom) not in existing_axioms:
+                self._axioms.append(axiom)
+                existing_axioms.add(str(axiom))
+        existing_dps = {str(d) for d in self._data_properties}
+        for dp in other._data_properties:
+            if str(dp) not in existing_dps:
+                self._data_properties.append(dp)
+                existing_dps.add(str(dp))
+
     def get_graph(self) -> nx.DiGraph:
         return self.graph
 

@@ -71,7 +71,14 @@ async def read_root():
 @app.get("/app", response_class=HTMLResponse)
 async def chat_app():
     """Serve the ontology chat UI."""
-    return HTMLResponse(content=generate_chat_ui_html())
+    return HTMLResponse(
+        content=generate_chat_ui_html(),
+        headers={
+            "Cache-Control": "no-store, no-cache, must-revalidate",
+            "Pragma": "no-cache",
+            "Expires": "0",
+        },
+    )
 
 
 @app.get("/health")
