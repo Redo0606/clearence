@@ -25,6 +25,18 @@ from ontology_builder.ontology.schema import (
 logger = logging.getLogger(__name__)
 
 
+def _merge_source_documents(existing: list[str] | None, new: str | None) -> list[str]:
+    """Merge source document into list, deduplicated."""
+    if not new:
+        return list(existing) if existing else []
+    result = list(existing) if existing else []
+    # Normalize: use basename for consistency
+    doc = new.strip()
+    if doc and doc not in result:
+        result.append(doc)
+    return result
+
+
 class OntologyGraph:
     """NetworkX DiGraph wrapper for formal ontology with class/instance nodes and axioms."""
 
@@ -48,15 +60,42 @@ class OntologyGraph:
         """
         self.graph.add_node(name, type=etype, kind=kind, **attrs)
 
-    def add_class(self, name: str, description: str = "", parent: str | None = None) -> None:
-        self.add_entity(name, etype="Class", kind="class", description=description)
+    def add_class(
+        self,
+        name: str,
+        description: str = "",
+        parent: str | None = None,
+        synonyms: list[str] | None = None,
+        source_document: str | None = None,
+    ) -> None:
+        attrs: dict[str, Any] = {}
+        if synonyms:
+            attrs["synonyms"] = list(synonyms)
+        if source_document:
+            attrs["source_documents"] = _merge_source_documents(
+                self.graph.nodes.get(name, {}).get("source_documents", []),
+                source_document,
+            )
+        self.add_entity(name, etype="Class", kind="class", description=description, **attrs)
         if parent:
-            self.add_relation(name, "subClassOf", parent)
+            self.add_relation(name, "subClassOf", parent, source_document=source_document)
 
-    def add_instance(self, name: str, class_name: str, description: str = "") -> None:
-        self.add_entity(name, etype=class_name, kind="instance", description=description)
+    def add_instance(
+        self,
+        name: str,
+        class_name: str,
+        description: str = "",
+        source_document: str | None = None,
+    ) -> None:
+        attrs: dict[str, Any] = {}
+        if source_document:
+            attrs["source_documents"] = _merge_source_documents(
+                self.graph.nodes.get(name, {}).get("source_documents", []),
+                source_document,
+            )
+        self.add_entity(name, etype=class_name, kind="instance", description=description, **attrs)
         if class_name and class_name in self.graph:
-            self.add_relation(name, "type", class_name)
+            self.add_relation(name, "type", class_name, source_document=source_document)
 
     # ------------------------------------------------------------------
     # Edge operations
@@ -68,11 +107,23 @@ class OntologyGraph:
         relation: str,
         target: str,
         confidence: float = 1.0,
+        source_document: str | None = None,
         **attrs: Any,
     ) -> None:
         """Add a directed relation edge with OG-RAG structured fact fields."""
         key_field = f"{source}: {relation}"
         full_field = f"{source}: {relation} -> {target}"
+        # Exclude key/value/full from attrs to avoid duplicate kwargs when loading from export
+        edge_attrs = {k: v for k, v in attrs.items() if k not in ("key", "value", "full")}
+        if source_document:
+            if self.graph.has_edge(source, target):
+                existing = self.graph[source][target]
+                edge_attrs["source_documents"] = _merge_source_documents(
+                    existing.get("source_documents", []),
+                    source_document,
+                )
+            else:
+                edge_attrs["source_documents"] = _merge_source_documents([], source_document)
         self.graph.add_edge(
             source,
             target,
@@ -81,7 +132,7 @@ class OntologyGraph:
             value=target,
             full=full_field,
             confidence=confidence,
-            **attrs,
+            **edge_attrs,
         )
 
     # ------------------------------------------------------------------
@@ -99,13 +150,26 @@ class OntologyGraph:
     # Data property operations
     # ------------------------------------------------------------------
 
-    def add_data_property(self, entity: str, attribute: str, value: str, datatype: str = "string") -> None:
-        self._data_properties.append({
+    def add_data_property(
+        self,
+        entity: str,
+        attribute: str,
+        value: str,
+        datatype: str = "string",
+        source_document: str | None = None,
+        source_documents: list[str] | None = None,
+    ) -> None:
+        dp: dict[str, Any] = {
             "entity": entity,
             "attribute": attribute,
             "value": value,
             "datatype": datatype,
-        })
+        }
+        if source_documents:
+            dp["source_documents"] = list(source_documents)
+        elif source_document:
+            dp["source_documents"] = [source_document]
+        self._data_properties.append(dp)
         self.graph.add_node(entity, **{attribute: value})
 
     @property
@@ -195,6 +259,20 @@ class OntologyGraph:
     def get_node_description(self, node: str) -> str:
         return self.graph.nodes[node].get("description", "") if node in self.graph else ""
 
+    def get_node_synonyms(self, node: str) -> list[str]:
+        """Return synonyms for a node (classes only)."""
+        return list(self.graph.nodes[node].get("synonyms", [])) if node in self.graph else []
+
+    def get_node_source_documents(self, node: str) -> list[str]:
+        """Return source documents that contributed to this node."""
+        return list(self.graph.nodes[node].get("source_documents", [])) if node in self.graph else []
+
+    def get_edge_source_documents(self, source: str, target: str) -> list[str]:
+        """Return source documents for an edge."""
+        if not self.graph.has_edge(source, target):
+            return []
+        return list(self.graph[source][target].get("source_documents", []))
+
     def has_edge(self, source: str, target: str, relation: str | None = None) -> bool:
         if not self.graph.has_edge(source, target):
             return False
@@ -211,9 +289,29 @@ class OntologyGraph:
         for node, attrs in other.graph.nodes(data=True):
             if node not in self.graph:
                 self.graph.add_node(node, **attrs)
+            else:
+                existing_sources = self.graph.nodes[node].get("source_documents", [])
+                new_sources = attrs.get("source_documents", [])
+                if new_sources:
+                    seen = set(existing_sources)
+                    for s in new_sources:
+                        if s and s not in seen:
+                            existing_sources = list(existing_sources) + [s]
+                            seen.add(s)
+                    self.graph.nodes[node]["source_documents"] = existing_sources
         for src, tgt, data in other.graph.edges(data=True):
             if not self.graph.has_edge(src, tgt):
                 self.graph.add_edge(src, tgt, **data)
+            else:
+                existing_sources = self.graph[src][tgt].get("source_documents", [])
+                new_sources = data.get("source_documents", [])
+                if new_sources:
+                    seen = set(existing_sources)
+                    for s in new_sources:
+                        if s and s not in seen:
+                            existing_sources = list(existing_sources) + [s]
+                            seen.add(s)
+                    self.graph[src][tgt]["source_documents"] = existing_sources
         existing_axioms = {str(a) for a in self._axioms}
         for axiom in other._axioms:
             if str(axiom) not in existing_axioms:
@@ -233,10 +331,12 @@ class OntologyGraph:
         data = nx.node_link_data(self.graph)
         data["axioms"] = self._axioms
         data["data_properties"] = self._data_properties
+        edge_count = self.graph.number_of_edges()
         data["stats"] = {
             "classes": len(self.get_classes()),
             "instances": len(self.get_instances()),
-            "edges": self.graph.number_of_edges(),
+            "relations": edge_count,
             "axioms": len(self._axioms),
+            "data_properties": len(self._data_properties),
         }
         return data
