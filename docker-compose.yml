@@ -33,7 +33,9 @@ services:
         required: false
     extra_hosts:
       - "host.docker.internal:host-gateway"
-    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload", "--reload-dir", "/app/app", "--reload-dir", "/app/ontology_builder", "--log-level", "warning"]
+    # Exclude api.py from reload so editing it during a pipeline run doesn't kill the process.
+    # Pipeline extraction can take several minutes; WatchFiles reload would abort it.
+    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload", "--reload-dir", "/app/app", "--reload-dir", "/app/ontology_builder", "--reload-exclude", "**/ui/api.py", "--log-level", "warning"]
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
