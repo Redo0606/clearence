@@ -1011,6 +1011,9 @@ async def graph_image():
 @router.get("/graph/viewer", response_class=HTMLResponse)
 async def graph_viewer(
     kb_id: str | None = Query(None, description="Knowledge base ID. Uses active KB if omitted."),
+    node: str | None = Query(None, description="Pre-select and highlight this node by ID."),
+    depth: int = Query(1, ge=1, le=5, description="N-hop depth for subgraph highlight (1-5)."),
+    debug: bool = Query(False, description="Enable console logging for layout debugging."),
 ):
     """Interactive vis.js graph viewer (standalone HTML page)."""
     graph = get_graph()
@@ -1021,5 +1024,5 @@ async def graph_viewer(
         graph = await asyncio.to_thread(load_from_path, path)
     if graph is None:
         raise HTTPException(404, "No ontology graph. Select one from the sidebar or build one first.")
-    html = generate_visjs_html(graph)
+    html = generate_visjs_html(graph, pre_select_node=node, depth=depth, debug=debug)
     return HTMLResponse(content=html)

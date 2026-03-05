@@ -1,13 +1,15 @@
 """Graph visualization: Matplotlib PNG and interactive vis.js HTML.
 
 Differentiates classes (rectangles/blue) from instances (circles/green),
-colors edges by relation type.
+colors edges by relation type. Uses normalized graph model for stable layout.
 """
 
 from __future__ import annotations
 
 import io
 import json
+import logging
+import random
 from typing import TYPE_CHECKING, Any
 
 import matplotlib
@@ -15,8 +17,12 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import networkx as nx
 
+from ontology_builder.ui.graph_models import normalize_graph
+
 if TYPE_CHECKING:
     from ontology_builder.storage.graphdb import OntologyGraph
+
+logger = logging.getLogger(__name__)
 
 _RELATION_COLORS: dict[str, str] = {
     "subClassOf": "#ec4899",
@@ -26,6 +32,15 @@ _RELATION_COLORS: dict[str, str] = {
     "depends_on": "#f59e0b",
 }
 _DEFAULT_EDGE_COLOR = "#6b7280"
+
+_EDGE_STYLES: dict[str, dict[str, Any]] = {
+    "subClassOf": {"width": 2.2, "dashes": False, "color": "#ec4899"},
+    "type": {"width": 1.6, "dashes": [6, 4], "color": "#38bdf8"},
+    "instanceOf": {"width": 1.6, "dashes": [6, 4], "color": "#38bdf8"},
+    "part_of": {"width": 1.5, "dashes": [4, 3], "color": "#38bdf8"},
+    "contains": {"width": 1.5, "dashes": False, "color": "#a78bfa"},
+    "depends_on": {"width": 1.5, "dashes": [3, 2], "color": "#f59e0b"},
+}
 
 
 def visualize(graph: "OntologyGraph", save_path: str | None = None) -> io.BytesIO | None:
@@ -89,42 +104,67 @@ def visualize(graph: "OntologyGraph", save_path: str | None = None) -> io.BytesI
     return buf
 
 
-def generate_visjs_html(graph: "OntologyGraph") -> str:
+def generate_visjs_html(
+    graph: "OntologyGraph",
+    pre_select_node: str | None = None,
+    depth: int = 1,
+    debug: bool = False,
+) -> str:
     """Generate standalone HTML page with interactive vis.js graph viewer."""
-    g = graph.get_graph()
+    ng = normalize_graph(graph)
+    logger.info(
+        "Graph normalized: %d nodes, %d edges, roots=%s, cycles=%s, disconnected=%d",
+        len(ng.nodes),
+        len(ng.edges),
+        ng.roots[:5] if len(ng.roots) > 5 else ng.roots,
+        ng.has_cycles,
+        ng.disconnected_count,
+    )
 
+    rng = random.Random(42)
+    NODE_WIDTH = 140
+    NODE_HEIGHT = 40
     vis_nodes: list[dict[str, Any]] = []
-    for node in g.nodes():
-        data = g.nodes[node]
-        kind = data.get("kind", "class")
-        label = node
-        desc = data.get("description", "")
+    for n in ng.nodes:
+        if n.id == "__root__":
+            continue
+        kind = n.type
         accent = "#ec4899" if kind == "class" else "#38bdf8" if kind == "instance" else "#8a8a94"
+        level = ng.hierarchy_levels.get(n.id, 999)
+        x_init = rng.uniform(-200, 200)
+        y_init = level * 120 + rng.uniform(-30, 30)
         vis_nodes.append({
-            "id": node,
-            "baseLabel": label,
-            "label": label,
+            "id": n.id,
+            "baseLabel": n.label,
+            "label": n.label,
             "kind": kind,
             "accent": accent,
-            "description": desc,
+            "description": n.metadata.get("description", ""),
+            "x": x_init,
+            "y": y_init,
+            "width": NODE_WIDTH,
+            "height": NODE_HEIGHT,
         })
 
     vis_edges: list[dict[str, Any]] = []
-    for u, v, data in g.edges(data=True):
-        rel = data.get("relation", "related_to")
-        color = _RELATION_COLORS.get(rel, _DEFAULT_EDGE_COLOR)
+    for e in ng.edges:
+        if e.source == "__root__" or e.target == "__root__":
+            continue
+        style = _EDGE_STYLES.get(e.relation, {"width": 1.5, "dashes": False, "color": _DEFAULT_EDGE_COLOR})
+        color = style.get("color", _RELATION_COLORS.get(e.relation, _DEFAULT_EDGE_COLOR))
         vis_edges.append({
-            "id": f"{u}->{v}:{rel}",
-            "from": u,
-            "to": v,
-            "label": rel,
-            "relation": rel,
+            "id": e.id,
+            "from": e.source,
+            "to": e.target,
+            "label": e.relation,
+            "relation": e.relation,
             "arrows": {"to": {"enabled": True, "scaleFactor": 0.7}},
             "color": {"color": color, "opacity": 0.96, "highlight": color, "hover": color},
-            "width": 1.8,
-            "smooth": {"type": "continuous"},
+            "width": style.get("width", 1.5) if not e.inferred else 1.2,
+            "dashes": style.get("dashes", False),
+            "smooth": {"type": "cubicBezier"},
             "font": {
-                "size": 11,
+                "size": 10,
                 "align": "middle",
                 "face": "JetBrains Mono",
                 "color": "#ddd9e6",
@@ -135,15 +175,25 @@ def generate_visjs_html(graph: "OntologyGraph") -> str:
 
     nodes_json = json.dumps(vis_nodes)
     edges_json = json.dumps(vis_edges)
+    relations_json = json.dumps(sorted({e["relation"] for e in vis_edges}))
+    hierarchy_json = json.dumps({n.id: ng.hierarchy_levels.get(n.id, 999) for n in ng.nodes if n.id != "__root__"})
+    clusters_json = json.dumps([list(c) for c in ng.clusters])
+    isolated_json = json.dumps(list(ng.isolated))
+    has_cycles_json = json.dumps(ng.has_cycles)
+    debug_json = json.dumps(debug)
     stats = graph.export().get("stats", {})
     rel_count = stats.get("relations") or stats.get("edges")
     if rel_count is None:
         rel_count = len(vis_edges)
+    cluster_info = f"Clusters: {len(ng.clusters)}" if ng.clusters else ""
+    isolated_info = f"Isolated: {len(ng.isolated)}" if ng.isolated else ""
     stats_html = (
         f"Classes: {stats.get('classes', 0)} | "
         f"Instances: {stats.get('instances', 0)} | "
         f"Relations: {rel_count} | "
         f"Axioms: {stats.get('axioms', 0)}"
+        + (f" | {cluster_info}" if cluster_info else "")
+        + (f" | {isolated_info}" if isolated_info else "")
     )
 
     return f"""\
@@ -153,26 +203,38 @@ def generate_visjs_html(graph: "OntologyGraph") -> str:
   <meta charset="UTF-8">
   <title>Ontology Graph Viewer</title>
   <script src="https://unpkg.com/vis-network@9.1.9/standalone/umd/vis-network.min.js" onerror="window.__viewerScriptError=true"></script>
+  <script src="https://unpkg.com/elkjs@0.9.1/lib/elk.bundled.js" onerror="window.__elkScriptError=true"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
   <style>
     * {{ margin: 0; padding: 0; box-sizing: border-box; }}
-    body {{ font-family: 'Space Grotesk', system-ui, -apple-system, sans-serif; background: #0a0a0f; color: #e8e6e3; min-height: 100vh; }}
+    html, body {{ height: 100%; }}
+    body {{ font-family: 'Space Grotesk', system-ui, -apple-system, sans-serif; background: #0a0a0f; color: #e8e6e3; min-height: 100vh; -webkit-font-smoothing: antialiased; }}
+    button, select, input {{ font: inherit; font-family: inherit; }}
+    button {{ -webkit-appearance: none; -moz-appearance: none; appearance: none; background: none; border: none; cursor: pointer; }}
+    select {{ -webkit-appearance: none; -moz-appearance: none; appearance: none; background: #1e1e28; border: 1px solid #2a2a3a; border-radius: 6px; padding: 6px 10px; cursor: pointer; color: #e8e6e3; transition: border-color 0.2s ease, background 0.2s ease; }}
+    select:hover {{ border-color: rgba(236,72,153,0.4); background: rgba(236,72,153,0.06); }}
+    select:focus {{ outline: none; border-color: rgba(56,189,248,0.6); background: rgba(56,189,248,0.08); }}
     .font-mono {{ font-family: 'JetBrains Mono', monospace; }}
-    #app {{ min-height: 100vh; display: flex; flex-direction: column; }}
+    #app {{ min-height: 100vh; height: 100%; display: flex; flex-direction: column; }}
     #header {{ padding: 14px 22px; background: #14141a; border-bottom: 1px solid #1a1a24; display: flex; justify-content: space-between; align-items: center; gap: 18px; }}
     #header h1 {{ font-size: 18px; font-weight: 600; color: #e8e6e3; }}
     #stats {{ font-size: 12px; color: #8a8a94; margin-top: 3px; }}
     #controls {{ display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }}
-    .ctrl-item {{ display: flex; align-items: center; gap: 6px; font-size: 11px; color: #8a8a94; background: #1e1e28; border: 1px solid #2a2a3a; border-radius: 8px; padding: 5px 8px; }}
-    .ctrl-btn {{ cursor: pointer; transition: border-color 0.2s ease, color 0.2s ease, background 0.18s ease; }}
-    .ctrl-btn:hover {{ border-color: rgba(236,72,153,0.4); color: #e8e6e3; }}
-    .ctrl-btn.active {{ border-color: rgba(56,189,248,0.6); color: #dff4ff; background: rgba(56,189,248,0.08); }}
-    .ctrl-sep {{ width: 1px; height: 20px; background: #2a2a3a; margin: 0 2px; }}
-    .legend-dot {{ width: 11px; height: 11px; border-radius: 2px; }}
-    #graph-wrap {{ flex: 1; padding: 12px; position: relative; }}
+    .ctrl-item {{ display: flex; align-items: center; gap: 6px; font-size: 11px; color: #8a8a94; background: #1e1e28; border: 1px solid #2a2a3a; border-radius: 8px; padding: 8px 12px; transition: border-color 0.2s ease, color 0.2s ease, background 0.2s ease, box-shadow 0.15s ease; }}
+    .ctrl-item:hover {{ border-color: rgba(236,72,153,0.4); color: #e8e6e3; background: rgba(236,72,153,0.06); }}
+    .ctrl-item:active {{ border-color: rgba(236,72,153,0.5); background: rgba(236,72,153,0.1); }}
+    .ctrl-btn {{ cursor: pointer; padding: 8px 12px; border-radius: 8px; background: #1e1e28; border: 1px solid #2a2a3a; color: #8a8a94; transition: all 0.2s ease; }}
+    .ctrl-btn:hover {{ border-color: rgba(236,72,153,0.4); color: #e8e6e3; background: rgba(236,72,153,0.06); }}
+    .ctrl-btn:active {{ border-color: rgba(236,72,153,0.5); background: rgba(236,72,153,0.1); color: #f472b6; }}
+    .ctrl-btn.active {{ border-color: rgba(56,189,248,0.6); color: #7dd3fc; background: rgba(56,189,248,0.08); }}
+    .ctrl-sep {{ width: 1px; height: 20px; background: #2a2a3a; margin: 0 2px; flex-shrink: 0; }}
+    .legend-dot {{ width: 11px; height: 11px; border-radius: 2px; flex-shrink: 0; }}
+    #graph-wrap {{ flex: 1; min-height: 0; padding: 12px; position: relative; display: flex; flex-direction: column; }}
     #graph {{
+      flex: 1;
+      min-height: 300px;
       width: 100%;
       height: calc(100vh - 84px);
       border: 1px solid #1a1a24;
@@ -256,7 +318,47 @@ def generate_visjs_html(graph: "OntologyGraph") -> str:
         <div class="ctrl-item"><div class="legend-dot" style="background:#ec4899"></div> Class</div>
         <div class="ctrl-item"><div class="legend-dot" style="background:#38bdf8"></div> Instance</div>
         <div class="ctrl-sep"></div>
+        <label class="ctrl-item" style="display: flex; align-items: center; gap: 4px;">
+          <span style="color: #8a8a94; font-size: 10px;">Layout:</span>
+          <select id="layout-select" class="text-xs font-mono">
+            <option value="force" selected>Force</option>
+            <option value="hierarchical">Hierarchy</option>
+            <option value="elk">ELK Layered</option>
+          </select>
+        </label>
+        <div class="ctrl-sep"></div>
+        <label class="ctrl-item" style="display: flex; align-items: center; gap: 4px;">
+          <span style="color: #8a8a94; font-size: 10px;">View:</span>
+          <select id="view-mode-select" class="text-xs font-mono">
+            <option value="full" selected>Full</option>
+            <option value="classes">Classes only</option>
+            <option value="instances">Instances</option>
+          </select>
+        </label>
+        <div class="ctrl-sep"></div>
+        <label class="ctrl-item" style="display: flex; align-items: center; gap: 4px;">
+          <span style="color: #8a8a94; font-size: 10px;">Edges:</span>
+          <select id="edge-filter" class="text-xs font-mono" style="min-width: 100px;">
+            <option value="all">All</option>
+            <option value="subClassOf">subClassOf only</option>
+            <option value="type">type only</option>
+            <option value="other">Other relations</option>
+          </select>
+        </label>
+        <div class="ctrl-sep"></div>
+        <label class="ctrl-item" style="display: flex; align-items: center; gap: 4px;">
+          <span style="color: #8a8a94; font-size: 10px;">N-hop:</span>
+          <select id="depth-select" class="text-xs font-mono">
+            <option value="1">1</option>
+            <option value="2">2</option>
+            <option value="3">3</option>
+            <option value="4">4</option>
+            <option value="999">All</option>
+          </select>
+        </label>
+        <div class="ctrl-sep"></div>
         <button id="fit-btn" class="ctrl-item ctrl-btn" type="button">Fit</button>
+        <button id="reset-focus-btn" class="ctrl-item ctrl-btn" type="button">Reset</button>
         <div class="ctrl-sep"></div>
         <button id="edge-label-toggle" class="ctrl-item ctrl-btn" type="button">Labels: ON</button>
       </div>
@@ -332,27 +434,79 @@ def generate_visjs_html(graph: "OntologyGraph") -> str:
     edges.forEach(function(e) {{
       edgeDefaults[e.id] = {{
         color: (e.color && e.color.color) ? e.color.color : "#6b7280",
+        dashes: e.dashes || false,
       }};
     }});
 
     /* ── Network setup ───────────────────────────────────────── */
 
+    var DEBUG = {debug_json};
+    var allRelations = {relations_json};
+    var hierarchyLevels = {hierarchy_json};
+    var clusters = {clusters_json};
+    var isolated = {isolated_json};
+    var hasCycles = {has_cycles_json};
+
+    var edgeFilter = "all";
+    var selectedDepth = 1;
+    var layoutMode = "force";
+    var simulationFrozen = false;
+    var nhopCache = {{}};
+
+    function getConnectedNodesNHop(nodeId, hops) {{
+      var key = nodeId + ":" + hops;
+      if (nhopCache[key]) return nhopCache[key];
+      var result = new Set([nodeId]);
+      var frontier = new Set([nodeId]);
+      for (var h = 0; h < hops; h++) {{
+        var next = new Set();
+        frontier.forEach(function(nid) {{
+          var conn = network.getConnectedNodes(nid) || [];
+          conn.forEach(function(c) {{ next.add(c); result.add(c); }});
+        }});
+        frontier = next;
+      }}
+      nhopCache[key] = result;
+      return result;
+    }}
+
+    function getConnectedEdgesForNodes(nodeSet) {{
+      var edgeSet = new Set();
+      nodeSet.forEach(function(nid) {{
+        (network.getConnectedEdges(nid) || []).forEach(function(eid) {{ edgeSet.add(eid); }});
+      }});
+      return edgeSet;
+    }}
+
+    function debugLog() {{
+      if (DEBUG && console && console.log) {{
+        var args = Array.prototype.slice.call(arguments);
+        console.log.apply(console, ["[GraphViewer]"].concat(args));
+      }}
+    }}
+
+    debugLog("Nodes:", nodes.get().length, "Edges:", edges.get().length);
+    nodes.get().slice(0, 5).forEach(function(n) {{
+      debugLog("Node", n.id, n.label);
+    }});
+
     var options = {{
       autoResize: true,
+      layout: {{ improvedLayout: true }},
       physics: {{
         enabled: true,
         barnesHut: {{
-          gravitationalConstant: -3000,
-          centralGravity: 0.3,
-          springLength: 160,
-          springConstant: 0.05,
-          damping: 0.09,
-          avoidOverlap: 0.2,
+          gravitationalConstant: -2800,
+          centralGravity: 0.35,
+          springLength: 140,
+          springConstant: 0.06,
+          damping: 0.12,
+          avoidOverlap: 0.25,
         }},
         stabilization: {{
           enabled: true,
-          iterations: 600,
-          updateInterval: 25,
+          iterations: Math.min(nodes.get().length > 200 ? 150 : 300, 400),
+          updateInterval: 50,
           fit: true,
         }},
       }},
@@ -401,6 +555,43 @@ def generate_visjs_html(graph: "OntologyGraph") -> str:
       }});
     }}
 
+    var resetFocusBtn = document.getElementById("reset-focus-btn");
+    if (resetFocusBtn) {{
+      resetFocusBtn.addEventListener("click", function() {{
+        exitSpotlight();
+        resetHighlight();
+        nhopCache = {{}};
+        network.fit({{ animation: {{ duration: 280, easingFunction: "easeInOutCubic" }} }});
+      }});
+    }}
+
+    var depthSelect = document.getElementById("depth-select");
+    if (depthSelect) {{
+      depthSelect.addEventListener("change", function() {{
+        selectedDepth = parseInt(depthSelect.value, 10) || 1;
+        nhopCache = {{}};
+        if (selectedNodeId) applySelectionStyles();
+        if (focusedNodeId) applySpotlightStyles();
+      }});
+    }}
+
+    var edgeFilterSelect = document.getElementById("edge-filter");
+    if (edgeFilterSelect) {{
+      edgeFilterSelect.addEventListener("change", function() {{
+        edgeFilter = edgeFilterSelect.value || "all";
+        edges.forEach(function(e) {{
+          var rel = e.relation || "";
+          var hide = false;
+          if (edgeFilter === "subClassOf") hide = rel !== "subClassOf";
+          else if (edgeFilter === "type") hide = rel !== "type" && rel !== "instanceOf";
+          else if (edgeFilter === "other") hide = rel === "subClassOf" || rel === "type" || rel === "instanceOf";
+          edges.update({{ id: e.id, hidden: hide }});
+        }});
+        nhopCache = {{}};
+        if (selectedNodeId) applySelectionStyles();
+      }});
+    }}
+
     /* ── Edge-label toggle ───────────────────────────────────── */
 
     function getRelationLabel(edge) {{
@@ -428,9 +619,9 @@ def generate_visjs_html(graph: "OntologyGraph") -> str:
       var relatedNodes = null;
       var relatedEdges = null;
       if (selectedNodeId) {{
-        relatedNodes = new Set(network.getConnectedNodes(selectedNodeId));
-        relatedNodes.add(selectedNodeId);
-        relatedEdges = new Set(network.getConnectedEdges(selectedNodeId));
+        var depth = selectedDepth >= 999 ? 10 : selectedDepth;
+        relatedNodes = getConnectedNodesNHop(selectedNodeId, depth);
+        relatedEdges = getConnectedEdgesForNodes(relatedNodes);
       }}
 
       nodes.forEach(function(n) {{
@@ -459,7 +650,9 @@ def generate_visjs_html(graph: "OntologyGraph") -> str:
         }});
       }});
       edges.forEach(function(e) {{
-        var base = edgeDefaults[e.id] ? edgeDefaults[e.id].color : "#6b7280";
+        var def = edgeDefaults[e.id] || {{}};
+        var base = def.color || "#6b7280";
+        var baseDashes = def.dashes || false;
         var active = !selectedNodeId || (relatedEdges && relatedEdges.has(e.id));
         edges.update({{
           id: e.id,
@@ -469,7 +662,7 @@ def generate_visjs_html(graph: "OntologyGraph") -> str:
             opacity: selectedNodeId ? (active ? 1.0 : 0.06) : 0.88
           }},
           width: selectedNodeId ? (active ? 2.6 : 0.4) : 1.8,
-          dashes: selectedNodeId ? (active ? false : [3, 6]) : false,
+          dashes: selectedNodeId ? (active ? baseDashes : [3, 6]) : baseDashes,
           font: {{
             color: selectedNodeId ? (active ? "#f8f4ff" : "#22222a") : "#b6b3bf",
             background: selectedNodeId ? (active ? "#151520" : "#101018") : "#14141a"
@@ -604,9 +797,9 @@ def generate_visjs_html(graph: "OntologyGraph") -> str:
     /* ── Spotlight (double-click) ────────────────────────────── */
 
     function applySpotlightStyles() {{
-      var related = new Set(network.getConnectedNodes(focusedNodeId));
-      related.add(focusedNodeId);
-      var relEdges = new Set(network.getConnectedEdges(focusedNodeId));
+      var depth = selectedDepth >= 999 ? 10 : selectedDepth;
+      var related = getConnectedNodesNHop(focusedNodeId, depth);
+      var relEdges = getConnectedEdgesForNodes(related);
 
       nodes.forEach(function(n) {{
         var meta = nodeDefaults[n.id] || {{}};
@@ -707,8 +900,196 @@ def generate_visjs_html(graph: "OntologyGraph") -> str:
 
     applyEdgeLabelMode();
     resetHighlight();
+
+    var layoutSelect = document.getElementById("layout-select");
+    if (layoutSelect) {{
+      layoutSelect.addEventListener("change", function() {{
+        layoutMode = layoutSelect.value || "force";
+        if (layoutMode === "elk") {{
+          if (typeof ELK === "undefined") {{
+            if (DEBUG) debugLog("ELK not loaded, falling back to hierarchy");
+            layoutSelect.value = "hierarchical";
+            layoutMode = "hierarchical";
+          }} else {{
+            runElkLayout();
+            return;
+          }}
+        }}
+        var useHierarchy = layoutMode === "hierarchical";
+        network.setOptions({{
+          layout: {{
+            hierarchical: {{
+              enabled: useHierarchy,
+              direction: "UD",
+              sortMethod: "directed",
+              levelSeparation: 180,
+              nodeSpacing: 140,
+              treeSpacing: 200,
+            }},
+          }},
+          physics: {{
+            enabled: true,
+            hierarchicalRepulsion: useHierarchy ? {{
+              centralGravity: 0.0,
+              springLength: 150,
+              springConstant: 0.01,
+              nodeDistance: 180,
+              damping: 0.09,
+            }} : undefined,
+            barnesHut: useHierarchy ? undefined : {{
+              gravitationalConstant: -2800,
+              centralGravity: 0.35,
+              springLength: 140,
+              springConstant: 0.06,
+              damping: 0.12,
+              avoidOverlap: 0.25,
+            }},
+            stabilization: {{ enabled: true, iterations: 250, updateInterval: 50, fit: true }},
+          }},
+        }});
+        simulationFrozen = false;
+        network.once("stabilizationIterationsDone", function() {{
+          network.setOptions({{ physics: {{ enabled: false }} }});
+          simulationFrozen = true;
+          network.fit({{ animation: {{ duration: 300, easingFunction: "easeInOutCubic" }} }});
+        }});
+      }});
+    }}
+
+    function runElkLayout() {{
+      if (typeof ELK === "undefined") return;
+      if (hasCycles) {{
+        if (DEBUG) debugLog("Graph has cycles, falling back to force layout");
+        layoutSelect.value = "force";
+        layoutMode = "force";
+        network.setOptions({{ physics: {{ enabled: true }}, layout: {{ hierarchical: {{ enabled: false }} }} }});
+        network.setOptions({{ physics: {{ barnesHut: {{ gravitationalConstant: -2800, centralGravity: 0.35, springLength: 140, springConstant: 0.06, damping: 0.12, avoidOverlap: 0.25 }}, stabilization: {{ enabled: true, iterations: 250, updateInterval: 50, fit: true }} }} }});
+        simulationFrozen = false;
+        network.once("stabilizationIterationsDone", function() {{
+          network.setOptions({{ physics: {{ enabled: false }} }});
+          simulationFrozen = true;
+          network.fit({{ animation: {{ duration: 300, easingFunction: "easeInOutCubic" }} }});
+        }});
+        return;
+      }}
+      var elk = new ELK();
+      var visibleNodes = nodes.get().filter(function(n) {{ return !n.hidden; }});
+      var visibleEdges = edges.get().filter(function(e) {{ return !e.hidden; }});
+      var nodeIds = new Set(visibleNodes.map(function(n) {{ return n.id; }}));
+      var normalizedEdges = visibleEdges
+        .filter(function(e) {{ return nodeIds.has(e.from) && nodeIds.has(e.to) && e.from !== e.to; }})
+        .map(function(e) {{ return {{ id: String(e.id || e.from + "-" + e.to), sources: [String(e.from)], targets: [String(e.to)] }}; }});
+      var nodeWidth = 140;
+      var nodeHeight = 40;
+      var elkGraph = {{
+        id: "root",
+        layoutOptions: {{
+          "elk.algorithm": "layered",
+          "elk.direction": "DOWN",
+          "elk.spacing.nodeNode": "50",
+          "elk.layered.spacing.nodeNodeBetweenLayers": "100",
+          "elk.edgeRouting": "ORTHOGONAL",
+          "elk.layered.allowNonTreeEdges": "true",
+        }},
+        children: visibleNodes.map(function(n) {{
+          var w = (n.width != null && n.width > 0) ? n.width : nodeWidth;
+          var h = (n.height != null && n.height > 0) ? n.height : nodeHeight;
+          return {{ id: String(n.id), width: w, height: h }};
+        }}),
+        edges: normalizedEdges,
+      }};
+      elk.layout(elkGraph).then(function(layout) {{
+        if (!layout || !layout.children || layout.children.length === 0) {{
+          if (DEBUG) debugLog("ELK returned empty layout, fallback to force");
+          fallbackToForceLayout();
+          return;
+        }}
+        var pos = {{}};
+        var allSame = true;
+        var firstX = null, firstY = null;
+        layout.children.forEach(function(c) {{
+          var x = (c.x != null) ? c.x : 0;
+          var y = (c.y != null) ? c.y : 0;
+          pos[c.id] = {{ x: x, y: y }};
+          if (firstX == null) {{ firstX = x; firstY = y; }}
+          else if (x !== firstX || y !== firstY) allSame = false;
+        }});
+        if (Object.keys(pos).length === 0) {{
+          if (DEBUG) debugLog("ELK produced no positions, fallback to force");
+          fallbackToForceLayout();
+          return;
+        }}
+        if (allSame && Object.keys(pos).length > 1) {{
+          if (DEBUG) debugLog("ELK returned identical coordinates, fallback to force");
+          fallbackToForceLayout();
+          return;
+        }}
+        network.setPositions(pos);
+        network.setOptions({{ physics: {{ enabled: false }} }});
+        simulationFrozen = true;
+        network.fit({{ animation: {{ duration: 300, easingFunction: "easeInOutCubic" }} }});
+      }}).catch(function(err) {{
+        if (DEBUG) debugLog("ELK layout failed:", err);
+        fallbackToForceLayout();
+      }});
+    }}
+
+    function fallbackToForceLayout() {{
+      if (layoutSelect) layoutSelect.value = "force";
+      layoutMode = "force";
+      network.setOptions({{ layout: {{ hierarchical: {{ enabled: false }} }}, physics: {{ enabled: true, barnesHut: {{ gravitationalConstant: -2800, centralGravity: 0.35, springLength: 140, springConstant: 0.06, damping: 0.12, avoidOverlap: 0.25 }}, stabilization: {{ enabled: true, iterations: 250, updateInterval: 50, fit: true }} }} }});
+      simulationFrozen = false;
+      network.once("stabilizationIterationsDone", function() {{
+        network.setOptions({{ physics: {{ enabled: false }} }});
+        simulationFrozen = true;
+        network.fit({{ animation: {{ duration: 300, easingFunction: "easeInOutCubic" }} }});
+      }});
+    }}
+
+    var viewModeSelect = document.getElementById("view-mode-select");
+    if (viewModeSelect) {{
+      viewModeSelect.addEventListener("change", function() {{
+        var mode = viewModeSelect.value;
+        nodes.forEach(function(n) {{
+          var hide = false;
+          if (mode === "classes") hide = n.kind === "instance";
+          nodes.update({{ id: n.id, hidden: hide }});
+        }});
+        edges.forEach(function(edge) {{
+          var fromNode = nodes.get(edge.from);
+          var toNode = nodes.get(edge.to);
+          var rel = edge.relation || "";
+          var hide = false;
+          if (mode === "classes") hide = rel !== "subClassOf";
+          else if (mode === "instances") hide = rel !== "type" && rel !== "instanceOf";
+          if (fromNode && fromNode.hidden) hide = true;
+          if (toNode && toNode.hidden) hide = true;
+          edges.update({{ id: edge.id, hidden: hide }});
+        }});
+        network.fit({{ animation: {{ duration: 280, easingFunction: "easeInOutCubic" }} }});
+      }});
+    }}
+
     network.on("stabilizationIterationsDone", function() {{
       network.setOptions({{ physics: {{ enabled: false }} }});
+      simulationFrozen = true;
+      if (DEBUG) {{
+        var pos = network.getPositions();
+        var ids = Object.keys(pos);
+        var nanCount = 0;
+        var sameCount = 0;
+        var prev = null;
+        ids.forEach(function(id) {{
+          var p = pos[id];
+          if (p && (isNaN(p.x) || isNaN(p.y))) nanCount++;
+          if (p && prev && p.x === prev.x && p.y === prev.y) sameCount++;
+          prev = p;
+        }});
+        debugLog("Layout done. Positions: NaN=" + nanCount + " identical=" + sameCount);
+        ids.slice(0, 3).forEach(function(id) {{
+          debugLog("Pos", id, pos[id]);
+        }});
+      }}
       network.fit({{ animation: {{ duration: 350, easingFunction: "easeInOutCubic" }} }});
       requestAnimationFrame(function() {{
         container.classList.add("ready");
