@@ -31,6 +31,7 @@ from ontology_builder.reasoning.engine import run_inference as apply_reasoning
 from ontology_builder.export.owl_exporter import export_ontology_to_rdf
 from ontology_builder.storage.graph_store import (
     clear as clear_graph_store,
+    clear_last_active_kb,
     get_current_kb_id,
     get_export,
     get_graph,

@@ -1,5 +1,6 @@
 """FastAPI app entry point. Mounts PDF-to-OWL and living-ontology routers."""
 
+import asyncio
 import logging
 
 from fastapi import FastAPI
@@ -10,8 +11,15 @@ from fastapi.responses import HTMLResponse
 from app.config import get_settings
 from app.logging_config import configure_table_logging
 from app.routers import ontology
-from ontology_builder.qa.graph_index import clear_index as clear_qa_index
-from ontology_builder.storage.graph_store import clear as clear_graph_store, set_current_kb_id
+from ontology_builder.qa.graph_index import build_index as build_qa_index, clear_index as clear_qa_index
+from ontology_builder.storage.graph_store import (
+    clear as clear_graph_store,
+    get_last_active_kb,
+    get_ontology_graphs_dir,
+    load_from_path,
+    set_current_kb_id,
+    set_graph,
+)
 from ontology_builder.ui.api import router as graph_router
 from ontology_builder.ui.chat_ui import generate_chat_ui_html
 
@@ -60,11 +68,26 @@ app.include_router(graph_router, prefix="/api/v1")
 
 @app.on_event("startup")
 async def startup_event():
-    """Log application startup. Start from clean state; no KB preloaded."""
+    """Log application startup. Restore last active KB if persisted (survives uvicorn --reload)."""
     _configure_logging()
     settings = get_settings()
     logger.info("Ontology API starting | log_level=%s | LLM=%s | model=%s",
                 settings.log_level, settings.openai_base_url, settings.ontology_llm_model)
+
+    # Restore last active KB after reload so KG creation/deletion/expansion survive WatchFiles restarts
+    last_id = get_last_active_kb()
+    if last_id:
+        graphs_dir = get_ontology_graphs_dir()
+        path = graphs_dir / f"{last_id}.json"
+        if path.exists():
+            try:
+                graph = load_from_path(path)
+                set_graph(graph, document_subject=None)
+                set_current_kb_id(last_id)
+                await asyncio.to_thread(build_qa_index, graph, verbose=False)
+                logger.info("Ontology API | restored active KB: %s", last_id)
+            except Exception as e:
+                logger.warning("Ontology API | failed to restore KB %s: %s", last_id, e)
 
 
 @app.on_event("shutdown")

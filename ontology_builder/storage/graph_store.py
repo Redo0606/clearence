@@ -35,10 +35,44 @@ def get_ontology_graphs_dir() -> Path:
     return repo_root / "documents" / "ontology_graphs"
 
 
+def _last_active_kb_path() -> Path:
+    """Path to the file storing the last active KB ID for restore on reload."""
+    return get_ontology_graphs_dir() / ".last_active"
+
+
+def save_last_active_kb(kb_id: str) -> None:
+    """Persist the active KB ID so it can be restored after uvicorn --reload."""
+    if not kb_id:
+        return
+    path = _last_active_kb_path()
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(kb_id.strip(), encoding="utf-8")
+
+
+def clear_last_active_kb() -> None:
+    """Remove the persisted last-active KB (e.g. when it was deleted)."""
+    path = _last_active_kb_path()
+    if path.exists():
+        path.unlink(missing_ok=True)
+
+
+def get_last_active_kb() -> str | None:
+    """Return the last active KB ID from persistence, or None."""
+    path = _last_active_kb_path()
+    if not path.exists():
+        return None
+    try:
+        return path.read_text(encoding="utf-8").strip() or None
+    except OSError:
+        return None
+
+
 def set_current_kb_id(kb_id: str | None) -> None:
     """Set the ID of the currently active knowledge base."""
     global _current_kb_id
     _current_kb_id = kb_id
+    if kb_id:
+        save_last_active_kb(kb_id)
 
 
 def get_current_kb_id() -> str | None:
