@@ -10,7 +10,7 @@ FastAPI application that builds **formal, theory-grounded ontologies** from docu
 ## Quick Start
 
 ```bash
-git clone https://gitlab.com/clearence/clearence.git
+git clone https://github.com/Redo0606/clearence.git
 cd clearence
 cp .env.example .env
 # Edit .env if using OpenAI cloud; leave defaults for LM Studio
