@@ -630,16 +630,21 @@ async def qa_ask(
         raise HTTPException(503, "No ontology graph. Build one first via POST /build_ontology.")
 
     if retrieval_mode == "hyperedges":
-        context_snippets = retrieve_hyperedges(req.question, k_nodes=10, max_hyperedges=5)
+        context_snippets = await asyncio.to_thread(
+            retrieve_hyperedges,
+            req.question,
+            10,
+            5,
+        )
         source_refs = [f"he:{i}" for i in range(len(context_snippets))]
         onto_ctx = ""
     elif retrieval_mode == "context":
-        result = retrieve_with_context(req.question, top_k=10)
+        result = await asyncio.to_thread(retrieve_with_context, req.question, 10)
         context_snippets = result.facts
         source_refs = result.source_refs
         onto_ctx = result.ontological_context
     else:
-        result = retrieve_with_context(req.question, top_k=10)
+        result = await asyncio.to_thread(retrieve_with_context, req.question, 10)
         context_snippets = result.facts
         source_refs = result.source_refs
         onto_ctx = ""
