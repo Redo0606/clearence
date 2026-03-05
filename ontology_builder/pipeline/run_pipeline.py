@@ -202,6 +202,9 @@ def _extract_sequential(
                 "chunk_index": idx,
                 "message": f"Extracting chunk {idx + 1}/{total}",
             })
+        # Log progress periodically so logs show pipeline is alive (extraction can take minutes)
+        if (idx + 1) % 5 == 0 or idx == 0:
+            logger.info("[Pipeline] Step 3/6: Extracting | chunk %d/%d", idx + 1, total)
         extraction = extract_ontology_sequential(chunk, source_document=doc_path)
         return idx, extraction
 
@@ -223,6 +226,7 @@ def _extract_sequential(
         results = [_extract_chunk(item) for item in chunk_iter]
 
     all_extractions = [ext for _, ext in sorted(results, key=lambda x: x[0])]
+    logger.info("[Pipeline] Step 3/6: Extraction complete | chunks=%d", len(all_extractions))
     for idx, extraction in enumerate(all_extractions):
         report.chunk_stats.append(ChunkStats(
             chunk_index=idx,
@@ -277,6 +281,8 @@ def _extract_legacy(
                 "chunk_index": idx,
                 "message": f"Extracting chunk {idx + 1}/{total}",
             })
+        if (idx + 1) % 5 == 0 or idx == 0:
+            logger.info("[Pipeline] Step 3/6: Extracting | chunk %d/%d", idx + 1, total)
         return extract_ontology(chunk)
 
     chunk_iter = tqdm(
@@ -293,6 +299,7 @@ def _extract_legacy(
             extractions = list(executor.map(_extract_with_progress, chunk_iter))
     else:
         extractions = [_extract_with_progress(item) for item in chunk_iter]
+    logger.info("[Pipeline] Step 3/6: Extraction complete | chunks=%d", len(extractions))
     for idx, extraction in enumerate(extractions):
         update_graph(graph, extraction, verbose=verbose)
         entities = extraction.get("entities", [])
