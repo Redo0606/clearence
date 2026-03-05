@@ -9,14 +9,13 @@ import re
 import logging
 from dataclasses import dataclass, field
 
+from app.config import get_settings
 from ontology_builder.llm.lmstudio_client import call_llm
 from ontology_builder.qa.prompts import QA_SYSTEM, build_qa_user_prompt
 
 logger = logging.getLogger(__name__)
 
-MAX_CONTEXT_CHARS = 4000
-
-# Match [node:...], [edge:...], [dp:...] so we can strip them from the answer if the LLM echoes them
+# Regex to strip raw source IDs ([node:X], [edge:A-R-B], [dp:E-A]) if LLM echoes them
 _RAW_ID_PATTERN = re.compile(r"\s*\[(?:node|edge|dp):[^\]]+\]\s*", re.IGNORECASE)
 
 
@@ -57,12 +56,13 @@ def answer_question(
 
     Args:
         question: User question.
-        context_snippets: Retrieved fact strings.
+        context_snippets: Retrieved fact strings (from graph_index retrieval).
         source_refs: Parallel list of source reference IDs for attribution.
-        ontological_context: OntoRAG-style taxonomy context string.
+            If None, uses fact:0, fact:1, ...
+        ontological_context: OntoRAG-style taxonomy context (parents, children, defs).
 
     Returns:
-        QAResult with answer, sources, and context metadata.
+        QAResult with answer text, sources, ontological_context, num_facts_used.
     """
     if source_refs is None:
         source_refs = [f"fact:{i}" for i in range(len(context_snippets))]
@@ -73,9 +73,10 @@ def answer_question(
         annotated_facts.append(f"[{i}] {fact}")
 
     context = "\n".join(annotated_facts)
-    if len(context) > MAX_CONTEXT_CHARS:
-        logger.debug("[QA] Truncating context from %d to %d chars", len(context), MAX_CONTEXT_CHARS)
-        context = context[:MAX_CONTEXT_CHARS] + "\n[... truncated ...]"
+    max_context_chars = get_settings().qa_max_context_chars
+    if len(context) > max_context_chars:
+        logger.debug("[QA] Truncating context from %d to %d chars", len(context), max_context_chars)
+        context = context[:max_context_chars] + "\n[... truncated ...]"
 
     user = build_qa_user_prompt(context, question, ontological_context)
     answer_text = call_llm(system=QA_SYSTEM, user=user, temperature=0.2, max_tokens=1400)

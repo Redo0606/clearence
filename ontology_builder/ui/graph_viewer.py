@@ -136,15 +136,13 @@ def generate_visjs_html(graph: "OntologyGraph") -> str:
     nodes_json = json.dumps(vis_nodes)
     edges_json = json.dumps(vis_edges)
     stats = graph.export().get("stats", {})
-    edges_count = stats.get("edges")
-    if edges_count is None:
-        edges_count = stats.get("relations")
-    if edges_count is None:
-        edges_count = len(vis_edges)
+    rel_count = stats.get("relations") or stats.get("edges")
+    if rel_count is None:
+        rel_count = len(vis_edges)
     stats_html = (
         f"Classes: {stats.get('classes', 0)} | "
         f"Instances: {stats.get('instances', 0)} | "
-        f"Edges: {edges_count} | "
+        f"Relations: {rel_count} | "
         f"Axioms: {stats.get('axioms', 0)}"
     )
 

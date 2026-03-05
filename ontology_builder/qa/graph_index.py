@@ -21,12 +21,11 @@ import numpy as np
 from sentence_transformers import SentenceTransformer
 from tqdm import tqdm
 
+from ontology_builder.constants import ENCODE_BATCH_SIZE, MAX_RETRIEVAL_FACTS
 from ontology_builder.storage.graphdb import OntologyGraph
 from ontology_builder.storage.hypergraph import HyperGraph, build_hypergraph
 
 logger = logging.getLogger(__name__)
-
-_ENCODE_BATCH_SIZE = 64
 
 _model: SentenceTransformer | None = None
 _lock = threading.Lock()
@@ -52,10 +51,18 @@ def _get_model() -> SentenceTransformer:
 # Record building
 # ---------------------------------------------------------------------------
 
+def _source_ref_with_provenance(base: str, docs: list[str] | None) -> str:
+    """Append document provenance to source_ref when available."""
+    if not docs:
+        return base
+    return f"{base} [sources: {', '.join(docs)}]"
+
+
 def _graph_to_records(graph: OntologyGraph) -> list[dict[str, Any]]:
     """Convert graph to structured records for dual retrieval.
 
     Each record has: key, value, full (formatted fact), node, source_ref (for attribution).
+    Includes document provenance when available.
     """
     g = graph.get_graph()
     records: list[dict[str, Any]] = []
@@ -67,18 +74,20 @@ def _graph_to_records(graph: OntologyGraph) -> list[dict[str, Any]]:
         full = f"subject: {node}, attribute: type, value: {node_type}"
         if desc:
             full += f" ({desc})"
+        docs = data.get("source_documents", [])
         records.append({
             "key": f"{node} type",
             "value": node_type,
             "full": full,
             "node": node,
             "kind": kind,
-            "source_ref": f"node:{node}",
+            "source_ref": _source_ref_with_provenance(f"node:{node}", docs),
         })
     for u, v, data in g.edges(data=True):
         r = data.get("relation", "related_to")
         conf = data.get("confidence", 1.0)
         full = f"subject: {u}, attribute: {r}, value: {v}"
+        docs = data.get("source_documents", [])
         records.append({
             "key": f"{u} {r}",
             "value": v,
@@ -86,7 +95,7 @@ def _graph_to_records(graph: OntologyGraph) -> list[dict[str, Any]]:
             "node": u,
             "kind": "edge",
             "confidence": conf,
-            "source_ref": f"edge:{u}-{r}-{v}",
+            "source_ref": _source_ref_with_provenance(f"edge:{u}-{r}-{v}", docs),
         })
 
     for dp in graph.data_properties:
@@ -94,13 +103,14 @@ def _graph_to_records(graph: OntologyGraph) -> list[dict[str, Any]]:
         attr = dp["attribute"]
         val = dp["value"]
         full = f"subject: {entity}, attribute: {attr}, value: {val}"
+        docs = dp.get("source_documents", [])
         records.append({
             "key": f"{entity} {attr}",
             "value": val,
             "full": full,
             "node": entity,
             "kind": "data_property",
-            "source_ref": f"dp:{entity}-{attr}",
+            "source_ref": _source_ref_with_provenance(f"dp:{entity}-{attr}", docs),
         })
     return records
 
@@ -141,6 +151,15 @@ def _build_ontological_context(query: str, graph: OntologyGraph) -> str:
             w in node_lower or node_lower in w for w in words if len(w) > 2
         ):
             matched_nodes.append(node)
+        else:
+            synonyms = graph.get_node_synonyms(node)
+            for syn in synonyms:
+                syn_lower = syn.lower()
+                if syn_lower in query_lower or any(
+                    w in syn_lower or syn_lower in w for w in words if len(w) > 2
+                ):
+                    matched_nodes.append(node)
+                    break
 
     if not matched_nodes:
         return ""
@@ -201,7 +220,7 @@ def build_index(graph: OntologyGraph, verbose: bool = True) -> None:
     key_chunks = []
     value_chunks = []
     for i in tqdm(
-        range(0, len(records), _ENCODE_BATCH_SIZE),
+        range(0, len(records), ENCODE_BATCH_SIZE),
         desc="Encoding records",
         disable=not verbose,
         unit="batch",
@@ -209,8 +228,8 @@ def build_index(graph: OntologyGraph, verbose: bool = True) -> None:
         dynamic_ncols=True,
         mininterval=0.5,
     ):
-        batch_keys = keys[i: i + _ENCODE_BATCH_SIZE]
-        batch_values = values[i: i + _ENCODE_BATCH_SIZE]
+        batch_keys = keys[i : i + ENCODE_BATCH_SIZE]
+        batch_values = values[i : i + ENCODE_BATCH_SIZE]
         key_chunks.append(model.encode(batch_keys, convert_to_numpy=True))
         value_chunks.append(model.encode(batch_values, convert_to_numpy=True))
     key_emb = np.vstack(key_chunks) if key_chunks else np.array([])
@@ -252,18 +271,30 @@ def _cosine_scores(query_emb: np.ndarray, doc_embeddings: np.ndarray) -> np.ndar
 
 
 def _concept_matched_indices(query: str) -> set[int]:
+    """Match query to nodes and their synonyms for concept-aware retrieval."""
     query_lower = query.lower()
     words = set(re.findall(r"\b\w+\b", query_lower))
     matched: set[int] = set()
     with _lock:
         node_to_indices = dict(_node_to_record_indices)
-        node_names = set(_node_names)
-    for node in node_names:
+        graph = _graph_ref
+    if graph is None:
+        return matched
+    for node in node_to_indices:
         node_lower = node.lower()
         if node_lower in query_lower or any(
             w in node_lower or node_lower in w for w in words if len(w) > 2
         ):
             matched.update(node_to_indices.get(node, []))
+        else:
+            synonyms = graph.get_node_synonyms(node)
+            for syn in synonyms:
+                syn_lower = syn.lower()
+                if syn_lower in query_lower or any(
+                    w in syn_lower or syn_lower in w for w in words if len(w) > 2
+                ):
+                    matched.update(node_to_indices.get(node, []))
+                    break
     return matched
 
 
@@ -281,7 +312,7 @@ class RetrievalResult:
 
 
 def retrieve(query: str, top_k: int = 10) -> list[str]:
-    """Dual retrieval with concept boost — returns fact strings."""
+    """Dual retrieval (OG-RAG): key-side + value-side similarity, concept boost for query entities."""
     with _lock:
         records = list(_records)
         key_emb = _key_embeddings
@@ -305,13 +336,13 @@ def retrieve(query: str, top_k: int = 10) -> list[str]:
         if i not in seen and i < len(records):
             seen.add(i)
             result.append(records[i]["full"])
-            if len(result) >= min(2 * top_k, 20):
+            if len(result) >= min(2 * top_k, MAX_RETRIEVAL_FACTS):
                 break
     return result
 
 
 def retrieve_with_context(query: str, top_k: int = 10) -> RetrievalResult:
-    """OntoRAG + OG-RAG combined retrieval with ontological context and attribution."""
+    """OntoRAG + OG-RAG: dual retrieval + ontological context (parents, children, defs) + attribution."""
     with _lock:
         records = list(_records)
         key_emb = _key_embeddings
@@ -339,7 +370,7 @@ def retrieve_with_context(query: str, top_k: int = 10) -> RetrievalResult:
             seen.add(i)
             facts.append(records[i]["full"])
             refs.append(records[i].get("source_ref", ""))
-            if len(facts) >= min(2 * top_k, 20):
+            if len(facts) >= min(2 * top_k, MAX_RETRIEVAL_FACTS):
                 break
 
     onto_ctx = ""
@@ -350,7 +381,7 @@ def retrieve_with_context(query: str, top_k: int = 10) -> RetrievalResult:
 
 
 def retrieve_hyperedges(query: str, k_nodes: int = 10, max_hyperedges: int = 5) -> list[str]:
-    """OG-RAG Algorithm 2: greedy set cover over hyperedges."""
+    """OG-RAG Algorithm 2: greedy set cover over hyperedges (groups by node)."""
     with _lock:
         records = list(_records)
         key_emb = _key_embeddings

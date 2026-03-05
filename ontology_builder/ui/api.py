@@ -8,6 +8,7 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+import os
 import threading
 import uuid
 from pathlib import Path
@@ -15,17 +16,19 @@ from queue import Queue
 from typing import Any
 
 from fastapi import APIRouter, File, Form, HTTPException, Query, Request, UploadFile
-from fastapi.responses import HTMLResponse, StreamingResponse
+from fastapi.responses import HTMLResponse, JSONResponse, Response, StreamingResponse
 from pydantic import BaseModel, Field
 
 from ontology_builder.pipeline.run_pipeline import PipelineCancelledError, process_document
 from ontology_builder.qa.answer import answer_question, source_ref_to_label
 from ontology_builder.qa.graph_index import (
     build_index as build_qa_index,
+    clear_index as clear_qa_index,
     retrieve_hyperedges,
     retrieve_with_context,
 )
 from ontology_builder.reasoning.engine import run_inference as apply_reasoning
+from ontology_builder.export.owl_exporter import export_ontology_to_rdf
 from ontology_builder.storage.graph_store import (
     clear as clear_graph_store,
     get_current_kb_id,
@@ -39,9 +42,13 @@ from ontology_builder.storage.graph_store import (
     set_current_kb_id,
     set_graph,
 )
+from app.config import get_settings
 from ontology_builder.ui.graph_viewer import generate_visjs_html, visualize
 
 logger = logging.getLogger(__name__)
+
+# Models available for selection in the UI
+_AVAILABLE_MODELS = ["gpt-4.1o-mini", "gpt-4o-mini", "phi-3-mini-4k-instruct", "gpt-4o", "gpt-4-turbo"]
 
 router = APIRouter(tags=["ontology-builder"])
 
@@ -58,57 +65,73 @@ _active_pipelines: dict[str, threading.Event] = {}
 # ---------------------------------------------------------------------------
 
 class PipelineReportResponse(BaseModel):
-    document_path: str = ""
-    total_chunks: int = 0
-    totals: dict[str, int] = Field(default_factory=dict)
-    extraction_totals: dict[str, int] = Field(default_factory=dict)
-    llm_inferred_relations: int = 0
-    reasoning: dict[str, Any] = Field(default_factory=dict)
-    elapsed_seconds: float = 0.0
-    extraction_mode: str = "sequential"
-    chunk_stats: list[dict[str, Any]] = Field(default_factory=list)
-    ontology_name: str = ""
+    """Pipeline execution report with extraction and reasoning stats."""
+
+    document_path: str = Field("", description="Path to source document")
+    total_chunks: int = Field(0, description="Number of text chunks processed")
+    totals: dict[str, int] = Field(default_factory=dict, description="Final graph counts")
+    extraction_totals: dict[str, int] = Field(default_factory=dict, description="Counts before reasoning")
+    llm_inferred_relations: int = Field(0, description="Relations inferred by LLM")
+    reasoning: dict[str, Any] = Field(default_factory=dict, description="OWL 2 RL reasoning stats")
+    elapsed_seconds: float = Field(0.0, description="Total pipeline duration")
+    extraction_mode: str = Field("sequential", description="legacy, parallel, or sequential")
+    chunk_stats: list[dict[str, Any]] = Field(default_factory=list, description="Per-chunk extraction stats")
+    ontology_name: str = Field("", description="Display name of the ontology")
 
 
 class BuildOntologyResponse(BaseModel):
-    graph: dict[str, Any] = Field(default_factory=dict)
+    """Response from build_ontology with graph and pipeline report."""
+
+    graph: dict[str, Any] = Field(default_factory=dict, description="Node-link graph export")
     pipeline_report: PipelineReportResponse = Field(default_factory=PipelineReportResponse)
-    kb_id: str | None = None
+    kb_id: str | None = Field(None, description="ID of created knowledge base")
 
 
 class QASourceResponse(BaseModel):
-    answer: str
-    sources: list[str] = Field(default_factory=list)
-    source_refs: list[str] = Field(default_factory=list)
-    source_labels: list[str] = Field(default_factory=list)
-    ontological_context: str = ""
-    num_facts_used: int = 0
+    """QA answer with fact-level attribution."""
+
+    answer: str = Field(..., description="Generated answer text")
+    sources: list[str] = Field(default_factory=list, description="Retrieved fact strings")
+    source_refs: list[str] = Field(default_factory=list, description="Source reference IDs")
+    source_labels: list[str] = Field(default_factory=list, description="Human-readable source labels")
+    ontological_context: str = Field("", description="OntoRAG taxonomy context")
+    num_facts_used: int = Field(0, description="Number of facts used in answer")
+    kb_id: str | None = Field(None, description="Ontology that was queried")
 
 
 class GraphExportResponse(BaseModel):
-    graph: dict[str, Any] = Field(default_factory=dict)
-    stats: dict[str, int] = Field(default_factory=dict)
+    """Graph export with node-link data and stats."""
+
+    graph: dict[str, Any] = Field(default_factory=dict, description="Node-link JSON")
+    stats: dict[str, int] = Field(default_factory=dict, description="Class/instance/edge counts")
 
 
 class ReasoningResponse(BaseModel):
-    inferred_edges: int = 0
-    iterations: int = 0
-    consistency_violations: list[str] = Field(default_factory=list)
-    inference_trace: list[dict[str, str]] = Field(default_factory=list)
-    graph: dict[str, Any] = Field(default_factory=dict)
+    """OWL 2 RL reasoning result with trace."""
+
+    inferred_edges: int = Field(0, description="Number of edges inferred")
+    iterations: int = Field(0, description="Fixpoint iterations")
+    consistency_violations: list[str] = Field(default_factory=list, description="Disjointness violations")
+    inference_trace: list[dict[str, str]] = Field(default_factory=list, description="Step-by-step trace")
+    graph: dict[str, Any] = Field(default_factory=dict, description="Updated graph export")
 
 
 class KnowledgeBaseItem(BaseModel):
-    id: str
-    name: str
-    description: str = ""
-    created_at: float
-    stats: dict[str, int] = Field(default_factory=dict)
+    """Single knowledge base metadata."""
+
+    id: str = Field(..., description="Unique KB ID")
+    name: str = Field(..., description="Display name")
+    description: str = Field("", description="Optional description")
+    created_at: float = Field(..., description="Unix timestamp")
+    stats: dict[str, int] = Field(default_factory=dict, description="Graph stats")
+    documents: list[str] = Field(default_factory=list, description="Source document filenames")
 
 
 class KnowledgeBasesResponse(BaseModel):
+    """List of knowledge bases with active ID."""
+
     items: list[KnowledgeBaseItem] = Field(default_factory=list)
-    active_id: str | None = None
+    active_id: str | None = Field(None, description="Currently active KB ID")
 
 
 # ---------------------------------------------------------------------------
@@ -117,6 +140,30 @@ class KnowledgeBasesResponse(BaseModel):
 
 class QAAskRequest(BaseModel):
     question: str
+    kb_id: str | None = Field(None, description="Ontology/knowledge base ID to query. If provided and different from active, activates it first.")
+
+
+class SettingsResponse(BaseModel):
+    model: str = ""
+    workers: int = 2
+    chunk_size: int = 1200
+    chunk_overlap: int = 200
+    temperature: float = 0.1
+    available_models: list[str] = Field(default_factory=list)
+
+
+@router.get("/settings", response_model=SettingsResponse)
+def get_app_settings() -> SettingsResponse:
+    """Return current LLM settings for the UI (model, workers, chunk params)."""
+    s = get_settings()
+    return SettingsResponse(
+        model=s.ontology_llm_model,
+        workers=s.get_llm_parallel_workers(),
+        chunk_size=s.chunk_size,
+        chunk_overlap=s.chunk_overlap,
+        temperature=s.llm_temperature,
+        available_models=_AVAILABLE_MODELS,
+    )
 
 
 @router.post("/build_ontology", response_model=BuildOntologyResponse)
@@ -170,7 +217,13 @@ async def build_ontology(
         name = (title or Path(file.filename).stem or f"ontology-{kb_id[:8]}").strip() or f"ontology-{kb_id[:8]}"
         saved_path = _ONTOLOGY_GRAPHS / f"{kb_id}.json"
         _ONTOLOGY_GRAPHS.mkdir(parents=True, exist_ok=True)
-        save_to_path_with_metadata(saved_path, name=name, kb_id=kb_id, description=description or "")
+        save_to_path_with_metadata(
+            saved_path,
+            name=name,
+            kb_id=kb_id,
+            description=description or "",
+            documents=[file.filename] if file.filename else [],
+        )
         set_current_kb_id(kb_id)
 
         report_dict = report.to_dict()
@@ -210,16 +263,101 @@ def _sse_event(data: dict) -> str:
     return f"data: {json.dumps(data)}\n\n"
 
 
+def _apply_env_overrides(
+    model: str | None = None,
+    workers: int | None = None,
+    chunk_size: int | None = None,
+    chunk_overlap: int | None = None,
+    temperature: float | None = None,
+) -> dict[str, str | None]:
+    """Apply form overrides to environment for pipeline execution.
+
+    Returns the previous env values for later restore. Clears settings cache.
+    """
+    old_env = {
+        "ONTOLOGY_LLM_MODEL": os.environ.get("ONTOLOGY_LLM_MODEL"),
+        "CHUNK_SIZE": os.environ.get("CHUNK_SIZE"),
+        "CHUNK_OVERLAP": os.environ.get("CHUNK_OVERLAP"),
+        "LLM_PARALLEL_WORKERS": os.environ.get("LLM_PARALLEL_WORKERS"),
+        "LLM_TEMPERATURE": os.environ.get("LLM_TEMPERATURE"),
+    }
+    if model:
+        os.environ["ONTOLOGY_LLM_MODEL"] = model
+    if workers is not None:
+        os.environ["LLM_PARALLEL_WORKERS"] = str(workers)
+    if chunk_size is not None:
+        os.environ["CHUNK_SIZE"] = str(chunk_size)
+    if chunk_overlap is not None:
+        os.environ["CHUNK_OVERLAP"] = str(chunk_overlap)
+    if temperature is not None:
+        os.environ["LLM_TEMPERATURE"] = str(temperature)
+    get_settings.cache_clear()
+    return old_env
+
+
+def _restore_env(old_env: dict[str, str | None]) -> None:
+    """Restore environment from snapshot and clear settings cache."""
+    for key, val in old_env.items():
+        if val is not None:
+            os.environ[key] = val
+        elif key in os.environ:
+            del os.environ[key]
+    get_settings.cache_clear()
+
+
+def _build_report_dict(
+    report_dict: dict[str, Any],
+    ontology_name: str,
+    totals: dict[str, Any] | None = None,
+    document_display: str | None = None,
+) -> dict[str, Any]:
+    """Build pipeline_report dict for SSE complete event.
+
+    If totals is None, uses report_dict.get('totals', {}).
+    Normalizes totals so 'relations' is set from 'edges' when missing (e.g. from graph.export() stats).
+    """
+    raw_totals = totals if totals is not None else report_dict.get("totals", {})
+    totals_normalized = dict(raw_totals)
+    if "relations" not in totals_normalized and "edges" in totals_normalized:
+        totals_normalized["relations"] = totals_normalized["edges"]
+    return {
+        "document_path": document_display or report_dict.get("document_path", ""),
+        "total_chunks": report_dict.get("total_chunks", 0),
+        "totals": totals_normalized,
+        "extraction_totals": report_dict.get("extraction_totals", {}),
+        "llm_inferred_relations": report_dict.get("llm_inferred_relations", 0),
+        "reasoning": report_dict.get("reasoning", {}),
+        "elapsed_seconds": report_dict.get("elapsed_seconds", 0.0),
+        "extraction_mode": report_dict.get("extraction_mode", ""),
+        "chunk_stats": report_dict.get("chunk_stats", []),
+        "ontology_name": ontology_name,
+    }
+
+
+def _streaming_sse_headers() -> dict[str, str]:
+    """SSE response headers for streaming endpoints."""
+    return {
+        "Cache-Control": "no-cache",
+        "Connection": "keep-alive",
+        "X-Accel-Buffering": "no",
+    }
+
+
 @router.post("/build_ontology_stream")
 async def build_ontology_stream(
     request: Request,
     file: UploadFile = File(..., description="Document (PDF, DOCX, TXT, MD)"),
     title: str | None = Form(None, description="Ontology title (default: filename stem)"),
     description: str | None = Form(None, description="Ontology description"),
+    model: str | None = Form(None, description="LLM model override (e.g. gpt-4.1o-mini)"),
+    workers: int | None = Form(None, description="Parallel workers for extraction"),
+    chunk_size: int | None = Form(None, description="Chunk size in chars"),
+    chunk_overlap: int | None = Form(None, description="Overlap between chunks"),
+    temperature: float | None = Form(None, description="LLM sampling temperature"),
     run_inference: bool = Query(True, description="Run LLM relation inference after extraction"),
     sequential: bool = Query(True, description="Use 3-stage sequential extraction (Bakker B)"),
     run_reasoning: bool = Query(True, description="Run OWL 2 RL reasoning after extraction"),
-    parallel: bool = Query(True, description="Process chunks in parallel (4 workers); if False, sequential"),
+    parallel: bool = Query(True, description="Process chunks in parallel; if False, sequential"),
 ):
     """Upload a document and run the pipeline, streaming progress via SSE.
 
@@ -279,6 +417,13 @@ async def build_ontology_stream(
 
         def run_pipeline() -> None:
             nonlocal result_holder, error_holder
+            old_env = _apply_env_overrides(
+                model=model,
+                workers=workers,
+                chunk_size=chunk_size,
+                chunk_overlap=chunk_overlap,
+                temperature=temperature,
+            )
             try:
                 graph, report = process_document(
                     str(temp_path),
@@ -297,7 +442,13 @@ async def build_ontology_stream(
                 name = (title or Path(file.filename).stem or f"ontology-{kb_id[:8]}").strip() or f"ontology-{kb_id[:8]}"
                 saved_path = _ONTOLOGY_GRAPHS / f"{kb_id}.json"
                 _ONTOLOGY_GRAPHS.mkdir(parents=True, exist_ok=True)
-                save_to_path_with_metadata(saved_path, name=name, kb_id=kb_id, description=description or "")
+                save_to_path_with_metadata(
+                    saved_path,
+                    name=name,
+                    kb_id=kb_id,
+                    description=description or "",
+                    documents=[file.filename] if file.filename else [],
+                )
                 set_current_kb_id(kb_id)
 
                 report_dict = report.to_dict()
@@ -305,18 +456,9 @@ async def build_ontology_stream(
                     "type": "complete",
                     "graph": graph.export(),
                     "kb_id": kb_id,
-                    "pipeline_report": {
-                        "document_path": report_dict.get("document_path", ""),
-                        "total_chunks": report_dict.get("total_chunks", 0),
-                        "totals": report_dict.get("totals", {}),
-                        "extraction_totals": report_dict.get("extraction_totals", {}),
-                        "llm_inferred_relations": report_dict.get("llm_inferred_relations", 0),
-                        "reasoning": report_dict.get("reasoning", {}),
-                        "elapsed_seconds": report_dict.get("elapsed_seconds", 0.0),
-                        "extraction_mode": report_dict.get("extraction_mode", ""),
-                        "chunk_stats": report_dict.get("chunk_stats", []),
-                        "ontology_name": name,
-                    },
+                    "pipeline_report": _build_report_dict(
+                        report_dict, name, document_display=file.filename
+                    ),
                 }
             except PipelineCancelledError:
                 logger.info("[BuildOntologyStream] Pipeline cancelled")
@@ -325,6 +467,7 @@ async def build_ontology_stream(
                 logger.exception("Pipeline failed")
                 error_holder = str(e)
             finally:
+                _restore_env(old_env)
                 _active_pipelines.pop(job_id, None)
                 if temp_path.exists():
                     try:
@@ -369,11 +512,7 @@ async def build_ontology_stream(
     return StreamingResponse(
         body(),
         media_type="text/event-stream",
-        headers={
-            "Cache-Control": "no-cache",
-            "Connection": "keep-alive",
-            "X-Accel-Buffering": "no",
-        },
+        headers=_streaming_sse_headers(),
     )
 
 
@@ -382,6 +521,11 @@ async def extend_kb_stream(
     kb_id: str,
     request: Request,
     file: UploadFile = File(..., description="Document (PDF, DOCX, TXT, MD)"),
+    model: str | None = Form(None, description="LLM model override (e.g. gpt-4.1o-mini)"),
+    workers: int | None = Form(None, description="Parallel workers for extraction"),
+    chunk_size: int | None = Form(None, description="Chunk size in chars"),
+    chunk_overlap: int | None = Form(None, description="Overlap between chunks"),
+    temperature: float | None = Form(None, description="LLM sampling temperature"),
     run_inference: bool = Query(True),
     sequential: bool = Query(True),
     run_reasoning: bool = Query(True),
@@ -451,6 +595,13 @@ async def extend_kb_stream(
 
         def run_extend() -> None:
             nonlocal result_holder, error_holder
+            old_env = _apply_env_overrides(
+                model=model,
+                workers=workers,
+                chunk_size=chunk_size,
+                chunk_overlap=chunk_overlap,
+                temperature=temperature,
+            )
             try:
                 existing_graph = load_from_path(kb_path)
 
@@ -470,7 +621,14 @@ async def extend_kb_stream(
                 build_qa_index(existing_graph, False)
 
                 saved_path = _ONTOLOGY_GRAPHS / f"{kb_id}.json"
-                save_to_path_with_metadata(saved_path, name=kb_name, kb_id=kb_id, description=kb_description)
+                save_to_path_with_metadata(
+                    saved_path,
+                    name=kb_name,
+                    kb_id=kb_id,
+                    description=kb_description,
+                    documents=[file.filename] if file.filename else [],
+                    merge_documents=True,
+                )
                 set_current_kb_id(kb_id)
 
                 report_dict = report.to_dict()
@@ -478,18 +636,12 @@ async def extend_kb_stream(
                     "type": "complete",
                     "graph": existing_graph.export(),
                     "kb_id": kb_id,
-                    "pipeline_report": {
-                        "document_path": report_dict.get("document_path", ""),
-                        "total_chunks": report_dict.get("total_chunks", 0),
-                        "totals": existing_graph.export().get("stats", {}),
-                        "extraction_totals": report_dict.get("extraction_totals", {}),
-                        "llm_inferred_relations": report_dict.get("llm_inferred_relations", 0),
-                        "reasoning": report_dict.get("reasoning", {}),
-                        "elapsed_seconds": report_dict.get("elapsed_seconds", 0.0),
-                        "extraction_mode": report_dict.get("extraction_mode", ""),
-                        "chunk_stats": report_dict.get("chunk_stats", []),
-                        "ontology_name": kb_name,
-                    },
+                    "pipeline_report": _build_report_dict(
+                        report_dict,
+                        kb_name,
+                        totals=existing_graph.export().get("stats", {}),
+                        document_display=file.filename,
+                    ),
                 }
             except PipelineCancelledError:
                 logger.info("[ExtendKBStream] Pipeline cancelled")
@@ -498,6 +650,7 @@ async def extend_kb_stream(
                 logger.exception("Extend pipeline failed")
                 error_holder = str(e)
             finally:
+                _restore_env(old_env)
                 _active_pipelines.pop(job_id, None)
                 if temp_path.exists():
                     try:
@@ -542,11 +695,7 @@ async def extend_kb_stream(
     return StreamingResponse(
         body(),
         media_type="text/event-stream",
-        headers={
-            "Cache-Control": "no-cache",
-            "Connection": "keep-alive",
-            "X-Accel-Buffering": "no",
-        },
+        headers=_streaming_sse_headers(),
     )
 
 
@@ -561,9 +710,9 @@ async def cancel_job(job_id: str):
     return {"status": "cancelled", "job_id": job_id}
 
 
-@router.get("/knowledge-bases", response_model=KnowledgeBasesResponse)
+@router.get("/knowledge-bases")
 async def list_kb():
-    """List persisted knowledge bases."""
+    """List persisted knowledge bases. Returns fresh data; no caching."""
     items = list_knowledge_bases()
     kb_items = [
         KnowledgeBaseItem(
@@ -572,12 +721,21 @@ async def list_kb():
             description=it.get("description", ""),
             created_at=it["created_at"],
             stats=it.get("stats", {}),
+            documents=it.get("documents", []),
         )
         for it in items
     ]
-    return KnowledgeBasesResponse(
+    resp = KnowledgeBasesResponse(
         items=kb_items,
         active_id=get_current_kb_id(),
+    )
+    return JSONResponse(
+        content=resp.model_dump(mode="json"),
+        headers={
+            "Cache-Control": "no-cache, no-store, must-revalidate",
+            "Pragma": "no-cache",
+            "Expires": "0",
+        },
     )
 
 
@@ -598,6 +756,25 @@ async def activate_kb(kb_id: str):
         raise HTTPException(500, f"Failed to load knowledge base: {e}") from e
 
 
+class KBUpdateRequest(BaseModel):
+    name: str | None = Field(None, description="New name for the knowledge base")
+    description: str | None = Field(None, description="New description")
+
+
+@router.patch("/knowledge-bases/{kb_id}")
+async def update_kb(kb_id: str, req: KBUpdateRequest):
+    """Update knowledge base metadata (name, description)."""
+    from ontology_builder.storage.graph_store import update_kb_metadata
+    try:
+        meta = update_kb_metadata(kb_id, name=req.name, description=req.description)
+        return {"status": "ok", "kb_id": kb_id, "name": meta.get("name"), "description": meta.get("description")}
+    except FileNotFoundError as e:
+        raise HTTPException(404, str(e)) from e
+    except Exception as e:
+        logger.exception("Failed to update KB %s", kb_id)
+        raise HTTPException(500, f"Failed to update: {e}") from e
+
+
 @router.delete("/knowledge-bases/{kb_id}")
 async def delete_kb(kb_id: str):
     """Delete a persisted knowledge base."""
@@ -611,11 +788,103 @@ async def delete_kb(kb_id: str):
             meta_path.unlink()
         if get_current_kb_id() == kb_id:
             clear_graph_store()
+            clear_qa_index()
             set_current_kb_id(None)
         return {"status": "ok", "deleted_id": kb_id}
     except OSError as e:
         logger.exception("Failed to delete knowledge base %s", kb_id)
         raise HTTPException(500, f"Failed to delete: {e}") from e
+
+
+_FORMAT_TO_MIME: dict[str, tuple[str, str]] = {
+    "turtle": ("text/turtle", ".ttl"),
+    "ttl": ("text/turtle", ".ttl"),
+    "json-ld": ("application/ld+json", ".jsonld"),
+    "jsonld": ("application/ld+json", ".jsonld"),
+    "xml": ("application/rdf+xml", ".owl"),
+    "rdf+xml": ("application/rdf+xml", ".owl"),
+    "owl": ("application/rdf+xml", ".owl"),
+    "nt": ("application/n-triples", ".nt"),
+}
+
+
+@router.get("/ontology/export")
+async def export_ontology(
+    format: str = Query("turtle", description="Export format: turtle, json-ld, xml"),
+    kb_id: str | None = Query(None, description="Knowledge base ID. Uses active KB if omitted."),
+):
+    """Export the ontology and entire knowledge base to a reusable standard format.
+
+    Supported formats (W3C standards):
+    - **turtle** (default): Human-readable, compact RDF. Best for sharing and version control.
+    - **json-ld**: JSON-based Linked Data. Best for integration with JSON systems.
+    - **xml**: RDF/XML. Classic format, widely supported by ontology tools.
+
+    The export includes classes, instances, relations, data properties, and axioms
+    in OWL 2 / RDF form, suitable for import into Protégé, GraphDB, or any RDF store.
+    """
+    graph = get_graph()
+    ontology_label: str | None = None
+    if kb_id:
+        path = _ONTOLOGY_GRAPHS / f"{kb_id}.json"
+        meta_path = _ONTOLOGY_GRAPHS / f"{kb_id}.meta.json"
+        if not path.exists():
+            raise HTTPException(404, f"Knowledge base '{kb_id}' not found.")
+        graph = await asyncio.to_thread(load_from_path, path)
+        if meta_path.exists():
+            try:
+                meta = json.loads(meta_path.read_text(encoding="utf-8"))
+                ontology_label = meta.get("name", kb_id)
+            except (json.JSONDecodeError, OSError):
+                ontology_label = kb_id
+        else:
+            ontology_label = kb_id
+    else:
+        if graph is None:
+            raise HTTPException(404, "No ontology. Build one or specify kb_id.")
+        active = get_current_kb_id()
+        if active:
+            meta_path = _ONTOLOGY_GRAPHS / f"{active}.meta.json"
+            if meta_path.exists():
+                try:
+                    meta = json.loads(meta_path.read_text(encoding="utf-8"))
+                    ontology_label = meta.get("name", active)
+                except (json.JSONDecodeError, OSError):
+                    ontology_label = active
+            else:
+                ontology_label = active
+
+    fmt = format.lower().strip()
+    if fmt not in _FORMAT_TO_MIME:
+        raise HTTPException(
+            400,
+            f"Unsupported format: {format}. Use: turtle, json-ld, xml",
+        )
+    mime, ext = _FORMAT_TO_MIME[fmt]
+
+    try:
+        content = await asyncio.to_thread(
+            export_ontology_to_rdf,
+            graph,
+            format=fmt,
+            ontology_label=ontology_label,
+        )
+    except ValueError as e:
+        raise HTTPException(400, str(e)) from e
+
+    if isinstance(content, bytes):
+        body = content
+    else:
+        body = content.encode("utf-8")
+
+    filename = (ontology_label or "ontology").replace(" ", "_") + ext
+    return Response(
+        content=body,
+        media_type=mime,
+        headers={
+            "Content-Disposition": f'attachment; filename="{filename}"',
+        },
+    )
 
 
 @router.post("/qa/ask", response_model=QASourceResponse)
@@ -624,10 +893,20 @@ async def qa_ask(
     retrieval_mode: str = Query("context", description="'context' (ontology-grounded), 'hyperedges', or 'snippets'"),
 ):
     """Answer a question using ontology-grounded RAG retrieval with attribution."""
-    logger.info("[QA] question=%r mode=%s", req.question[:80], retrieval_mode)
+    logger.info("[QA] question=%r mode=%s kb_id=%s", req.question[:80], retrieval_mode, req.kb_id)
+    kb_id = req.kb_id or get_current_kb_id()
+    if kb_id and kb_id != get_current_kb_id():
+        path = _ONTOLOGY_GRAPHS / f"{kb_id}.json"
+        if not path.exists():
+            raise HTTPException(404, f"Ontology '{kb_id}' not found.")
+        graph = await asyncio.to_thread(load_from_path, path)
+        set_graph(graph, document_subject=None)
+        set_current_kb_id(kb_id)
+        await asyncio.to_thread(build_qa_index, graph, False)
+        logger.info("[QA] Activated ontology %s for query", kb_id)
     graph = get_graph()
     if graph is None:
-        raise HTTPException(503, "No ontology graph. Build one first via POST /build_ontology.")
+        raise HTTPException(503, "No ontology graph. Select one from the sidebar or build one first.")
 
     if retrieval_mode == "hyperedges":
         context_snippets = await asyncio.to_thread(
@@ -672,6 +951,7 @@ async def qa_ask(
         source_labels=source_labels,
         ontological_context=qa_result.ontological_context,
         num_facts_used=qa_result.num_facts_used,
+        kb_id=get_current_kb_id(),
     )
 
 
@@ -726,10 +1006,17 @@ async def graph_image():
 
 
 @router.get("/graph/viewer", response_class=HTMLResponse)
-async def graph_viewer():
+async def graph_viewer(
+    kb_id: str | None = Query(None, description="Knowledge base ID. Uses active KB if omitted."),
+):
     """Interactive vis.js graph viewer (standalone HTML page)."""
     graph = get_graph()
+    if kb_id:
+        path = _ONTOLOGY_GRAPHS / f"{kb_id}.json"
+        if not path.exists():
+            raise HTTPException(404, f"Knowledge base '{kb_id}' not found.")
+        graph = await asyncio.to_thread(load_from_path, path)
     if graph is None:
-        raise HTTPException(404, "No ontology graph. Build one first.")
+        raise HTTPException(404, "No ontology graph. Select one from the sidebar or build one first.")
     html = generate_visjs_html(graph)
     return HTMLResponse(content=html)
