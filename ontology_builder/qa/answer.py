@@ -78,7 +78,7 @@ def answer_question(
         context = context[:MAX_CONTEXT_CHARS] + "\n[... truncated ...]"
 
     user = build_qa_user_prompt(context, question, ontological_context)
-    answer_text = call_llm(system=QA_SYSTEM, user=user, temperature=0.2)
+    answer_text = call_llm(system=QA_SYSTEM, user=user, temperature=0.2, max_tokens=1400)
     logger.info("[QA] Answer generated | length=%d chars | facts=%d", len(answer_text), len(context_snippets))
 
     # Strip any raw source IDs the LLM may have echoed (safety net)
