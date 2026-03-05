@@ -1,12 +1,17 @@
-# Theory-Grounded Ontology Graph MVP
+# Clearence
+
+**Theory-grounded ontology graph builder** — Build formal, academically-grounded ontologies from documents using LLM extraction, OWL 2 RL reasoning, and ontology-grounded RAG.
+
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 
 FastAPI application that builds **formal, theory-grounded ontologies** from documents using LLM extraction, OWL 2 RL reasoning, and ontology-grounded RAG. By default it uses your local **LM Studio** server (OpenAI-compatible API at `http://localhost:1234/v1`).
 
 ## Quick Start
 
 ```bash
-git clone https://gitlab.com/YOUR_ORG/ontology-graph.git
-cd ontology-graph
+git clone https://gitlab.com/YOUR_ORG/clearence.git
+cd clearence
 cp .env.example .env
 # Edit .env if using OpenAI cloud; leave defaults for LM Studio
 pip install -e .
@@ -251,6 +256,14 @@ make format     # Run ruff format
 make run        # Run with uvicorn --reload
 ```
 
+## Contributing
+
+We welcome contributions! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+
+## License
+
+Clearence is released under the [MIT License](LICENSE).
+
 ## Troubleshooting
 
 
@@ -262,5 +275,4 @@ make run        # Run with uvicorn --reload
 | Model not found       | Use the exact model name from LM Studio for `ONTOLOGY_LLM_MODEL` |
 | LLM timeout           | Increase `LLM_TIMEOUT_SECONDS`                                   |
 | Structured output error (`Invalid JSON Schema` / unsupported) | Use a model with structured-output support (typically >=7B); fallback will retry in text mode once |
-
 
