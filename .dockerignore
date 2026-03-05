@@ -55,7 +55,7 @@ docker-compose*
 docs/
 *.md
 
-# Continue / Cursor
+# IDE
 .continue/
 
 # OS

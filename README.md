@@ -2,6 +2,19 @@
 
 FastAPI application that builds **formal, theory-grounded ontologies** from documents using LLM extraction, OWL 2 RL reasoning, and ontology-grounded RAG. By default it uses your local **LM Studio** server (OpenAI-compatible API at `http://localhost:1234/v1`).
 
+## Quick Start
+
+```bash
+git clone https://gitlab.com/YOUR_ORG/ontology-graph.git
+cd ontology-graph
+cp .env.example .env
+# Edit .env if using OpenAI cloud; leave defaults for LM Studio
+pip install -e .
+uvicorn app.main:app --host 0.0.0.0 --port 8000
+```
+
+Or with Docker: `docker compose up -d`
+
 ## Theoretical Foundation
 
 This system integrates concepts from 7 academic papers:
@@ -58,15 +71,18 @@ flowchart TB
 
 ## Setup
 
+See [Quick Start](#quick-start) above for the minimal clone-and-run flow. Details:
+
 1. Install dependencies:
    ```bash
-   pip install -r requirements.txt
+   pip install -e .
+   # or: pip install -r requirements.txt
    ```
 2. **LM Studio (default)**
   - Start [LM Studio](https://lmstudio.ai/) and load a model.
   - Start the local server (port **1234**).
   - No API key needed; defaults to `OPENAI_BASE_URL=http://localhost:1234/v1`.
-3. **Optional:** use OpenAI cloud instead:
+3. **Optional:** create `.env` for overrides. For LM Studio, defaults work (empty key). For OpenAI cloud:
    ```bash
    cp .env.example .env
    # Edit .env with your OpenAI credentials

@@ -56,6 +56,7 @@ COPY --from=builder /opt/venv /opt/venv
 
 # Copy application code
 COPY app/ ./app/
+COPY core/ ./core/
 COPY ontology_builder/ ./ontology_builder/
 
 # Create writable directories for uploads and persisted graphs
