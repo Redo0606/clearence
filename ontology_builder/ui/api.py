@@ -88,10 +88,11 @@ class BuildOntologyResponse(BaseModel):
 
 
 class QASourceResponse(BaseModel):
-    """QA answer with fact-level attribution."""
+    """QA answer with fact-level attribution and explainable reasoning."""
 
-    answer: str = Field(..., description="Generated answer text")
-    sources: list[str] = Field(default_factory=list, description="Retrieved fact strings")
+    answer: str = Field(..., description="Generated natural language answer")
+    reasoning: str = Field("", description="In-depth interpretation of the facts")
+    sources: list[str] = Field(default_factory=list, description="Retrieved fact strings (raw facts)")
     source_refs: list[str] = Field(default_factory=list, description="Source reference IDs")
     source_labels: list[str] = Field(default_factory=list, description="Human-readable source labels")
     ontological_context: str = Field("", description="OntoRAG taxonomy context")
@@ -946,6 +947,7 @@ async def qa_ask(
     source_labels = [source_ref_to_label(r) for r in qa_result.sources]
     return QASourceResponse(
         answer=qa_result.answer,
+        reasoning=qa_result.reasoning,
         sources=context_snippets,
         source_refs=qa_result.sources,
         source_labels=source_labels,

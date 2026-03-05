@@ -5,6 +5,7 @@ Supports both simple (list[str]) and structured (RetrievalResult) context.
 
 from __future__ import annotations
 
+import json
 import re
 import logging
 from dataclasses import dataclass, field
@@ -21,9 +22,10 @@ _RAW_ID_PATTERN = re.compile(r"\s*\[(?:node|edge|dp):[^\]]+\]\s*", re.IGNORECASE
 
 @dataclass
 class QAResult:
-    """Structured QA answer with source attribution."""
+    """Structured QA answer with source attribution and reasoning."""
 
     answer: str = ""
+    reasoning: str = ""
     sources: list[str] = field(default_factory=list)
     ontological_context: str = ""
     num_facts_used: int = 0
@@ -79,16 +81,37 @@ def answer_question(
         context = context[:max_context_chars] + "\n[... truncated ...]"
 
     user = build_qa_user_prompt(context, question, ontological_context)
-    answer_text = complete(system=QA_SYSTEM, user=user, temperature=0.2, max_tokens=1400)
-    logger.info("[QA] Answer generated | length=%d chars | facts=%d", len(answer_text), len(context_snippets))
+    response_text = complete(
+        system=QA_SYSTEM,
+        user=user,
+        temperature=0.2,
+        max_tokens=2000,
+        response_format={"type": "json_object"},
+    )
+    logger.info("[QA] Response generated | length=%d chars | facts=%d", len(response_text), len(context_snippets))
+
+    # Parse JSON; fallback to plain text if parsing fails
+    reasoning = ""
+    answer_text = response_text
+    try:
+        parsed = json.loads(response_text)
+        reasoning = (parsed.get("reasoning") or "").strip()
+        answer_text = (parsed.get("answer") or answer_text).strip()
+    except (json.JSONDecodeError, TypeError) as e:
+        logger.warning("[QA] JSON parse failed, using raw response as answer: %s", e)
+        answer_text = response_text.strip()
 
     # Strip any raw source IDs the LLM may have echoed (safety net)
+    reasoning = _RAW_ID_PATTERN.sub(" ", reasoning)
+    reasoning = re.sub(r"[ \t]+", " ", reasoning).strip()
+    reasoning = re.sub(r"\n\s*\n\s*\n+", "\n\n", reasoning)
     answer_text = _RAW_ID_PATTERN.sub(" ", answer_text)
     answer_text = re.sub(r"[ \t]+", " ", answer_text).strip()
-    answer_text = re.sub(r"\n\s*\n\s*\n+", "\n\n", answer_text)  # at most one blank line
+    answer_text = re.sub(r"\n\s*\n\s*\n+", "\n\n", answer_text)
 
     return QAResult(
         answer=answer_text,
+        reasoning=reasoning,
         sources=source_refs[:len(context_snippets)],
         ontological_context=ontological_context,
         num_facts_used=len(context_snippets),
