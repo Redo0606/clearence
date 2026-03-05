@@ -1,4 +1,4 @@
-# ONTOLOGY_GRAPH - Docker build context exclusions
+# Clearence - Docker build context exclusions
 # Prevents venv, secrets, and dev artifacts from being copied into the image
 
 # Virtual environments (never copy local venv into image)

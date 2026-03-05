@@ -1,15 +1,15 @@
-# ONTOLOGY_GRAPH - Docker Compose
+# Clearence - Docker Compose
 # Run: docker compose up -d
 # LM Studio: Use host.docker.internal when LLM runs on host (Mac/Windows).
 # Linux: extra_hosts enables host.docker.internal.
 # Dev: volumes + --reload enable auto-reload without rebuilding.
 
 services:
-  ontology-api:
+  clearence-api:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: ontology-graph-api
+    container_name: clearence-api
     volumes:
       - .:/app
     ports:

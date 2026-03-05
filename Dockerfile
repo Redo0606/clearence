@@ -1,4 +1,4 @@
-# ONTOLOGY_GRAPH - Multi-stage Dockerfile
+# Clearence - Multi-stage Dockerfile
 # Stage 1: Build dependencies in isolated venv
 # Stage 2: Minimal runtime with non-root user
 
