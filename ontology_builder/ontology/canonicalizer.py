@@ -40,7 +40,7 @@ def canonicalize(entity_name: str) -> str:
         return name
 
     model = _get_model()
-    emb = model.encode(name, convert_to_numpy=True)
+    emb = model.encode(name, convert_to_numpy=True, show_progress_bar=False)
 
     with _lock:
         # Check cache: if similar entity exists, return it; else add and return input
@@ -68,6 +68,6 @@ def seed_from_entities(entity_names: list[str]) -> None:
             n = (name or "").strip()
             if not n or n in entity_vectors:
                 continue
-            emb = model.encode(n, convert_to_numpy=True)
+            emb = model.encode(n, convert_to_numpy=True, show_progress_bar=False)
             entity_vectors[n] = emb
         logger.debug("[Canonicalizer] Seeded %d entities | cache_size=%d", len(entity_names), len(entity_vectors))

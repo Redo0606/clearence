@@ -230,8 +230,8 @@ def build_index(graph: OntologyGraph, verbose: bool = True) -> None:
     ):
         batch_keys = keys[i : i + ENCODE_BATCH_SIZE]
         batch_values = values[i : i + ENCODE_BATCH_SIZE]
-        key_chunks.append(model.encode(batch_keys, convert_to_numpy=True))
-        value_chunks.append(model.encode(batch_values, convert_to_numpy=True))
+        key_chunks.append(model.encode(batch_keys, convert_to_numpy=True, show_progress_bar=False))
+        value_chunks.append(model.encode(batch_values, convert_to_numpy=True, show_progress_bar=False))
     key_emb = np.vstack(key_chunks) if key_chunks else np.array([])
     value_emb = np.vstack(value_chunks) if value_chunks else np.array([])
 
@@ -321,7 +321,7 @@ def retrieve(query: str, top_k: int = 10) -> list[str]:
         return []
 
     model = _get_model()
-    q_emb = model.encode(query, convert_to_numpy=True)
+    q_emb = model.encode(query, convert_to_numpy=True, show_progress_bar=False)
     key_scores = _cosine_scores(q_emb, key_emb)
     value_scores = _cosine_scores(q_emb, value_emb)
     top_by_key = set(np.argsort(key_scores)[::-1][:top_k])
@@ -352,7 +352,7 @@ def retrieve_with_context(query: str, top_k: int = 10) -> RetrievalResult:
         return RetrievalResult()
 
     model = _get_model()
-    q_emb = model.encode(query, convert_to_numpy=True)
+    q_emb = model.encode(query, convert_to_numpy=True, show_progress_bar=False)
     key_scores = _cosine_scores(q_emb, key_emb)
     value_scores = _cosine_scores(q_emb, value_emb)
     top_by_key = set(np.argsort(key_scores)[::-1][:top_k])
@@ -391,7 +391,7 @@ def retrieve_hyperedges(query: str, k_nodes: int = 10, max_hyperedges: int = 5) 
         return []
 
     model = _get_model()
-    q_emb = model.encode(query, convert_to_numpy=True)
+    q_emb = model.encode(query, convert_to_numpy=True, show_progress_bar=False)
     key_scores = _cosine_scores(q_emb, key_emb)
     value_scores = _cosine_scores(q_emb, value_emb)
     top_by_key = set(np.argsort(key_scores)[::-1][:k_nodes])
