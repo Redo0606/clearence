@@ -24,9 +24,17 @@ Identify all important domain concepts as classes, relationships between concept
 
 
 def extract_ontology_schema(text: str) -> OntologySchema:
-    """
-    Call the configured LLM (OpenAI or LM Studio) to extract an ontology schema from text.
-    Uses OPENAI_BASE_URL (default: LM Studio at http://localhost:1234/v1) and OPENAI_API_KEY.
+    """Extract ontology schema from text via configured LLM.
+
+    Args:
+        text: Document text (truncated to MAX_TEXT_CHARS if longer).
+
+    Returns:
+        Validated OntologySchema with classes and properties.
+
+    Raises:
+        ValueError: If OPENAI_API_KEY missing when not using local LLM.
+        RuntimeError: If LLM request fails or returns invalid JSON.
     """
     settings = get_settings()
     logger.info("[LLM] Extracting ontology schema | text_length=%d | model=%s | base_url=%s",

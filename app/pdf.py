@@ -15,9 +15,16 @@ class PDFExtractionError(Exception):
 
 
 def extract_text_from_pdf(content: bytes) -> str:
-    """
-    Extract text from PDF bytes.
-    Raises PDFExtractionError for encrypted, empty, or corrupt PDFs.
+    """Extract text from PDF bytes.
+
+    Args:
+        content: Raw PDF file bytes.
+
+    Returns:
+        Extracted text concatenated from all pages.
+
+    Raises:
+        PDFExtractionError: For encrypted, empty, or corrupt PDFs.
     """
     logger.debug("[PDF] Starting extraction | input_bytes=%d", len(content))
     if not content or len(content) == 0:

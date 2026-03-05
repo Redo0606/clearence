@@ -75,6 +75,23 @@ def test_complete_sends_explicit_response_format(monkeypatch):
     assert seen["response_format"] == schema
 
 
+def test_create_client_requires_api_key_for_openai_cloud(monkeypatch):
+    """When using api.openai.com, OPENAI_API_KEY must be set."""
+    import ontology_builder.llm.client as client_module
+
+    def mock_settings():
+        return type("S", (), {
+            "get_llm_api_key": lambda: "",
+            "openai_base_url": "https://api.openai.com/v1",
+        })()
+
+    monkeypatch.setattr(client_module, "get_settings", mock_settings)
+    monkeypatch.setattr(client_module, "_client", None)
+
+    with pytest.raises(ValueError, match="OPENAI_API_KEY is required"):
+        client_module._create_client()
+
+
 def test_complete_batch_returns_in_order(monkeypatch):
     """Verify complete_batch returns results in same order as items."""
     def fake_complete(system, user, temperature=0.1):

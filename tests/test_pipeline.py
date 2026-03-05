@@ -116,3 +116,50 @@ def test_process_document_verbose_false(monkeypatch, tmp_path):
     assert graph.get_graph().number_of_nodes() >= 2
     assert graph.get_graph().number_of_edges() >= 1
     assert report.total_chunks >= 1
+
+
+def test_process_document_parallel_sequential_mode(monkeypatch, tmp_path):
+    """Test process_document with parallel_extraction=True and sequential mode (Bakker B)."""
+    doc = tmp_path / "doc.txt"
+    doc.write_text(
+        "Neural networks have layers. Each layer contains neurons. "
+        "Deep learning uses multiple layers. Convolutional networks process images.",
+        encoding="utf-8",
+    )
+
+    call_count = 0
+
+    def fake_call(system, user, temperature=0.1, response_format=None, force_text_mode=None):
+        nonlocal call_count
+        call_count += 1
+        if "classes" in (system + user).lower() or call_count % 3 == 1:
+            return json.dumps({"classes": [{"name": "Layer", "parent": None, "description": "d"}, {"name": "Neuron", "parent": None, "description": "d"}]})
+        if "instances" in (system + user).lower() or call_count % 3 == 2:
+            return json.dumps({"instances": [{"name": "InputLayer", "class_name": "Layer", "description": "d"}]})
+        return json.dumps({
+            "object_properties": [{"source": "Layer", "relation": "contains", "target": "Neuron", "confidence": 0.9, "symmetric": False, "transitive": False}],
+            "data_properties": [],
+            "axioms": [],
+        })
+
+    from ontology_builder.pipeline import extractor
+    from ontology_builder.pipeline import taxonomy_builder
+    monkeypatch.setattr(extractor, "call_llm", fake_call)
+    monkeypatch.setattr(
+        taxonomy_builder,
+        "call_llm",
+        lambda *a, **kw: json.dumps({"taxonomy": [{"name": "Layer", "parent": None}, {"name": "Neuron", "parent": "Layer"}]}),
+    )
+
+    from ontology_builder.pipeline.run_pipeline import process_document
+    graph, report = process_document(
+        str(doc),
+        run_inference=False,
+        verbose=False,
+        sequential=True,
+        run_reasoning=False,
+        parallel_extraction=True,
+    )
+    assert graph.get_graph().number_of_nodes() >= 2
+    assert report.total_chunks >= 1
+    assert report.extraction_mode == "parallel"

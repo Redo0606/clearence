@@ -1,6 +1,5 @@
 """FastAPI app entry point. Mounts PDF-to-OWL and living-ontology routers."""
 
-import asyncio
 import logging
 
 from fastapi import FastAPI
@@ -11,14 +10,8 @@ from fastapi.responses import HTMLResponse
 from app.config import get_settings
 from app.logging_config import configure_table_logging
 from app.routers import ontology
-from ontology_builder.qa.graph_index import build_index as build_qa_index
-from ontology_builder.storage.graph_store import (
-    get_ontology_graphs_dir,
-    list_knowledge_bases,
-    load_from_path,
-    set_current_kb_id,
-    set_graph,
-)
+from ontology_builder.qa.graph_index import clear_index as clear_qa_index
+from ontology_builder.storage.graph_store import clear as clear_graph_store, set_current_kb_id
 from ontology_builder.ui.api import router as graph_router
 from ontology_builder.ui.chat_ui import generate_chat_ui_html
 
@@ -26,7 +19,10 @@ logger = logging.getLogger(__name__)
 
 
 def _configure_logging() -> None:
-    """Configure application-wide logging with table format. INFO by default."""
+    """Configure application-wide logging with table format.
+
+    Sets level from LOG_LEVEL, suppresses noisy loggers (httpx, openai, etc.).
+    """
     settings = get_settings()
     level = getattr(logging, settings.log_level.upper(), logging.INFO)
     configure_table_logging(level=level)
@@ -64,29 +60,20 @@ app.include_router(graph_router, prefix="/api/v1")
 
 @app.on_event("startup")
 async def startup_event():
-    """Log application startup."""
+    """Log application startup. Start from clean state; no KB preloaded."""
     _configure_logging()
     settings = get_settings()
     logger.info("Ontology API starting | log_level=%s | LLM=%s | model=%s",
                 settings.log_level, settings.openai_base_url, settings.ontology_llm_model)
-    try:
-        kb_items = list_knowledge_bases()
-        if not kb_items:
-            return
-        latest = kb_items[0]
-        kb_id = latest.get("id")
-        if not kb_id:
-            return
-        kb_path = get_ontology_graphs_dir() / f"{kb_id}.json"
-        if not kb_path.exists():
-            return
-        graph = await asyncio.to_thread(load_from_path, kb_path)
-        set_graph(graph, document_subject=None)
-        set_current_kb_id(kb_id)
-        await asyncio.to_thread(build_qa_index, graph, False)
-        logger.info("Restored KB on startup | kb_id=%s", kb_id)
-    except Exception as e:
-        logger.warning("Failed to restore latest KB on startup: %s", e)
+
+
+@app.on_event("shutdown")
+async def shutdown_event():
+    """Clear in-memory KB state and indexes on shutdown."""
+    clear_graph_store()
+    set_current_kb_id(None)
+    clear_qa_index()
+    logger.info("Ontology API shutdown | KB cleared")
 
 
 @app.get("/")
@@ -114,8 +101,8 @@ async def health():
     return {"status": "ok"}
 
 
-def run():
-    """Start uvicorn server on 0.0.0.0:8000."""
+def run() -> None:
+    """Start uvicorn server on 0.0.0.0:8000 (entry point for ontology-app CLI)."""
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
 

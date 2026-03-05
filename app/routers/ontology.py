@@ -20,9 +20,10 @@ async def ontology_from_pdf(
     output_format: str = Query("owl", description="Output format: owl, turtle, json-ld"),
     response_type: str = Query("file", description="Response: file (download) or json"),
 ):
-    """
-    Upload a PDF, extract text, use the configured LLM (default: LM Studio at localhost:1234)
-    to extract an ontology schema, and return the ontology in the requested format.
+    """Upload PDF, extract ontology schema via LLM, return OWL/Turtle/JSON-LD.
+
+    Pipeline: PDF text extraction → LLM schema extraction → rdflib graph → serialize.
+    Uses LM Studio (localhost:1234) or OpenAI per OPENAI_BASE_URL.
     """
     settings = get_settings()
     if output_format not in ("owl", "turtle", "json-ld"):
