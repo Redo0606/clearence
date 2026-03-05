@@ -20,6 +20,7 @@ def generate_chat_ui_html() -> str:
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
   <style>
     * {{ margin: 0; padding: 0; box-sizing: border-box; }}
+    .sr-only {{ position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }}
     body {{ font-family: 'Space Grotesk', system-ui, -apple-system, sans-serif; background: #0a0a0f; color: #e8e6e3; min-height: 100vh; }}
     .font-mono {{ font-family: 'JetBrains Mono', monospace; }}
 
@@ -123,6 +124,10 @@ def generate_chat_ui_html() -> str:
     .job-card.error .stage-dot {{ background: #ef4444; animation: none; }}
     .job-card.cancelled .stage-dot {{ background: #6b6b76; animation: none; }}
     .job-card.job-clickable {{ cursor: pointer; }}
+    .job-card.job-create {{ border-left: 3px solid #14b8a6; }}
+    .job-card.job-create .job-type-badge {{ background: rgba(20, 184, 166, 0.2); color: #14b8a6; }}
+    .job-card.job-extend {{ border-left: 3px solid #f59e0b; }}
+    .job-card.job-extend .job-type-badge {{ background: rgba(245, 158, 11, 0.2); color: #f59e0b; }}
     .onto-card {{ cursor: pointer; transition: all 0.2s ease; }}
     .onto-card .onto-card-expandable {{ overflow: hidden; max-height: 500px; transition: max-height 0.25s ease, opacity 0.2s ease; }}
     .onto-card.collapsed .onto-card-expandable {{ max-height: 0; opacity: 0; margin-top: 0 !important; padding-top: 0 !important; }}
@@ -185,11 +190,31 @@ def generate_chat_ui_html() -> str:
     .chat-tab.active {{ background: rgba(236,72,153,0.15); color: #ec4899; }}
     .chat-tab-add {{ padding: 0.5rem 0.75rem; color: #8a8a94; }}
     .chat-tab-add:hover {{ color: #ec4899; background: rgba(236,72,153,0.08); }}
+    .chat-tab-delete {{ opacity: 0; padding: 0.25rem; margin-left: 0.25rem; border-radius: 4px; transition: opacity 0.15s, color 0.15s; cursor: pointer; }}
+    .chat-tab-wrap:hover .chat-tab-delete {{ opacity: 1; }}
+    .chat-tab-wrap .chat-tab.active ~ .chat-tab-delete {{ opacity: 0.7; }}
+    .chat-tab-delete:hover {{ color: #ef4444 !important; background: rgba(239,68,68,0.15); }}
+
+    /* KB management list */
+    .kb-mgmt-row {{ transition: all 0.2s; }}
+    .kb-mgmt-row:hover {{ background: rgba(236,72,153,0.04); }}
+    .kb-mgmt-row.active {{ border-left: 3px solid #ec4899; }}
+    .kb-mgmt-delete {{ opacity: 0.7; transition: opacity 0.15s; }}
+    .kb-mgmt-delete:hover {{ opacity: 1; color: #ef4444 !important; }}
+
+    /* New chat modal */
+    .new-chat-modal {{ max-height: 70vh; overflow-y: auto; }}
+    .new-chat-modal button:hover {{ border-color: rgba(236,72,153,0.3); background: rgba(236,72,153,0.06); }}
+
+    /* Chat tab wrap */
+    .chat-tab-wrap {{ border-radius: 0.5rem; }}
+    .chat-tab-wrap .chat-tab {{ border-radius: 0.5rem 0 0 0.5rem; padding-right: 0.25rem; }}
+    .chat-tab-wrap .chat-tab-delete {{ border-radius: 0 0.5rem 0.5rem 0; padding: 0.5rem 0.5rem; }}
   </style>
 </head>
-<body class="flex">
+<body class="flex h-screen overflow-hidden">
   <!-- Sidebar -->
-  <aside id="sidebar" class="sidebar w-80 flex flex-col shrink-0 overflow-y-auto" style="background: #14141a; border-right: 1px solid #1a1a24;">
+  <aside id="sidebar" class="sidebar w-80 flex flex-col shrink-0 min-h-0 overflow-y-auto" style="background: #14141a; border-right: 1px solid #1a1a24;">
 
     <!-- Brand -->
     <div class="px-5 py-4 flex items-center gap-3 shrink-0" style="border-bottom: 1px solid #1a1a24;">
@@ -214,28 +239,39 @@ def generate_chat_ui_html() -> str:
       </button>
     </div>
 
-    <!-- Knowledge tab content -->
-    <div id="tab-knowledge-content" class="flex flex-col flex-1 min-h-0">
+    <!-- Knowledge tab content: single scrollable area so everything fits the tab -->
+    <div id="tab-knowledge-content" class="flex flex-col flex-1 min-h-0 overflow-y-auto">
       <div class="px-5 py-4 shrink-0" style="border-bottom: 1px solid #1a1a24;">
         <div class="flex items-center justify-between mb-3">
           <p class="text-xs font-semibold uppercase tracking-widest" style="color: #8a8a94;">Knowledge Bases</p>
           <span id="status-badge" class="status-badge px-2 py-0.5 rounded-full text-xs font-medium empty" style="background: #1a1a24; color: #8a8a94;">Empty</span>
         </div>
-        <button type="button" id="kb-create-btn" class="w-full rounded-lg px-3 py-2.5 text-sm font-medium border transition-all flex items-center justify-center gap-2"
+        <label for="file-input-create" id="kb-create-btn" class="w-full rounded-lg px-3 py-2.5 text-sm font-medium border transition-all flex items-center justify-center gap-2 cursor-pointer"
           style="background: rgba(236,72,153,0.08); color: #ec4899; border-color: rgba(236,72,153,0.3);">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/></svg>
           Create new KB
-        </button>
-        <input type="file" id="file-input-create" class="hidden" accept=".pdf,.docx,.txt,.md">
-        <div id="kb-list" class="mt-3 flex flex-col gap-2"></div>
+        </label>
+        <input type="file" id="file-input-create" class="sr-only" accept=".pdf,.docx,.txt,.md" tabindex="-1">
+      </div>
+      <!-- KB management list: compact cards, all KBs -->
+      <div class="px-3 py-3 shrink-0">
+        <div class="flex items-center justify-between mb-2">
+          <p class="text-xs font-medium" style="color: #8a8a94;">All knowledge bases <span id="kb-count" class="font-mono" style="color: #6b6b76;"></span></p>
+          <button type="button" id="kb-refresh-btn" class="text-xs font-medium link-teal hover:opacity-80" title="Refresh list">↻</button>
+        </div>
+        <div id="kb-list" class="flex flex-col gap-1.5"></div>
+        <div id="kb-list-empty" class="hidden py-6 text-center">
+          <p class="text-sm" style="color: #6b6b76;">No knowledge bases yet</p>
+          <p class="text-xs mt-1" style="color: #555;">Create one with the button above</p>
+        </div>
       </div>
 
-    <!-- Ontology Info Card (hidden until KB selected) -->
-    <div id="onto-info-panel" class="hidden px-5 py-4 shrink-0 relative mt-2" style="border-bottom: 1px solid #1a1a24;">
+    <!-- Ontology Info Card (hidden until KB selected, compact) -->
+    <div id="onto-info-panel" class="hidden px-5 py-3 shrink-0 relative" style="border-top: 1px solid #1a1a24;">
       <div id="onto-card-loading" class="hidden absolute inset-0 flex items-center justify-center z-10 rounded-xl" style="background: rgba(20, 20, 26, 0.9);">
         <div class="kb-load-spinner"></div>
       </div>
-      <div id="onto-card" class="onto-card onto-card-glow rounded-xl p-4" style="background: #1e1e28; border: 1px solid rgba(236,72,153,0.18);">
+      <div id="onto-card" class="onto-card onto-card-glow rounded-xl p-3 collapsed" style="background: #1e1e28; border: 1px solid rgba(236,72,153,0.18);">
         <!-- Header row (clickable: expand + open modal) -->
         <div id="onto-card-header" class="flex items-start gap-3">
           <div class="w-9 h-9 rounded-lg flex items-center justify-center shrink-0 mt-0.5" style="background: rgba(236, 72, 153, 0.15);">
@@ -303,24 +339,24 @@ def generate_chat_ui_html() -> str:
 
     <!-- Document Management tab content -->
     <div id="tab-documents-content" class="hidden flex flex-col flex-1 min-h-0 overflow-hidden">
-    <div class="px-5 py-4 shrink-0 flex-1 overflow-y-auto">
+    <div class="px-5 py-4 flex-1 min-h-0 overflow-y-auto">
       <p class="text-xs font-semibold uppercase tracking-widest mb-3" style="color: #8a8a94;">Add Documents</p>
       <p class="text-xs mb-3" style="color: #8a8a94;">Add documents to the active KB. Select a KB in the Knowledge tab first.</p>
-      <div id="drop-zone" class="drop-zone border-2 border-dashed rounded-xl p-5 text-center cursor-pointer transition-all"
+      <label for="file-input" id="drop-zone" class="drop-zone border-2 border-dashed rounded-xl p-5 text-center cursor-pointer transition-all block"
         style="border-color: #2a2a3a; color: #8a8a94; background: rgba(30, 30, 40, 0.4);">
         <div class="drop-icon mx-auto mb-2 w-10 h-10 rounded-full flex items-center justify-center" style="background: rgba(236, 72, 153, 0.1);">
           <svg class="w-5 h-5" style="color: #ec4899;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
         </div>
         <p class="text-sm font-medium" style="color: #e8e6e3;">Drop your document here</p>
-        <p class="mt-0.5 text-xs">or <span class="link-teal font-medium cursor-pointer">browse files</span></p>
+        <p class="mt-0.5 text-xs">or <span class="link-teal font-medium">browse files</span></p>
         <div class="flex justify-center gap-1.5 mt-2.5">
           <span class="file-badge">PDF</span>
           <span class="file-badge">DOCX</span>
           <span class="file-badge">TXT</span>
           <span class="file-badge">MD</span>
         </div>
-        <input type="file" id="file-input" class="hidden" accept=".pdf,.docx,.txt,.md">
-      </div>
+        <input type="file" id="file-input" class="sr-only" accept=".pdf,.docx,.txt,.md" tabindex="-1">
+      </label>
       <div id="job-queue-section" class="job-queue-section mt-3">
         <button type="button" id="job-queue-toggle" class="job-queue-toggle w-full flex items-center justify-between py-2 text-xs font-medium" style="color: #8a8a94;">
           <span>Documents &amp; jobs</span>
@@ -332,9 +368,6 @@ def generate_chat_ui_html() -> str:
       </div>
     </div>
     </div>
-
-    <!-- Spacer -->
-    <div class="flex-1"></div>
 
     <!-- Footer links -->
     <div class="px-5 py-3 flex items-center gap-4 shrink-0" style="border-top: 1px solid #1a1a24;">
@@ -436,6 +469,26 @@ def generate_chat_ui_html() -> str:
     </div>
   </div>
 
+  <!-- New chat KB selection modal -->
+  <div id="new-chat-modal" class="fixed inset-0 z-50 hidden" aria-hidden="true">
+    <div class="modal-backdrop absolute inset-0 bg-black/60 backdrop-blur-sm" onclick="document.getElementById('new-chat-modal').classList.add('hidden')"></div>
+    <div class="modal-content modal-enter new-chat-modal absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md rounded-xl p-6 shadow-2xl" style="background: #1e1e28; border: 1px solid #2a2a3a;" onclick="event.stopPropagation()">
+      <div class="flex items-center gap-3 mb-4">
+        <div class="w-10 h-10 rounded-lg flex items-center justify-center shrink-0" style="background: rgba(236, 72, 153, 0.15);">
+          <svg class="w-5 h-5" style="color: #ec4899;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
+        </div>
+        <div>
+          <h3 class="font-semibold text-lg" style="color: #e8e6e3;">New Chat</h3>
+          <p class="text-xs mt-0.5" style="color: #8a8a94;">Choose a knowledge base to chat with</p>
+        </div>
+      </div>
+      <div id="new-chat-kb-list" class="space-y-2 max-h-64 overflow-y-auto mb-4"></div>
+      <div class="flex gap-3 justify-end">
+        <button type="button" id="new-chat-modal-cancel" class="px-4 py-2.5 rounded-lg text-sm transition-all" style="background: #14141a; color: #8a8a94; border: 1px solid #2a2a3a;">Cancel</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Delete confirmation modal -->
   <div id="delete-modal" class="fixed inset-0 z-50 hidden" aria-hidden="true">
     <div class="modal-backdrop absolute inset-0 bg-black/60 backdrop-blur-sm" onclick="document.getElementById('delete-modal').classList.add('hidden')"></div>
@@ -458,7 +511,7 @@ def generate_chat_ui_html() -> str:
   </div>
 
   <!-- Main chat area -->
-  <main class="flex-1 flex flex-col min-h-screen overflow-hidden">
+  <main class="flex-1 flex flex-col min-h-0 overflow-hidden">
     <!-- Header -->
     <header class="shrink-0 px-6 py-3.5 flex items-center justify-between" style="background: #14141a; border-bottom: 1px solid #1a1a24;">
       <div class="flex items-center gap-3">
@@ -540,6 +593,10 @@ def generate_chat_ui_html() -> str:
             </div>
           </div>
           <div id="chat-onto-stats" class="grid grid-cols-3 gap-2"></div>
+          <div id="chat-onto-docs" class="hidden mt-4 pt-4" style="border-top: 1px solid #1a1a24;">
+            <p class="text-xs font-semibold uppercase tracking-wider mb-2" style="color: #8a8a94;">Documents</p>
+            <div id="chat-onto-docs-list" class="flex flex-wrap gap-2"></div>
+          </div>
           <p class="text-sm mt-5 text-center" style="color: #8a8a94;">Ask a question about this ontology to get started</p>
         </div>
 
@@ -731,14 +788,60 @@ def generate_chat_ui_html() -> str:
       if (!container) return;
       container.innerHTML = '';
       _chats.forEach(c => {{
+        const wrap = document.createElement('div');
+        wrap.className = 'chat-tab-wrap flex items-center shrink-0';
         const btn = document.createElement('button');
         btn.type = 'button';
-        btn.className = 'chat-tab shrink-0' + (c.id === _activeChatId ? ' active' : '');
-        btn.textContent = (c.kbName || 'Chat').substring(0, 20) + (c.messages.length ? ' (' + c.messages.length + ')' : '');
+        btn.className = 'chat-tab shrink-0 flex items-center' + (c.id === _activeChatId ? ' active' : '');
+        btn.innerHTML = '<span class="truncate max-w-[100px]">' + esc((c.kbName || 'Chat').substring(0, 20)) + (c.messages.length ? ' (' + c.messages.length + ')' : '') + '</span>';
         btn.title = c.kbName + (c.messages.length ? ' · ' + c.messages.length + ' messages' : '');
         btn.addEventListener('click', () => switchToChat(c.id));
-        container.appendChild(btn);
+        const delBtn = document.createElement('button');
+        delBtn.type = 'button';
+        delBtn.className = 'chat-tab-delete shrink-0';
+        delBtn.style.color = '#8a8a94';
+        delBtn.title = 'Delete chat';
+        delBtn.innerHTML = '<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>';
+        delBtn.addEventListener('click', (e) => {{ e.stopPropagation(); deleteChat(c.id); }});
+        wrap.appendChild(btn);
+        wrap.appendChild(delBtn);
+        container.appendChild(wrap);
       }});
+    }}
+
+    function deleteChat(chatId) {{
+      const idx = _chats.findIndex(c => c.id === chatId);
+      if (idx < 0) return;
+      _chats.splice(idx, 1);
+      if (_activeChatId === chatId) {{
+        _activeChatId = _chats.length ? _chats[0].id : null;
+        if (_chats.length) {{
+          switchToChat(_chats[0].id);
+        }} else {{
+          renderChatTabs();
+          messagesEl.querySelectorAll('[data-chat-message]').forEach(el => el.remove());
+          const hasKb = !!getActiveKbId();
+          updateEmptyStatesForChat(hasKb ? {{ kbId: getActiveKbId(), messages: [] }} : {{ kbId: null, messages: [] }});
+          setInputsEnabled(hasKb);
+          setStickySummaryVisible(hasKb);
+          if (hasKb) {{
+            currentOntologyPill?.classList.remove('hidden');
+            currentOntologyPill?.classList.add('flex');
+            const kb = _kbData.find(k => k.id === getActiveKbId());
+            if (kb) {{
+              currentOntologyName.textContent = kb.name || kb.id;
+              const stats = kb.stats || {{}};
+              const relCount = stats.relations ?? stats.edges ?? 0;
+              currentOntologyStats.textContent = [stats.classes, relCount].filter(Boolean).map(v => fmtNum(v)).join(' · ') || '';
+            }}
+          }} else {{
+            currentOntologyPill?.classList.add('hidden');
+            currentOntologyPill?.classList.remove('flex');
+          }}
+        }}
+      }} else {{
+        renderChatTabs();
+      }}
     }}
 
     function updateEmptyStatesForChat(chat) {{
@@ -767,6 +870,23 @@ def generate_chat_ui_html() -> str:
             chip.innerHTML = '<p class="stat-value text-base font-semibold">' + fmtNum(v ?? 0) + '</p><p class="text-xs mt-0.5 stat-label">' + l + '</p>';
             grid.appendChild(chip);
           }});
+          const chatDocsEl = document.getElementById('chat-onto-docs');
+          const chatDocsList = document.getElementById('chat-onto-docs-list');
+          const docs = kb.documents || [];
+          if (docs.length) {{
+            chatDocsEl.classList.remove('hidden');
+            chatDocsList.innerHTML = '';
+            docs.forEach(d => {{
+              const pill = document.createElement('span');
+              pill.className = 'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium';
+              pill.style.cssText = 'background: rgba(236,72,153,0.08); color: #e8e6e3; border: 1px solid rgba(236,72,153,0.2);';
+              pill.innerHTML = '<svg class="w-3.5 h-3.5 shrink-0" style="color:#ec4899;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>'
+                + '<span class="truncate max-w-[180px]">' + esc(d) + '</span>';
+              chatDocsList.appendChild(pill);
+            }});
+          }} else {{
+            chatDocsEl.classList.add('hidden');
+          }}
         }}
       }}
     }}
@@ -816,7 +936,16 @@ def generate_chat_ui_html() -> str:
       // Sidebar card
       document.getElementById('onto-card-name').textContent = name;
       const readyEl = document.getElementById('onto-card-ready');
-      if (readyEl) {{ readyEl.classList.remove('hidden'); readyEl.classList.add('flex'); }}
+      if (readyEl) {{
+        readyEl.classList.remove('hidden');
+        readyEl.classList.add('flex');
+        const building = getKbStatus(kb.id) === 'building';
+        readyEl.innerHTML = building
+          ? '<span class="kb-building-dot"></span>Building'
+          : '<span class="kb-ready-dot"></span>Ready';
+        readyEl.style.color = building ? '#f59e0b' : '#22c55e';
+        readyEl.style.background = building ? 'rgba(245,158,11,0.15)' : 'rgba(34,197,94,0.15)';
+      }}
       const summaryParts = [];
       if (stats.classes) summaryParts.push(fmtNum(stats.classes) + ' cls');
       if (stats.instances) summaryParts.push(fmtNum(stats.instances) + ' inst');
@@ -902,6 +1031,25 @@ def generate_chat_ui_html() -> str:
         chatStatsGrid.appendChild(chip);
       }});
 
+      // Documents list
+      const chatDocsEl = document.getElementById('chat-onto-docs');
+      const chatDocsList = document.getElementById('chat-onto-docs-list');
+      const docs = kb.documents || [];
+      if (docs.length) {{
+        chatDocsEl.classList.remove('hidden');
+        chatDocsList.innerHTML = '';
+        docs.forEach(d => {{
+          const pill = document.createElement('span');
+          pill.className = 'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium';
+          pill.style.cssText = 'background: rgba(236,72,153,0.08); color: #e8e6e3; border: 1px solid rgba(236,72,153,0.2);';
+          pill.innerHTML = '<svg class="w-3.5 h-3.5 shrink-0" style="color:#ec4899;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>'
+            + '<span class="truncate max-w-[180px]">' + esc(d) + '</span>';
+          chatDocsList.appendChild(pill);
+        }});
+      }} else {{
+        chatDocsEl.classList.add('hidden');
+      }}
+
       // Sticky chat summary
       document.getElementById('chat-onto-sticky-name').textContent = name;
       const stickyDescEl = document.getElementById('chat-onto-sticky-desc');
@@ -947,14 +1095,24 @@ def generate_chat_ui_html() -> str:
     }}
 
     async function fetchKBs() {{
-      const res = await fetch(API + '/knowledge-bases', {{ cache: 'no-store' }});
-      if (!res.ok) return {{ items: [], active_id: null }};
-      return res.json();
+      try {{
+        const res = await fetch(API + '/knowledge-bases', {{ cache: 'no-store' }});
+        if (!res.ok) return {{ items: [], active_id: null }};
+        const data = await res.json();
+        return data && typeof data === 'object' ? data : {{ items: [], active_id: null }};
+      }} catch (e) {{
+        console.error('[fetchKBs]', e);
+        return {{ items: [], active_id: null }};
+      }}
     }}
 
     function renderKbList(items, activeId) {{
+      if (!kbList) return;
+      const countEl = document.getElementById('kb-count');
+      if (countEl) countEl.textContent = '(' + items.length + ')';
+      const emptyEl = document.getElementById('kb-list-empty');
+      if (emptyEl) emptyEl.classList.toggle('hidden', items.length > 0);
       kbList.innerHTML = '';
-      kbList.classList.toggle('kb-list-scrollable', items.length > 10);
       for (const kb of items) {{
         const stats = kb.stats || {{}};
         const relCount = stats.relations ?? stats.edges ?? 0;
@@ -965,8 +1123,13 @@ def generate_chat_ui_html() -> str:
         const summary = parts.length ? parts.join(' · ') : '—';
         const isActive = kb.id === activeId;
         const status = getKbStatus(kb.id);
+        const docs = kb.documents || [];
+        const docSummary = docs.length
+          ? (docs.length === 1 ? docs[0] : docs.length + ' docs: ' + docs.slice(0, 3).map(d => esc(d)).join(', ') + (docs.length > 3 ? '…' : ''))
+          : '—';
+        const createdStr = kb.created_at ? formatDate(kb.created_at) : '';
         const card = document.createElement('div');
-        card.className = 'kb-list-card rounded-lg px-3 py-2.5 border flex flex-col gap-2' + (isActive ? ' active' : '');
+        card.className = 'kb-mgmt-row kb-list-card rounded-lg px-3 py-2.5 border flex flex-col gap-2' + (isActive ? ' active' : '');
         card.style.background = isActive ? 'rgba(236,72,153,0.08)' : 'rgba(20, 20, 26, 0.9)';
         card.style.borderColor = isActive ? 'rgba(236,72,153,0.5)' : '#2a2a3a';
         card.dataset.kbId = kb.id;
@@ -974,16 +1137,23 @@ def generate_chat_ui_html() -> str:
         const statusBadge = status === 'building'
           ? '<span class="flex items-center gap-1 text-xs font-medium shrink-0" style="color:#f59e0b;"><span class="kb-building-dot"></span>Building</span>'
           : '<span class="kb-ready-badge flex items-center gap-1 text-xs font-medium shrink-0" style="color:#22c55e;"><span class="kb-ready-dot"></span>Ready</span>';
-        card.innerHTML = '<div class="flex items-center gap-2.5 min-w-0">'
+        const activeLabel = isActive ? '<span class="text-xs font-medium shrink-0 px-1.5 py-0.5 rounded" style="background:rgba(236,72,153,0.2);color:#ec4899;">Active</span>' : '';
+        const subtextParts = [summary];
+        if (docSummary !== '—') subtextParts.push(docSummary);
+        if (createdStr) subtextParts.push(createdStr);
+        const subtext = subtextParts.join(' · ');
+        card.innerHTML = '<div class="flex items-center gap-2 min-w-0 flex-wrap">'
           + '<div class="flex-1 min-w-0">'
           + '<p class="text-sm font-medium truncate" style="color:#e8e6e3;">' + esc(kb.name || kb.id) + '</p>'
-          + '<p class="text-xs truncate mt-0.5" style="color:#8a8a94;">' + esc(summary) + '</p></div>'
+          + '<p class="text-xs truncate mt-0.5" style="color:#8a8a94;">' + esc(subtext) + '</p></div>'
           + statusBadge
-          + '<a href="' + viewerUrl + '" target="_blank" rel="noopener noreferrer" class="text-xs font-medium shrink-0 link-teal opacity-70 hover:opacity-100" onclick="event.stopPropagation()">Open</a>'
-          + '</div>'
-          + '<div class="flex items-center gap-2" onclick="event.stopPropagation()">'
-          + '<button type="button" class="kb-new-chat-btn text-xs font-medium px-2 py-1 rounded transition-colors shrink-0" style="color:#8a8a94; background:#1a1a24;">+ New chat</button>'
-          + '</div>';
+          + activeLabel
+          + '<div class="flex items-center gap-1 shrink-0" onclick="event.stopPropagation()">'
+          + '<button type="button" class="kb-new-chat-btn text-xs font-medium px-2 py-1 rounded transition-colors" style="color:#8a8a94; background:#1a1a24;">+ Chat</button>'
+          + '<a href="' + viewerUrl + '" target="_blank" rel="noopener noreferrer" class="text-xs font-medium link-teal opacity-70 hover:opacity-100 px-1.5 py-1">Open</a>'
+          + '<button type="button" class="kb-mgmt-delete kb-delete-btn p-1 rounded shrink-0" style="color:#8a8a94;" title="Delete KB" data-kb-id="' + esc(kb.id) + '">'
+          + '<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>'
+          + '</button></div>';
         card.querySelector('.kb-new-chat-btn').addEventListener('click', (e) => {{
           e.stopPropagation();
           createNewChat(kb.id);
@@ -997,6 +1167,16 @@ def generate_chat_ui_html() -> str:
             createNewChat(kb.id);
             await switchToChat(_activeChatId);
           }}
+        }});
+        const delBtn = card.querySelector('.kb-delete-btn');
+        if (delBtn) delBtn.addEventListener('click', (e) => {{
+          e.stopPropagation();
+          const kid = delBtn.dataset.kbId;
+          const k = _kbData.find(x => x.id === kid);
+          _pendingDeleteId = kid;
+          _pendingDeleteName = k ? (k.name || kid) : kid;
+          document.getElementById('delete-modal-name').textContent = _pendingDeleteName;
+          document.getElementById('delete-modal').classList.remove('hidden');
         }});
         kbList.appendChild(card);
       }}
@@ -1065,7 +1245,7 @@ def generate_chat_ui_html() -> str:
       }}
     }}
 
-    if (kbCreateBtn && fileInputCreate) kbCreateBtn.addEventListener('click', () => fileInputCreate.click());
+    document.getElementById('kb-refresh-btn')?.addEventListener('click', () => loadKBs());
 
     tabKnowledge?.addEventListener('click', () => {{
       tabKnowledge.classList.add('sidebar-tab-active');
@@ -1183,7 +1363,9 @@ def generate_chat_ui_html() -> str:
       return wrapper;
     }}
 
-    function buildMessageElement(role, content, sources, numFactsUsed) {{
+    function buildMessageElement(role, content, sources, numFactsUsed, rawFacts, reasoning) {{
+      const hasRawFacts = role === 'assistant' && rawFacts && Array.isArray(rawFacts) && rawFacts.length > 0;
+      const hasReasoning = role === 'assistant' && reasoning && typeof reasoning === 'string' && reasoning.trim().length > 0;
       const div = document.createElement('div');
       div.dataset.chatMessage = '1';
       div.className = 'flex ' + (role === 'user' ? 'justify-end msg-enter-user' : 'justify-start msg-enter-assistant');
@@ -1217,8 +1399,30 @@ def generate_chat_ui_html() -> str:
         }}
         bubble.appendChild(metaRow);
 
-        // Reasoning block
-        const hasReasoning = (numFactsUsed !== undefined && numFactsUsed > 0) || (sources && sources.length > 0);
+        // Explainable reasoning: Raw facts (expandable)
+        if (hasRawFacts) {{
+          const rawFactsDiv = document.createElement('details');
+          rawFactsDiv.className = 'mb-3 rounded-lg overflow-hidden';
+          rawFactsDiv.style.cssText = 'border:1px solid #1a1a24; background:#14141a;';
+          const summary = document.createElement('summary');
+          summary.className = 'cursor-pointer px-3 py-2 text-xs font-medium flex items-center gap-2';
+          summary.style.color = '#8a8a94';
+          summary.innerHTML = '<svg class="w-3 h-3 shrink-0" style="color:#ec4899;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4"/></svg> Raw facts used';
+          rawFactsDiv.appendChild(summary);
+          const rawContent = document.createElement('div');
+          rawContent.className = 'px-3 pb-2.5 pt-1 space-y-2 text-xs font-mono';
+          rawContent.style.cssText = 'color:#8a8a94; max-height:200px; overflow-y:auto;';
+          rawFacts.forEach((fact, i) => {{
+            const p = document.createElement('p');
+            p.style.cssText = 'margin:0; padding:0.25rem 0; border-bottom:1px solid #1a1a24;';
+            p.textContent = '[' + (i + 1) + '] ' + (typeof fact === 'string' ? fact : String(fact));
+            rawContent.appendChild(p);
+          }});
+          rawFactsDiv.appendChild(rawContent);
+          bubble.appendChild(rawFactsDiv);
+        }}
+
+        // Reasoning: in-depth interpretation of the facts (expandable)
         if (hasReasoning) {{
           const reasonDiv = document.createElement('details');
           reasonDiv.className = 'mb-3 rounded-lg overflow-hidden';
@@ -1226,22 +1430,12 @@ def generate_chat_ui_html() -> str:
           const summary = document.createElement('summary');
           summary.className = 'cursor-pointer px-3 py-2 text-xs font-medium flex items-center gap-2';
           summary.style.color = '#8a8a94';
-          summary.innerHTML = '<svg class="w-3 h-3 shrink-0" style="color:#ec4899;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg> Reasoning trace';
+          summary.innerHTML = '<svg class="w-3 h-3 shrink-0" style="color:#ec4899;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg> Reasoning';
           reasonDiv.appendChild(summary);
           const reasonContent = document.createElement('div');
-          reasonContent.className = 'px-3 pb-2.5 pt-1 space-y-1.5 text-xs font-mono';
-          reasonContent.style.color = '#8a8a94';
-          const steps = [];
-          steps.push('▸ Retrieve');
-          if (numFactsUsed !== undefined) steps.push('  Retrieved ' + numFactsUsed + ' facts from ontology graph');
-          steps.push('▸ Synthesize');
-          if (sources && sources.length > 0) steps.push('  Used ' + sources.length + ' source' + (sources.length > 1 ? 's' : '') + ' in answer');
-          steps.push('▸ Answer');
-          steps.forEach(s => {{
-            const p = document.createElement('p');
-            p.textContent = s;
-            reasonContent.appendChild(p);
-          }});
+          reasonContent.className = 'px-3 pb-2.5 pt-1 text-sm leading-relaxed';
+          reasonContent.style.cssText = 'color:#b8b8c0; max-height:300px; overflow-y:auto; white-space:pre-wrap;';
+          reasonContent.appendChild(renderAssistantGuide(reasoning));
           reasonDiv.appendChild(reasonContent);
           bubble.appendChild(reasonDiv);
         }}
@@ -1252,6 +1446,13 @@ def generate_chat_ui_html() -> str:
       if (typeof content === 'string') {{
         if (role === 'assistant') {{
           text.className = 'text-sm leading-relaxed';
+          if (hasRawFacts || hasReasoning) {{
+            const explLabel = document.createElement('div');
+            explLabel.className = 'text-xs font-medium mb-2';
+            explLabel.style.color = '#ec4899';
+            explLabel.textContent = 'Answer';
+            text.appendChild(explLabel);
+          }}
           text.appendChild(renderAssistantGuide(content));
         }} else {{
           text.textContent = content;
@@ -1420,24 +1621,24 @@ def generate_chat_ui_html() -> str:
           const totals = m.report?.totals || {{}};
           lastOntologyTotals = {{ classes: totals.classes ?? 0, instances: totals.instances ?? 0, relations: totals.relations ?? totals.edges ?? 0, axioms: totals.axioms ?? 0, data_properties: totals.data_properties ?? 0 }};
         }} else {{
-          el = buildMessageElement(m.role, m.content, m.sources, m.numFactsUsed);
+          el = buildMessageElement(m.role, m.content, m.sources, m.numFactsUsed, m.rawFacts, m.reasoning);
         }}
         if (el) messagesEl.insertBefore(el, insertBefore);
       }});
       messagesEl.scrollTop = messagesEl.scrollHeight;
     }}
 
-    function appendMessage(role, content, sources, numFactsUsed, chatId) {{
+    function appendMessage(role, content, sources, numFactsUsed, chatId, rawFacts, reasoning) {{
       let chat = chatId ? getChatById(chatId) : getActiveChat();
       if (!chat) {{
         if (chatId) return;
         if (!getActiveKbId()) return;
         chat = createNewChat();
       }}
-      chat.messages.push({{ role, content, sources, numFactsUsed }});
+      chat.messages.push({{ role, content, sources, numFactsUsed, rawFacts, reasoning }});
       if (chat.id === _activeChatId) {{
         hideEmptyStates();
-        const el = buildMessageElement(role, content, sources, numFactsUsed);
+        const el = buildMessageElement(role, content, sources, numFactsUsed, rawFacts, reasoning);
         const before = messagesEl.querySelector('#empty-state-no-kb') || messagesEl.querySelector('#empty-state-ready');
         messagesEl.insertBefore(el, before);
         messagesEl.scrollTop = messagesEl.scrollHeight;
@@ -1514,12 +1715,14 @@ def generate_chat_ui_html() -> str:
         const data = await res.json().catch(() => ({{}}));
         if (!res.ok) throw new Error(parseError(data) || res.statusText);
         const sourceTags = (data.source_labels && data.source_labels.length) ? data.source_labels : (data.source_refs || []);
-        appendMessage('assistant', data.answer, sourceTags, data.num_facts_used, submitChatId);
+        const rawFacts = data.sources || [];
+        const reasoning = data.reasoning || '';
+        appendMessage('assistant', data.answer, sourceTags, data.num_facts_used, submitChatId, rawFacts, reasoning);
       }} catch (e) {{
         const msg = e && e.name === 'AbortError'
           ? 'Request timed out. The model may be overloaded; try again.'
           : e.message;
-        appendMessage('assistant', 'Error: ' + msg, null, null, submitChatId);
+        appendMessage('assistant', 'Error: ' + msg, null, null, submitChatId, null, null);
       }} finally {{
         clearTimeout(timeoutId);
         showLoading(false);
@@ -1527,8 +1730,7 @@ def generate_chat_ui_html() -> str:
       }}
     }});
 
-    // Upload
-    dropZone.addEventListener('click', () => fileInput.click());
+    // Upload (label handles click; drop handlers for drag-and-drop)
     dropZone.addEventListener('dragover', (e) => {{ e.preventDefault(); dropZone.classList.add('dragover'); }});
     dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
     let pendingFile = null;
@@ -1565,7 +1767,7 @@ def generate_chat_ui_html() -> str:
       }}
     }}
 
-    function showCreateModal(file) {{
+    function showCreateModal(file, source) {{
       pendingFile = file;
       const stem = file.name.replace(/\\.[^.]+$/, '') || file.name;
       modalTitle.value = stem;
@@ -1578,7 +1780,7 @@ def generate_chat_ui_html() -> str:
         const kbName = activeKb ? activeKb.name : activeId;
         document.getElementById('modal-mode-kb-name').textContent = kbName;
         modalModeSection.classList.remove('hidden');
-        setModalMode('extend');
+        setModalMode(source === 'document' ? 'extend' : 'new');
       }} else {{
         modalModeSection.classList.add('hidden');
         setModalMode('new');
@@ -1630,10 +1832,30 @@ def generate_chat_ui_html() -> str:
           const data = await res.json().catch(() => ({{}}));
           throw new Error(parseError(data) || res.statusText);
         }}
+        _chats = _chats.filter(c => c.kbId !== idToDelete);
+        if (_activeChatId && _chats.every(c => c.id !== _activeChatId)) {{
+          _activeChatId = _chats[0]?.id || null;
+        }}
+        try {{
+          let recent = JSON.parse(localStorage.getItem(RECENT_KB_KEY) || '[]');
+          recent = recent.filter(id => id !== idToDelete);
+          localStorage.setItem(RECENT_KB_KEY, JSON.stringify(recent));
+        }} catch (_) {{}}
         await loadKBs();
-        kbStatus.style.display = 'none';
+        renderChatTabs();
+        if (_chats.length && _activeChatId) switchToChat(_activeChatId);
+        else if (!_chats.length) {{
+          renderChatMessages(null);
+          updateEmptyStatesForChat({{ kbId: null, messages: [] }});
+          setInputsEnabled(false);
+        }}
+        kbStatus.textContent = 'Knowledge base deleted successfully';
+        kbStatus.style.color = '#22c55e';
+        kbStatus.style.display = '';
+        setTimeout(() => {{ kbStatus.style.display = 'none'; }}, 3000);
       }} catch (e) {{
         kbStatus.textContent = 'Delete failed: ' + e.message;
+        kbStatus.style.color = '#ef4444';
         kbStatus.style.display = '';
       }}
     }});
@@ -1702,7 +1924,7 @@ def generate_chat_ui_html() -> str:
     // Ontology card: expand/collapse + click to open summary modal
     const ontoCard = document.getElementById('onto-card');
     const ontoCardExpandBtn = document.getElementById('onto-card-expand-btn');
-    let _ontoCardExpanded = true;
+    let _ontoCardExpanded = false;
     if (ontoCard) {{
       ontoCardExpandBtn?.addEventListener('click', (e) => {{
         e.stopPropagation();
@@ -1720,59 +1942,44 @@ def generate_chat_ui_html() -> str:
     const jobDetailContent = document.getElementById('job-detail-content');
     const jobDetailTitle = document.getElementById('job-detail-title');
 
-    modalConfirm.addEventListener('click', () => {{
-      if (pendingFile) {{
-        const parallel = _modalMode === 'extend'
-          ? document.getElementById('modal-parallel-extend').checked
-          : document.getElementById('modal-parallel').checked;
-        if (_modalMode === 'extend') {{
-          const activeId = getActiveKbId();
-          if (activeId) {{
-            doExtend(pendingFile, activeId, parallel);
-            hideCreateModal();
-            return;
-          }}
+    modalConfirm?.addEventListener('click', () => {{
+      if (!pendingFile) return;
+      const parallel = _modalMode === 'extend'
+        ? document.getElementById('modal-parallel-extend').checked
+        : document.getElementById('modal-parallel').checked;
+      const file = pendingFile;
+      hideCreateModal();
+      if (_modalMode === 'extend') {{
+        const activeId = getActiveKbId();
+        if (activeId) {{
+          doExtend(file, activeId, parallel);
+          return;
         }}
-        const title = modalTitle.value.trim() || pendingFile.name.replace(/\\.[^.]+$/, '');
-        const description = modalDescription.value.trim();
-        doUpload(pendingFile, title, description, parallel);
-        hideCreateModal();
       }}
+      const title = modalTitle.value.trim() || file.name.replace(/\\.[^.]+$/, '');
+      const description = modalDescription.value.trim();
+      doUpload(file, title, description, parallel);
     }});
 
-    dropZone.addEventListener('drop', (e) => {{
+    dropZone?.addEventListener('drop', (e) => {{
       e.preventDefault();
       dropZone.classList.remove('dragover');
       const files = e.dataTransfer?.files;
       if (files?.length) {{
-        const activeId = getActiveKbId();
-        if (activeId) {{
-          doExtend(files[0], activeId, true);
-        }} else {{
-          kbStatus.textContent = 'Select a KB in the Knowledge tab first.';
-          kbStatus.style.display = '';
-        }}
+        showCreateModal(files[0], 'document');
       }}
     }});
-    fileInput.addEventListener('change', () => {{
+    fileInput?.addEventListener('change', () => {{
       if (fileInput.files?.length) {{
-        const activeId = getActiveKbId();
-        if (activeId) {{
-          doExtend(fileInput.files[0], activeId, true);
-        }} else {{
-          kbStatus.textContent = 'Select a KB in the Knowledge tab first.';
-          kbStatus.style.display = '';
-        }}
+        showCreateModal(fileInput.files[0], 'document');
         fileInput.value = '';
       }}
     }});
     if (fileInputCreate) fileInputCreate.addEventListener('change', () => {{
       if (fileInputCreate.files?.length) {{
-        const file = fileInputCreate.files[0];
-        const title = file.name.replace(/\\.[^.]+$/, '') || file.name;
-        doUpload(file, title, '', true);
-        fileInputCreate.value = '';
+        showCreateModal(fileInputCreate.files[0], 'create');
       }}
+      fileInputCreate.value = '';
     }});
 
     const jobs = [];
@@ -1781,11 +1988,17 @@ def generate_chat_ui_html() -> str:
 
     function createJobCard(job) {{
       job.progress = job.progress || {{}};
+      const isCreate = job.jobType === 'create';
+      const typeClass = isCreate ? 'job-create' : 'job-extend';
+      const typeLabel = isCreate ? 'New KB' : 'Expanding';
       const card = document.createElement('div');
-      card.className = 'job-card job-clickable';
+      card.className = 'job-card job-clickable ' + typeClass;
       card.dataset.jobId = job.localId;
       card.innerHTML = '<div class="flex items-center justify-between gap-2">'
-        + '<p class="text-sm font-medium truncate flex-1 min-w-0" style="color:#e8e6e3;">' + esc(job.title) + '</p>'
+        + '<div class="flex items-center gap-2 min-w-0 flex-1">'
+        + '<span class="job-type-badge text-xs font-medium px-1.5 py-0.5 rounded shrink-0">' + typeLabel + '</span>'
+        + '<p class="text-sm font-medium truncate min-w-0" style="color:#e8e6e3;">' + esc(job.title) + '</p>'
+        + '</div>'
         + '<button type="button" class="job-cancel shrink-0 w-5 h-5 rounded flex items-center justify-center" style="color:#8a8a94;">'
         + '<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>'
         + '</button></div>'
@@ -1988,7 +2201,8 @@ def generate_chat_ui_html() -> str:
     function setJobStatus(job, status, label) {{
       job.status = status;
       if (!job.card) return;
-      job.card.className = 'job-card ' + status;
+      const typeClass = job.jobType === 'create' ? 'job-create' : 'job-extend';
+      job.card.className = 'job-card job-clickable ' + typeClass + ' ' + status;
       const sl = job.card.querySelector('.stage-label');
       if (sl) sl.textContent = label;
       const cancelBtn = job.card.querySelector('.job-cancel');
@@ -2039,10 +2253,12 @@ def generate_chat_ui_html() -> str:
         serverJobId: null,
         abortController: new AbortController(),
         card: null,
+        jobType: 'create',
       }};
       jobs.push(job);
       job.card = createJobCard(job);
-      jobQueue.appendChild(job.card);
+      if (jobQueue) jobQueue.appendChild(job.card);
+      if (jobQueueSection) jobQueueSection.classList.remove('collapsed');
       setStatusBadge('processing');
       tabDocuments?.click();
 
@@ -2094,12 +2310,14 @@ def generate_chat_ui_html() -> str:
           if (result.kb_id) setActiveKbId(result.kb_id);
           if (result.pipeline_report && result.kb_id) appendOntologySummary(result.pipeline_report, result.kb_id);
           removeJobCard(job, 3000);
+          if (kbStatus) {{ kbStatus.style.display = 'none'; }}
         }}
       }} catch (e) {{
         if (e.name === 'AbortError') {{
           setJobStatus(job, 'cancelled', 'Cancelled');
         }} else {{
           setJobStatus(job, 'error', e.message);
+          if (kbStatus) {{ kbStatus.textContent = 'Job failed: ' + e.message; kbStatus.style.display = ''; kbStatus.style.color = '#ef4444'; }}
         }}
         removeJobCard(job, 4000);
       }} finally {{
@@ -2120,13 +2338,16 @@ def generate_chat_ui_html() -> str:
         abortController: new AbortController(),
         card: null,
         kbId: kbId,
+        jobType: 'extend',
       }};
       jobs.push(job);
       job.card = createJobCard(job);
-      jobQueue.appendChild(job.card);
+      if (jobQueue) jobQueue.appendChild(job.card);
+      if (jobQueueSection) jobQueueSection.classList.remove('collapsed');
       setStatusBadge('processing');
       tabDocuments?.click();
       if (_kbData && _kbData.length) renderKbList(_kbData, _activeKbId);
+      if (activeKb) renderOntologyCard(activeKb);
 
       const fd = new FormData();
       fd.append('file', file);
@@ -2199,13 +2420,47 @@ def generate_chat_ui_html() -> str:
       }});
     }});
 
-    document.getElementById('new-chat-btn')?.addEventListener('click', () => {{
-      if (!getActiveKbId()) {{
-        kbStatus.textContent = 'Select a KB first.';
-        kbStatus.style.display = '';
-        return;
+    function showNewChatModal() {{
+      const modal = document.getElementById('new-chat-modal');
+      const listEl = document.getElementById('new-chat-kb-list');
+      if (!listEl) return;
+      listEl.innerHTML = '';
+      if (_kbData.length === 0) {{
+        listEl.innerHTML = '<p class="text-sm py-4 text-center" style="color:#8a8a94;">No knowledge bases. Create one first.</p>';
+      }} else {{
+        for (const kb of _kbData) {{
+          const stats = kb.stats || {{}};
+          const relCount = stats.relations ?? stats.edges ?? 0;
+          const parts = [];
+          if (stats.classes) parts.push(fmtNum(stats.classes) + ' cls');
+          if (stats.instances) parts.push(fmtNum(stats.instances) + ' inst');
+          if (relCount) parts.push(fmtNum(relCount) + ' rel');
+          const summary = parts.length ? parts.join(' · ') : '—';
+          const isActive = kb.id === getActiveKbId();
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          btn.className = 'w-full text-left px-4 py-3 rounded-lg transition-all flex items-center justify-between gap-2';
+          btn.style.cssText = 'background:#14141a; border:1px solid #2a2a3a; color:#e8e6e3;';
+          btn.innerHTML = '<div class="min-w-0"><p class="font-medium truncate text-sm">' + esc(kb.name || kb.id) + '</p><p class="text-xs mt-0.5 truncate" style="color:#8a8a94;">' + esc(summary) + '</p></div>'
+            + (isActive ? '<span class="text-xs shrink-0 px-1.5 py-0.5 rounded" style="background:rgba(236,72,153,0.2);color:#ec4899;">Active</span>' : '');
+          btn.addEventListener('click', () => {{
+            createNewChat(kb.id);
+            modal.classList.add('hidden');
+          }});
+          listEl.appendChild(btn);
+        }}
       }}
-      createNewChat();
+      modal.classList.remove('hidden');
+    }}
+
+    document.getElementById('new-chat-btn')?.addEventListener('click', () => {{
+      showNewChatModal();
+    }});
+    document.getElementById('new-chat-modal-cancel')?.addEventListener('click', () => {{
+      document.getElementById('new-chat-modal').classList.add('hidden');
+    }});
+    document.getElementById('new-chat-modal')?.querySelector('.modal-backdrop')?.addEventListener('click', () => {{
+      document.getElementById('new-chat-modal').classList.add('hidden');
     }});
     sidebarToggle?.addEventListener('click', () => sidebar.classList.toggle('open'));
     document.getElementById('sidebar-overlay')?.addEventListener('click', () => sidebar.classList.remove('open'));
@@ -2219,12 +2474,17 @@ def generate_chat_ui_html() -> str:
     document.querySelectorAll('a.graph-viewer-link').forEach(function(a) {{ a.href = viewerUrl; }});
 
     (async function init() {{
-      await loadKBs();
-      const params = new URLSearchParams(window.location.search);
-      const urlKbId = params.get('kb_id');
-      if (urlKbId && _kbData.some(k => k.id === urlKbId) && urlKbId !== getActiveKbId()) {{
-        try {{ await activateKB(urlKbId); }} catch (_) {{}}
-        history.replaceState(null, '', window.location.pathname);
+      try {{
+        await loadKBs();
+        const params = new URLSearchParams(window.location.search);
+        const urlKbId = params.get('kb_id');
+        if (urlKbId && _kbData.some(k => k.id === urlKbId) && urlKbId !== getActiveKbId()) {{
+          try {{ await activateKB(urlKbId); }} catch (_) {{}}
+          history.replaceState(null, '', window.location.pathname);
+        }}
+      }} catch (e) {{
+        console.error('[init]', e);
+        if (statusBadge) {{ statusBadge.textContent = 'Error loading'; statusBadge.className = 'status-badge px-2 py-0.5 rounded-full text-xs font-medium empty'; }}
       }}
     }})();
     document.addEventListener('visibilitychange', () => {{ if (document.visibilityState === 'visible') loadKBs(); }});
