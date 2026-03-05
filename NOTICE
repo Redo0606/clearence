@@ -1,0 +1,17 @@
+Clearence - Theory-Grounded Ontology Graph Builder
+
+Copyright (c) 2025 Clearence Contributors
+
+This project builds upon concepts from the following academic works. We acknowledge
+their contributions to the field and encourage proper citation when using Clearence
+in academic or research contexts:
+
+- Guarino et al. — "What Is an Ontology?"
+- Sharma et al. — OG-RAG (hypergraph construction, dual retrieval)
+- Bakker et al. — "Ontology Learning from Text" (sequential extraction)
+- Smith & Proietti — "OWL 2 RL Logic Programming"
+- OntoRAG (ICLR) — OntoGen taxonomy pipeline
+- Gajderowicz et al. — "RAG and Ontologies"
+- Huettemann et al. — "Ontology-based Search"
+
+See README.md for full references and mapping to codebase layers.
