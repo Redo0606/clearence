@@ -19,6 +19,7 @@ from fastapi import APIRouter, File, Form, HTTPException, Query, Request, Upload
 from fastapi.responses import HTMLResponse, JSONResponse, Response, StreamingResponse
 from pydantic import BaseModel, Field
 
+from ontology_builder.evaluation.graph_health import compute_graph_health
 from ontology_builder.pipeline.run_pipeline import PipelineCancelledError, process_document
 from ontology_builder.qa.answer import answer_question, source_ref_to_label
 from ontology_builder.qa.graph_index import (
@@ -80,6 +81,7 @@ class PipelineReportResponse(BaseModel):
     chunk_stats: list[dict[str, Any]] = Field(default_factory=list, description="Per-chunk extraction stats")
     ontology_name: str = Field("", description="Display name of the ontology")
     quality: dict[str, Any] | None = Field(None, description="OntologyQualityReport: structural metrics, reliability grade, recommended actions")
+    health: dict[str, Any] | None = Field(None, description="Graph health: badge, overall_score, structural/semantic/retrieval metrics")
 
 
 class BuildOntologyResponse(BaseModel):
@@ -129,6 +131,7 @@ class KnowledgeBaseItem(BaseModel):
     created_at: float = Field(..., description="Unix timestamp")
     stats: dict[str, int] = Field(default_factory=dict, description="Graph stats")
     documents: list[str] = Field(default_factory=list, description="Source document filenames")
+    ontology_language: str = Field("en", description="ISO 639-1 language of the ontology (all node/edge text)")
 
 
 class KnowledgeBasesResponse(BaseModel):
@@ -145,6 +148,7 @@ class KnowledgeBasesResponse(BaseModel):
 class QAAskRequest(BaseModel):
     question: str
     kb_id: str | None = Field(None, description="Ontology/knowledge base ID to query. If provided and different from active, activates it first.")
+    answer_language: str | None = Field(None, description="ISO 639-1 code for answer language (e.g. en, fr). If omitted, answer in the same language as the question.")
 
 
 class SettingsResponse(BaseModel):
@@ -188,6 +192,7 @@ async def build_ontology(
     files: list[UploadFile] | None = File(None, description="Multiple documents"),
     title: str | None = Form(None, description="Ontology title (default: first filename stem)"),
     description: str | None = Form(None, description="Ontology description"),
+    ontology_language: str = Form("en", description="ISO 639-1 language for the ontology (all class/instance names and descriptions in this language)"),
     run_inference: bool = Query(True, description="Run LLM relation inference after extraction"),
     sequential: bool = Query(True, description="Use 3-stage sequential extraction (Bakker B)"),
     run_reasoning: bool = Query(True, description="Run OWL 2 RL reasoning after extraction"),
@@ -237,6 +242,7 @@ async def build_ontology(
                 sequential=sequential,
                 run_reasoning=run_reasoning,
                 parallel_extraction=parallel,
+                ontology_language=ontology_language or "en",
             )
             if graph is None:
                 graph = _graph
@@ -261,6 +267,7 @@ async def build_ontology(
             kb_id=kb_id,
             description=description or "",
             documents=doc_names,
+            ontology_language=ontology_language or "en",
         )
         set_current_kb_id(kb_id)
 
@@ -363,6 +370,7 @@ def _build_report_dict(
     document_display: str | None = None,
     all_reports: list[dict[str, Any]] | None = None,
     doc_names: list[str] | None = None,
+    health: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Build pipeline_report dict for SSE complete event.
 
@@ -400,6 +408,7 @@ def _build_report_dict(
             "chunk_stats": chunk_stats,
             "ontology_name": ontology_name,
             "quality": last.get("quality"),
+            "health": health,
         }
     return {
         "document_path": document_display or report_dict.get("document_path", ""),
@@ -413,6 +422,7 @@ def _build_report_dict(
         "chunk_stats": report_dict.get("chunk_stats", []),
         "ontology_name": ontology_name,
         "quality": report_dict.get("quality"),
+        "health": health,
     }
 
 
@@ -432,6 +442,7 @@ async def build_ontology_stream(
     files: list[UploadFile] | None = File(None, description="Multiple documents"),
     title: str | None = Form(None, description="Ontology title (default: first filename stem)"),
     description: str | None = Form(None, description="Ontology description"),
+    ontology_language: str = Form("en", description="ISO 639-1 language for the ontology (all names/descriptions in this language)"),
     model: str | None = Form(None, description="LLM model override (e.g. gpt-4.1o-mini)"),
     workers: int | None = Form(None, description="Parallel workers for extraction"),
     chunk_size: int | None = Form(None, description="Chunk size in chars"),
@@ -547,6 +558,7 @@ async def build_ontology_stream(
                         parallel_extraction=parallel,
                         progress_callback=progress_callback,
                         cancel_check=cancel_event.is_set,
+                        ontology_language=ontology_language or "en",
                     )
                     if graph is None:
                         graph = _graph
@@ -571,11 +583,16 @@ async def build_ontology_stream(
                     kb_id=kb_id,
                     description=description or "",
                     documents=doc_names,
+                    ontology_language=ontology_language or "en",
                 )
                 set_current_kb_id(kb_id)
 
                 last_report_dict = all_reports[-1]
                 export = graph.export()
+                try:
+                    health_result = compute_graph_health(graph, kb_id=kb_id)
+                except Exception:
+                    health_result = None
                 result_holder = {
                     "type": "complete",
                     "graph": export,
@@ -587,6 +604,7 @@ async def build_ontology_stream(
                         document_display=", ".join(doc_names) if len(doc_names) > 1 else (doc_names[0] if doc_names else ""),
                         all_reports=all_reports if len(all_reports) > 1 else None,
                         doc_names=doc_names if len(doc_names) > 1 else None,
+                        health=health_result,
                     ),
                 }
             except PipelineCancelledError:
@@ -697,7 +715,7 @@ async def extend_kb_stream(
         logger.exception("Failed to save uploads")
         raise HTTPException(500, f"Failed to save files: {e}") from e
 
-    # Read existing metadata before entering the thread
+    # Read existing metadata before entering the thread (including ontology language for extend)
     meta_path = _ONTOLOGY_GRAPHS / f"{kb_id}.meta.json"
     try:
         existing_meta = json.loads(meta_path.read_text(encoding="utf-8")) if meta_path.exists() else {}
@@ -705,6 +723,7 @@ async def extend_kb_stream(
         existing_meta = {}
     kb_name = existing_meta.get("name", kb_id)
     kb_description = existing_meta.get("description", "")
+    kb_ontology_language = existing_meta.get("ontology_language", "en")
 
     progress_queue: Queue = Queue()
     cancel_event = threading.Event()
@@ -774,6 +793,7 @@ async def extend_kb_stream(
                         parallel_extraction=parallel,
                         progress_callback=progress_callback,
                         cancel_check=cancel_event.is_set,
+                        ontology_language=kb_ontology_language,
                     )
                     existing_graph.merge_from(new_graph)
                     all_reports.append(report.to_dict())
@@ -794,6 +814,10 @@ async def extend_kb_stream(
 
                 last_report_dict = all_reports[-1] if all_reports else {}
                 export = existing_graph.export()
+                try:
+                    health_result = compute_graph_health(existing_graph, kb_id=kb_id)
+                except Exception:
+                    health_result = None
                 result_holder = {
                     "type": "complete",
                     "graph": export,
@@ -805,6 +829,7 @@ async def extend_kb_stream(
                         document_display=", ".join(doc_names) if len(doc_names) > 1 else (doc_names[0] if doc_names else ""),
                         all_reports=all_reports if len(all_reports) > 1 else None,
                         doc_names=doc_names if len(doc_names) > 1 else None,
+                        health=health_result,
                     ),
                 }
             except PipelineCancelledError:
@@ -887,6 +912,7 @@ async def list_kb():
             created_at=it["created_at"],
             stats=it.get("stats", {}),
             documents=it.get("documents", []),
+            ontology_language=it.get("ontology_language", "en"),
         )
         for it in items
     ]
@@ -924,14 +950,20 @@ async def activate_kb(kb_id: str):
 class KBUpdateRequest(BaseModel):
     name: str | None = Field(None, description="New name for the knowledge base")
     description: str | None = Field(None, description="New description")
+    ontology_language: str | None = Field(None, description="ISO 639-1 language of the ontology (metadata only; does not re-extract)")
 
 
 @router.patch("/knowledge-bases/{kb_id}")
 async def update_kb(kb_id: str, req: KBUpdateRequest):
-    """Update knowledge base metadata (name, description)."""
+    """Update knowledge base metadata (name, description, ontology_language)."""
     from ontology_builder.storage.graph_store import update_kb_metadata
     try:
-        meta = update_kb_metadata(kb_id, name=req.name, description=req.description)
+        meta = update_kb_metadata(
+            kb_id,
+            name=req.name,
+            description=req.description,
+            ontology_language=req.ontology_language,
+        )
         return {"status": "ok", "kb_id": kb_id, "name": meta.get("name"), "description": meta.get("description")}
     except FileNotFoundError as e:
         raise HTTPException(404, str(e)) from e
@@ -1272,6 +1304,7 @@ async def qa_ask(
             context_snippets,
             source_refs,
             onto_ctx,
+            answer_language=req.answer_language,
         )
     except Exception as e:
         logger.exception("QA LLM failed")
