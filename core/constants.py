@@ -7,13 +7,14 @@ Centralizes magic numbers with documented rationale for maintainability.
 CHARS_PER_TOKEN = 4
 
 # Cosine similarity >= threshold maps to same canonical entity (embedding deduplication).
-SIMILARITY_THRESHOLD = 0.9
+# Lowered to 0.85 when using normalization pre-pass (canonicalizer).
+SIMILARITY_THRESHOLD = 0.85
 
 # OWL 2 RL fixpoint iteration cap; prevents infinite loops.
 MAX_REASONING_ITERATIONS = 20
 
 # Min confidence for LLM-inferred relations to be accepted.
-CONFIDENCE_THRESHOLD = 0.5
+CONFIDENCE_THRESHOLD = 0.65
 
 # Embedding batch size for SentenceTransformer (balance speed vs memory).
 ENCODE_BATCH_SIZE = 64

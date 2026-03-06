@@ -4,8 +4,14 @@ import functools
 import os
 import re
 from pathlib import Path
+from typing import Literal
 
 from pydantic import field_validator, model_validator
+
+
+# Embedding provider: sentence_transformers (local) or openai (same base URL/API key as LLM).
+EMBEDDING_PROVIDER_SENTENCE_TRANSFORMERS = "sentence_transformers"
+EMBEDDING_PROVIDER_OPENAI = "openai"
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -16,6 +22,14 @@ def _in_docker() -> bool:
 
 # LM Studio exposes an OpenAI-compatible API at http://localhost:1234/v1 by default.
 # Set OPENAI_BASE_URL to use it; leave OPENAI_API_KEY empty (or any placeholder).
+# Per-domain preset overrides (applied when domain is set).
+DOMAIN_PROFILES: dict[str, dict[str, object]] = {
+    "biomedical": {"chunk_size": 1500, "similarity_threshold": 0.88, "confidence_threshold": 0.70},
+    "legal": {"chunk_size": 2000, "similarity_threshold": 0.85, "confidence_threshold": 0.65},
+    "technical": {"chunk_size": 1200, "similarity_threshold": 0.90, "confidence_threshold": 0.60},
+    "general": {},
+}
+
 # For OpenAI cloud, set OPENAI_BASE_URL=https://api.openai.com/v1 and OPENAI_API_KEY=sk-...
 class Settings(BaseSettings):
     """Application settings from env. Supports LM Studio (local) and OpenAI cloud."""
@@ -25,6 +39,11 @@ class Settings(BaseSettings):
         env_file_encoding="utf-8",
         extra="ignore",
     )
+
+    domain: str = "general"
+    # Optional overrides (from domain profile or env); when None, core.constants values are used.
+    similarity_threshold: float | None = None
+    confidence_threshold: float | None = None
 
     openai_api_key: str = ""
     ontology_llm_model: str = "phi-3-mini-4k-instruct"
@@ -49,31 +68,47 @@ class Settings(BaseSettings):
     llm_max_chunk_chars: int = 600
     # Soft token budget for entire prompt (system + user). Prevents context overflow.
     llm_max_prompt_tokens: int = 3000
-    # Chunk size and overlap for document splitting. Larger chunks = fewer API calls (faster with gpt-4o-mini).
-    chunk_size: int = 1200
-    chunk_overlap: int = 200
+    # Chunk size and overlap for document splitting. Semantic mode uses sentence boundaries.
+    chunk_size: int = 2000
+    chunk_overlap: int = 300
+    chunk_mode: Literal["fixed", "semantic"] = "semantic"
     # LLM sampling temperature (0.0–2.0). Lower = more deterministic.
     llm_temperature: float = 0.1
     # Max graph chars for relation inference; max classes/instances JSON for extractor stages. Larger for gpt-4o-mini.
     llm_max_graph_chars: int = 3000
-    llm_max_taxonomy_chars: int = 2500
-    llm_max_classes_json_chars: int = 1000
-    llm_max_instances_json_chars: int = 800
-    # Max context chars for QA answers.
-    qa_max_context_chars: int = 4000
+    llm_max_taxonomy_chars: int = 8000
+    llm_max_classes_json_chars: int = 3000
+    llm_max_instances_json_chars: int = 2000
+    # Max context chars for QA answers (graph-grounded answer generation).
+    qa_max_context_chars: int = 6000
     # Force plain-text responses when no explicit response_format is provided.
     llm_force_text_mode: bool = True
 
-    @model_validator(mode="after")
-    def _apply_gpt4o_mini_defaults(self) -> "Settings":
-        """Use larger chunk/context defaults when gpt-4o-mini (128k context).
+    # Embeddings: use local SentenceTransformer or OpenAI (batched) via same LLM stack.
+    embedding_provider: Literal["sentence_transformers", "openai"] = "sentence_transformers"
+    embedding_openai_model: str = "text-embedding-3-small"
+    embedding_openai_batch_size: int = 100
 
-        Only applies when env vars are unset; allows override via .env.
-        """
+    # Batching for pipeline performance (aggregation, canonicalizer, graph writes, taxonomy).
+    aggregation_batch_size: int = 80
+    canonicalizer_batch_size: int = 64
+    graph_write_batch_size: int = 500
+    taxonomy_batch_size: int = 40
+
+    @model_validator(mode="after")
+    def _apply_domain_and_model_defaults(self) -> "Settings":
+        """Apply domain profile overrides, then gpt-4o-mini larger defaults when applicable."""
+        domain = (getattr(self, "domain", None) or "general").lower()
+        if domain in DOMAIN_PROFILES:
+            for k, v in DOMAIN_PROFILES[domain].items():
+                if hasattr(self, k):
+                    object.__setattr__(self, k, v)
+
         model_lower = (self.ontology_llm_model or "").lower()
         if "gpt-4o-mini" not in model_lower and "gpt-4.1o-mini" not in model_lower:
             return self
         updates: dict = {}
+        # Only override if env not set (preserve domain profile)
         if os.environ.get("CHUNK_SIZE") is None and self.chunk_size == 1200:
             updates["chunk_size"] = 10000
         if os.environ.get("CHUNK_OVERLAP") is None and self.chunk_overlap == 200:
