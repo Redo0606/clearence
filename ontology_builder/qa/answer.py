@@ -11,10 +11,19 @@ import logging
 from dataclasses import dataclass, field
 
 from core.config import get_settings
-from ontology_builder.llm.client import complete
+from ontology_builder.llm.client import complete, complete_batch
 from ontology_builder.qa.prompts import QA_SYSTEM, build_qa_user_prompt
 
 logger = logging.getLogger(__name__)
+
+
+def _parse_answer_from_response(response_text: str) -> str:
+    """Extract answer from JSON response; fallback to raw text."""
+    try:
+        parsed = json.loads(response_text)
+        return (parsed.get("answer") or response_text).strip()
+    except (json.JSONDecodeError, TypeError):
+        return response_text.strip()
 
 # Regex to strip raw source IDs ([node:X], [edge:A-R-B], [dp:E-A]) if LLM echoes them
 _RAW_ID_PATTERN = re.compile(r"\s*\[(?:node|edge|dp):[^\]]+\]\s*", re.IGNORECASE)
@@ -116,3 +125,49 @@ def answer_question(
         ontological_context=ontological_context,
         num_facts_used=len(context_snippets),
     )
+
+
+def answer_questions_batch(
+    items: list[tuple[str, list[str], list[str], str]],
+) -> list[QAResult]:
+    """Answer multiple questions in parallel. Each item is (question, context_snippets, source_refs, onto_ctx)."""
+    if not items:
+        return []
+
+    def system_fn(_: tuple) -> str:
+        return QA_SYSTEM
+
+    def user_fn(item: tuple[str, list[str], list[str], str]) -> str:
+        question, context_snippets, source_refs, onto_ctx = item
+        source_refs = source_refs or [f"fact:{i}" for i in range(len(context_snippets))]
+        annotated_facts = [f"[{i}] {fact}" for i, (fact, ref) in enumerate(zip(context_snippets, source_refs), start=1)]
+        context = "\n".join(annotated_facts)
+        max_context_chars = get_settings().qa_max_context_chars
+        if len(context) > max_context_chars:
+            context = context[:max_context_chars] + "\n[... truncated ...]"
+        return build_qa_user_prompt(context, question, onto_ctx)
+
+    responses = complete_batch(
+        items,
+        system_fn=system_fn,
+        user_fn=user_fn,
+        temperature=0.2,
+        response_format={"type": "json_object"},
+        max_tokens=2000,
+    )
+
+    results: list[QAResult] = []
+    for i, (question, context_snippets, source_refs, onto_ctx) in enumerate(items):
+        response_text = responses[i] if i < len(responses) else ""
+        answer_text = _parse_answer_from_response(response_text)
+        answer_text = _RAW_ID_PATTERN.sub(" ", answer_text)
+        answer_text = re.sub(r"[ \t]+", " ", answer_text).strip()
+        answer_text = re.sub(r"\n\s*\n\s*\n+", "\n\n", answer_text)
+        results.append(QAResult(
+            answer=answer_text,
+            reasoning="",
+            sources=source_refs[:len(context_snippets)] if source_refs else [],
+            ontological_context=onto_ctx,
+            num_facts_used=len(context_snippets),
+        ))
+    return results

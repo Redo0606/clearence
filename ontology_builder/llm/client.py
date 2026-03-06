@@ -125,6 +125,8 @@ def complete_batch(
     temperature: float = 0.1,
     max_workers: int | None = None,
     parallel: bool = True,
+    response_format: dict[str, Any] | None = None,
+    max_tokens: int | None = None,
 ) -> list[str]:
     """Process items via LLM completion. Returns results in order.
 
@@ -135,6 +137,8 @@ def complete_batch(
         temperature: Sampling temperature.
         max_workers: Thread pool size when parallel=True (default from config).
         parallel: If True, process items concurrently; if False, process sequentially.
+        response_format: Optional JSON/text format for responses.
+        max_tokens: Optional max tokens per completion.
 
     Returns:
         List of completion strings in same order as items.
@@ -143,7 +147,13 @@ def complete_batch(
         return []
 
     def process_one(item: T) -> str:
-        return complete(system=system_fn(item), user=user_fn(item), temperature=temperature)
+        return complete(
+            system=system_fn(item),
+            user=user_fn(item),
+            temperature=temperature,
+            response_format=response_format,
+            max_tokens=max_tokens,
+        )
 
     if not parallel:
         results: list[str] = []
