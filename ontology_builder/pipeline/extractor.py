@@ -127,6 +127,17 @@ def _truncate_for_context(text: str, max_chars: int) -> str:
     return text[:max_chars] + "\n[...truncated for context...]"
 
 
+def _class_has_token_overlap_with_chunk(class_name: str, chunk: str) -> bool:
+    """Return True if at least one token (word) of class_name appears in chunk (hallucination guard)."""
+    if not class_name or not chunk:
+        return False
+    chunk_lower = chunk.lower()
+    for token in class_name.replace("-", " ").replace("_", " ").split():
+        if len(token) > 1 and token.lower() in chunk_lower:
+            return True
+    return False
+
+
 def _parse_classes(raw: list, prov: dict) -> list[OntologyClass]:
     """Parse raw class dicts into OntologyClass list."""
     out = []
@@ -257,6 +268,30 @@ def _truncate_json_list(items: list, max_chars: int) -> tuple[list, str]:
         else:
             break
     return kept, json.dumps(kept) if kept else "[]"
+
+
+def _truncate_classes_by_priority(classes_list: list[dict], max_chars: int) -> tuple[list, str]:
+    """Truncate classes by priority: richer (longer description) first. Returns (kept, json_str)."""
+    if not classes_list:
+        return [], "[]"
+    sorted_classes = sorted(
+        classes_list,
+        key=lambda c: len((c.get("description") or "")),
+        reverse=True,
+    )
+    return _truncate_json_list(sorted_classes, max_chars)
+
+
+def _truncate_instances_by_priority(instances_list: list[dict], max_chars: int) -> tuple[list, str]:
+    """Truncate instances by priority: non-empty description first. Returns (kept, json_str)."""
+    if not instances_list:
+        return [], "[]"
+    sorted_instances = sorted(
+        instances_list,
+        key=lambda i: 1 if (i.get("description") or "").strip() else 0,
+        reverse=True,
+    )
+    return _truncate_json_list(sorted_instances, max_chars)
 
 
 def _fit_chunk_to_budget(chunk: str, system: str, prompt_template: str, token_budget: int, **fmt_kwargs: str) -> str:
@@ -390,7 +425,14 @@ def extract_ontology_sequential(chunk: str, source_document: str = "") -> Ontolo
         classes_raw = []
 
     classes_list = [c for c in classes_raw if isinstance(c, dict)]
-    kept_classes, classes_json = _truncate_json_list(classes_list, get_settings().llm_max_classes_json_chars)
+    # Hallucination guard: drop classes with zero token overlap with source chunk
+    classes_list = [
+        c for c in classes_list
+        if _class_has_token_overlap_with_chunk(c.get("name") or "", chunk_for_llm)
+    ]
+    kept_classes, classes_json = _truncate_classes_by_priority(
+        classes_list, get_settings().llm_max_classes_json_chars
+    )
     if len(kept_classes) < len(classes_list):
         logger.debug("[Extractor] Truncated classes %d -> %d for context", len(classes_list), len(kept_classes))
 
@@ -418,7 +460,7 @@ def extract_ontology_sequential(chunk: str, source_document: str = "") -> Ontolo
         instances_raw = []
 
     instances_list = [i for i in instances_raw if isinstance(i, dict)]
-    kept_instances, instances_json = _truncate_json_list(
+    kept_instances, instances_json = _truncate_instances_by_priority(
         instances_list, get_settings().llm_max_instances_json_chars
     )
     if len(kept_instances) < len(instances_list):
@@ -447,8 +489,8 @@ def extract_ontology_sequential(chunk: str, source_document: str = "") -> Ontolo
         data3 = {}
 
     return OntologyExtraction(
-        classes=_parse_classes(classes_raw, prov),
-        instances=_parse_instances(instances_raw, prov),
+        classes=_parse_classes(classes_list, prov),
+        instances=_parse_instances(instances_list, prov),
         object_properties=_parse_object_properties(data3, prov),
         data_properties=_parse_data_properties(data3, prov),
         axioms=_parse_axioms(data3, prov),
