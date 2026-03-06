@@ -45,11 +45,11 @@ def _configure_logging() -> None:
 
 
 app = FastAPI(
-    title="Theory-Grounded Ontology Graph API",
+    title="Clearence · Theory-Grounded Ontology Graph API",
     description=(
         "Build formal, theory-grounded ontologies from documents using sequential LLM extraction "
         "(Bakker Approach B), OWL 2 RL reasoning (Smith & Proietti), and ontology-grounded RAG "
-        "(OntoRAG + OG-RAG). Supports LM Studio and OpenAI."
+        "(OntoRAG + OG-RAG). Supports LM Studio and OpenAI. Developed and maintained by Reda Sarehane."
     ),
     version="0.1.0",
 )
@@ -102,7 +102,7 @@ async def shutdown_event():
 @app.get("/")
 async def read_root():
     """Return service info: name, docs URL, health URL."""
-    return {"service": "PDF to Ontology", "docs": "/docs", "health": "/health", "app": "/app"}
+    return {"service": "Clearence", "developer": "Reda Sarehane", "docs": "/docs", "health": "/health", "app": "/app"}
 
 
 @app.get("/app", response_class=HTMLResponse)

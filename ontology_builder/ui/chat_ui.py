@@ -13,7 +13,7 @@ def generate_chat_ui_html() -> str:
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Clarence · Ontology Assistant</title>
+  <title>Clearence · Ontology Assistant</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -457,7 +457,7 @@ def generate_chat_ui_html() -> str:
 
     <!-- Footer links -->
     <div class="px-5 py-3 flex items-center gap-4 shrink-0" style="border-top: 1px solid #1a1a24;">
-      <span class="text-xs" style="color: #555;">Clarence v1.0</span>
+      <span class="text-xs" style="color: #555;">Clearence v1.0 · by Reda Sarehane</span>
     </div>
   </aside>
   <div class="sidebar-overlay" id="sidebar-overlay" aria-hidden="true"></div>
@@ -602,8 +602,8 @@ def generate_chat_ui_html() -> str:
     <header class="shrink-0 px-6 py-3.5 flex items-center justify-between" style="background: #14141a; border-bottom: 1px solid #1a1a24;">
       <div class="flex items-center gap-3">
         <div>
-          <h1 class="font-semibold text-base" style="color: #e8e6e3;">Clarence</h1>
-          <p class="text-xs" style="color: #8a8a94;">Ontology Assistant</p>
+          <h1 class="font-semibold text-base" style="color: #e8e6e3;">Clearence</h1>
+          <p class="text-xs" style="color: #8a8a94;">Ontology Assistant · Reda Sarehane</p>
         </div>
         <!-- Active ontology pill -->
         <div id="current-ontology-pill" class="hidden items-center gap-2 pl-3 ml-1" style="border-left: 1px solid #1a1a24;">
@@ -1810,7 +1810,7 @@ def generate_chat_ui_html() -> str:
         const metaLabel = document.createElement('span');
         metaLabel.className = 'text-xs font-medium';
         metaLabel.style.color = '#ec4899';
-        metaLabel.textContent = 'Clarence';
+        metaLabel.textContent = 'Clearence';
         metaRow.appendChild(metaLabel);
         if (numFactsUsed > 0) {{
           const factsBadge = document.createElement('span');

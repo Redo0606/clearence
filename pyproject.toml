@@ -7,6 +7,8 @@ name = "clearence"
 version = "0.1.0"
 description = "Clearence: Theory-grounded ontology graph builder from documents using LLM extraction, OWL 2 RL reasoning, and ontology-grounded RAG"
 readme = "README.md"
+authors = [{name = "Reda Sarehane"}]
+maintainers = [{name = "Reda Sarehane"}]
 license = {text = "MIT"}
 requires-python = ">=3.10"
 keywords = ["ontology", "llm", "rag", "owl", "knowledge-graph", "nlp"]
