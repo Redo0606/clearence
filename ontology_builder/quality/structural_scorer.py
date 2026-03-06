@@ -74,9 +74,14 @@ def _extract_class_hierarchy(graph: OntologyGraph) -> nx.DiGraph:
 
 
 def _depth_profile(hierarchy: nx.DiGraph) -> list[int]:
-    """BFS from root; return list of depth per class (root = 0)."""
+    """BFS from root; return list of depth per class (root = 0).
+
+    Edges are stored child -> parent (subClassOf(child, parent)), so the root
+    has out_degree 0 and we traverse to children via predecessors (in_edges).
+    """
     if ROOT_NAME not in hierarchy:
-        roots = [n for n in hierarchy if hierarchy.in_degree(n) == 0]
+        # Root = node that does not point to any parent (out_degree 0)
+        roots = [n for n in hierarchy if hierarchy.out_degree(n) == 0]
         if not roots:
             return []
         start = roots[0]
@@ -90,7 +95,8 @@ def _depth_profile(hierarchy: nx.DiGraph) -> list[int]:
     while queue:
         u = queue.pop(0)
         d = depths[u]
-        for _, v in hierarchy.out_edges(u):
+        # Children are nodes that have an edge TO u (child -> parent)
+        for v in hierarchy.predecessors(u):
             if v not in depths:
                 depths[v] = d + 1
                 queue.append(v)
