@@ -39,6 +39,7 @@ from ontology_builder.storage.graph_store import (
     get_subject,
     list_knowledge_bases,
     load_from_path,
+    save_to_path,
     save_to_path_with_metadata,
     set_current_kb_id,
     set_graph,
@@ -797,6 +798,172 @@ async def delete_kb(kb_id: str):
     except OSError as e:
         logger.exception("Failed to delete knowledge base %s", kb_id)
         raise HTTPException(500, f"Failed to delete: {e}") from e
+
+
+_REPORTS_DIR = _REPO_ROOT / "documents" / "reports"
+
+
+@router.get("/knowledge-bases/{kb_id}/health")
+async def get_kb_health(kb_id: str):
+    """Return graph health metrics for a knowledge base."""
+    path = _ONTOLOGY_GRAPHS / f"{kb_id}.json"
+    if not path.exists():
+        raise HTTPException(404, f"Knowledge base '{kb_id}' not found.")
+    try:
+        from ontology_builder.evaluation.graph_health import (
+            compute_graph_health,
+            load_graph_health,
+            save_graph_health,
+        )
+        graph = await asyncio.to_thread(load_from_path, path)
+        health = compute_graph_health(graph, kb_id=kb_id)
+        _REPORTS_DIR.mkdir(parents=True, exist_ok=True)
+        await asyncio.to_thread(save_graph_health, kb_id, health, _REPORTS_DIR)
+        return health
+    except Exception as e:
+        logger.exception("Failed to compute health for kb_id=%s", kb_id)
+        raise HTTPException(500, f"Failed to compute health: {e}") from e
+
+
+@router.get("/knowledge-bases/{kb_id}/evaluation-records")
+async def get_evaluation_records(kb_id: str):
+    """Return list of evaluation records for a knowledge base (timestamp, scores, per-question details)."""
+    path = _ONTOLOGY_GRAPHS / f"{kb_id}.json"
+    if not path.exists():
+        raise HTTPException(404, f"Knowledge base '{kb_id}' not found.")
+    records_file = _REPORTS_DIR / f"eval-records-{kb_id}.json"
+    if not records_file.exists():
+        return []
+    try:
+        records = json.loads(records_file.read_text(encoding="utf-8"))
+        return records if isinstance(records, list) else []
+    except Exception as e:
+        logger.warning("Failed to load eval records for kb_id=%s: %s", kb_id, e)
+        return []
+
+
+@router.post("/knowledge-bases/{kb_id}/repair")
+async def repair_kb(kb_id: str):
+    """Repair graph: link orphans, bridge components. Returns SSE stream."""
+    path = _ONTOLOGY_GRAPHS / f"{kb_id}.json"
+    if not path.exists():
+        raise HTTPException(404, f"Knowledge base '{kb_id}' not found.")
+    # Run repair in thread pool; SSE emits from generator
+    def gen():
+        import traceback
+        try:
+            from ontology_builder.repair import RepairConfig, repair_graph
+            graph = load_from_path(path)
+            meta_path = _ONTOLOGY_GRAPHS / f"{kb_id}.meta.json"
+
+            def progress(step: str, message: str, details: dict) -> None:
+                pass
+
+            def sync_gen():
+                for msg in ["Loading graph", "Computing health before", "Adding root concept", "Linking orphans", "Bridging components", "Running inference", "Computing health after"]:
+                    yield f"data: {json.dumps({'type': 'step', 'message': msg})}\n\n"
+                config = RepairConfig(run_reasoning_after=True)
+                report = repair_graph(graph, config=config, progress_callback=progress, kb_id=kb_id)
+                set_graph(graph, document_subject=None)
+                set_current_kb_id(kb_id)
+                build_qa_index(graph, False)
+                if meta_path.exists():
+                    meta = json.loads(meta_path.read_text(encoding="utf-8"))
+                    save_to_path_with_metadata(path, name=meta.get("name", kb_id), kb_id=kb_id, description=meta.get("description", ""), documents=meta.get("documents"))
+                else:
+                    save_to_path(path)
+                yield f"data: {json.dumps({'type': 'done', 'edges_added': report.edges_added})}\n\n"
+            for chunk in sync_gen():
+                yield chunk
+        except Exception as e:
+            logger.exception("Repair failed for kb_id=%s", kb_id)
+            yield f"data: {json.dumps({'type': 'error', 'message': str(e), 'traceback': traceback.format_exc()})}\n\n"
+
+    return StreamingResponse(
+        gen(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache, no-store, must-revalidate",
+            "Pragma": "no-cache",
+            "Expires": "0",
+            "Connection": "keep-alive",
+        },
+    )
+
+
+def _run_evaluation_sync(
+    path: Path,
+    kb_id: str,
+    kb_name: str,
+    num_questions: int,
+    reports_dir: Path,
+) -> dict:
+    """Run evaluation in sync (for thread pool). Returns record dict."""
+    from ontology_builder.evaluation.eval_pipeline import run_evaluation
+    graph = load_from_path(path)
+    record = run_evaluation(
+        graph,
+        kb_id=kb_id,
+        kb_name=kb_name,
+        num_questions=num_questions,
+        reports_dir=str(reports_dir),
+        progress_callback=None,
+    )
+    return record.to_dict()
+
+
+@router.post("/knowledge-bases/{kb_id}/evaluate")
+async def evaluate_kb(
+    kb_id: str,
+    num_questions: int = Query(5, ge=1, le=500, description="Number of evaluation questions"),
+):
+    """Run QA evaluation: generate questions, answer, compute scores. Returns SSE stream."""
+    path = _ONTOLOGY_GRAPHS / f"{kb_id}.json"
+    meta_path = _ONTOLOGY_GRAPHS / f"{kb_id}.meta.json"
+    if not path.exists():
+        raise HTTPException(404, f"Knowledge base '{kb_id}' not found.")
+    kb_name = kb_id
+    if meta_path.exists():
+        try:
+            meta = json.loads(meta_path.read_text(encoding="utf-8"))
+            kb_name = meta.get("name", kb_id)
+        except Exception:
+            pass
+
+    async def gen():
+        import traceback
+        yield f"data: {json.dumps({'type': 'step', 'message': 'Loading knowledge base'})}\n\n"
+        yield f"data: {json.dumps({'type': 'step', 'message': 'Building index'})}\n\n"
+        yield f"data: {json.dumps({'type': 'step', 'message': 'Generating questions'})}\n\n"
+        try:
+            record = await asyncio.to_thread(
+                _run_evaluation_sync,
+                path,
+                kb_id,
+                kb_name,
+                num_questions,
+                _REPORTS_DIR,
+            )
+            per_q = record.get("scores", {}).get("per_question", [])
+            yield f"data: {json.dumps({'type': 'step', 'message': f'Generated {len(per_q)} questions'})}\n\n"
+            for i, pq in enumerate(per_q):
+                yield f"data: {json.dumps({'type': 'progress', 'current': i + 1, 'total': len(per_q), 'question': pq.get('question', '')})}\n\n"
+            yield f"data: {json.dumps({'type': 'step', 'message': 'Computing final scores'})}\n\n"
+            yield f"data: {json.dumps({'type': 'complete', 'scores': record.get('scores', {}), 'health': record.get('health', {}), 'record': record})}\n\n"
+        except Exception as e:
+            logger.exception("Evaluate failed for kb_id=%s", kb_id)
+            yield f"data: {json.dumps({'type': 'error', 'message': str(e), 'traceback': traceback.format_exc()})}\n\n"
+
+    return StreamingResponse(
+        gen(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache, no-store, must-revalidate",
+            "Pragma": "no-cache",
+            "Expires": "0",
+            "Connection": "keep-alive",
+        },
+    )
 
 
 _FORMAT_TO_MIME: dict[str, tuple[str, str]] = {

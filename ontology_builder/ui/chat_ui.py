@@ -235,7 +235,10 @@ def generate_chat_ui_html() -> str:
         Knowledge
       </button>
       <button type="button" id="tab-documents" class="sidebar-tab sidebar-tab-inactive flex-1 px-4 py-3 text-xs font-semibold uppercase tracking-wider transition-all">
-        Document Management
+        Documents
+      </button>
+      <button type="button" id="tab-evaluate" class="sidebar-tab sidebar-tab-inactive flex-1 px-4 py-3 text-xs font-semibold uppercase tracking-wider transition-all">
+        Evaluate
       </button>
     </div>
 
@@ -367,6 +370,89 @@ def generate_chat_ui_html() -> str:
         <div id="job-queue" class="job-queue-content mt-2 space-y-2 transition-opacity duration-200"></div>
       </div>
     </div>
+    </div>
+
+    <!-- Evaluate tab content -->
+    <div id="tab-evaluate-content" class="hidden flex flex-col flex-1 min-h-0 overflow-hidden">
+      <div class="px-5 py-4 flex flex-col flex-1 min-h-0 overflow-y-auto">
+        <p class="text-xs font-semibold uppercase tracking-widest mb-3" style="color: #8a8a94;">Graph Health &amp; Repair</p>
+        <div class="mb-3">
+          <label class="block text-xs font-medium mb-1.5" style="color: #8a8a94;">Knowledge base</label>
+          <select id="eval-kb-select" class="w-full rounded-lg px-3 py-2.5 text-sm border transition-all" style="background: #14141a; color: #e8e6e3; border-color: #2a2a3a;">
+            <option value="">Select a KB</option>
+          </select>
+        </div>
+        <div id="eval-panel-state-a" class="rounded-xl p-4" style="background: #1e1e28; border: 1px solid #2a2a3a;">
+          <div class="flex items-center justify-between mb-3">
+            <h4 class="font-semibold text-sm" style="color: #e8e6e3;">Graph Health</h4>
+            <span id="eval-health-badge" class="text-xs font-medium px-2 py-0.5 rounded" style="background: #1a1a24; color: #8a8a94;">—</span>
+          </div>
+          <div id="eval-health-stats" class="text-xs space-y-1 font-mono" style="color: #8a8a94;">
+            <p>Select a KB to view health</p>
+          </div>
+          <div id="eval-health-warnings" class="mt-3 text-xs" style="color: #f59e0b;"></div>
+          <div class="mt-3 flex items-center gap-2">
+            <button type="button" id="eval-refresh-btn" class="px-3 py-1.5 rounded-lg text-xs font-medium transition-all" style="background: rgba(236,72,153,0.1); color: #ec4899; border: 1px solid rgba(236,72,153,0.3);">Rerun to refresh</button>
+            <button type="button" id="eval-repair-btn" class="px-3 py-1.5 rounded-lg text-xs font-medium transition-all flex items-center gap-1.5" style="background: rgba(34,197,94,0.12); color: #22c55e; border: 1px solid rgba(34,197,94,0.25);" title="Infer missing edges to connect orphans and bridge components">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+              Repair
+            </button>
+          </div>
+        </div>
+        <div id="eval-panel-state-b" class="hidden rounded-xl p-4 flex flex-col" style="background: #1e1e28; border: 1px solid #2a2a3a;">
+          <div class="flex items-center gap-2 mb-2">
+            <div class="kb-load-spinner w-4 h-4"></div>
+            <span id="eval-stage-label" class="text-sm font-medium" style="color: #e8e6e3;">Repairing...</span>
+          </div>
+          <div class="h-1.5 rounded-full mb-3 overflow-hidden" style="background: #1a1a24;">
+            <div id="eval-progress-bar" class="h-full rounded-full transition-all duration-300" style="background: #22c55e; width: 0%;"></div>
+          </div>
+          <div id="eval-log-feed" class="flex-1 min-h-[120px] overflow-y-auto text-xs font-mono space-y-1 break-words overflow-x-hidden" style="color: #8a8a94; max-height: 200px;"></div>
+          <div id="eval-error-banner" class="hidden mt-2 px-3 py-2 rounded-lg text-xs" style="background: rgba(239,68,68,0.15); color: #ef4444;"></div>
+        </div>
+
+        <!-- Evaluation section (same style as health) -->
+        <div id="eval-eval-panel" class="mt-4 rounded-xl p-4" style="background: #1e1e28; border: 1px solid #2a2a3a;">
+          <div class="flex items-center justify-between mb-3">
+            <h4 class="font-semibold text-sm" style="color: #e8e6e3;">QA Evaluation</h4>
+            <span id="eval-eval-badge" class="text-xs font-medium px-2 py-0.5 rounded" style="background: #1a1a24; color: #8a8a94;">—</span>
+          </div>
+          <div class="mb-2 flex items-center gap-2">
+            <label class="text-xs" style="color: #8a8a94;">Questions</label>
+            <input type="number" id="eval-num-questions" value="5" min="1" max="500" class="w-16 rounded px-2 py-1 text-xs font-mono border" style="background: #14141a; color: #e8e6e3; border-color: #2a2a3a;">
+          </div>
+          <div id="eval-eval-stats" class="text-xs space-y-1 font-mono" style="color: #8a8a94;">
+            <p>Run evaluation to view scores</p>
+          </div>
+          <div class="mt-3">
+            <button type="button" id="eval-run-btn" class="px-3 py-1.5 rounded-lg text-xs font-medium transition-all flex items-center gap-1.5" style="background: rgba(236,72,153,0.12); color: #ec4899; border: 1px solid rgba(236,72,153,0.3);" title="Run QA evaluation">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+              Run Evaluation
+            </button>
+          </div>
+        </div>
+        <div id="eval-eval-progress" class="hidden mt-4 rounded-xl p-4 flex flex-col" style="background: #1e1e28; border: 1px solid #2a2a3a;">
+          <div class="flex items-center gap-2 mb-2">
+            <div class="kb-load-spinner w-4 h-4"></div>
+            <span id="eval-eval-stage-label" class="text-sm font-medium" style="color: #e8e6e3;">Evaluating...</span>
+          </div>
+          <div class="h-1.5 rounded-full mb-3 overflow-hidden" style="background: #1a1a24;">
+            <div id="eval-eval-progress-bar" class="h-full rounded-full transition-all duration-300" style="background: #ec4899; width: 0%;"></div>
+          </div>
+          <div id="eval-eval-log" class="min-h-[80px] overflow-y-auto text-xs font-mono space-y-1 break-words" style="color: #8a8a94; max-height: 150px;"></div>
+          <div id="eval-eval-error" class="hidden mt-2 px-3 py-2 rounded-lg text-xs" style="background: rgba(239,68,68,0.15); color: #ef4444;"></div>
+        </div>
+
+        <!-- Evaluation Records -->
+        <div id="eval-records-panel" class="mt-4 rounded-xl p-4" style="background: #1e1e28; border: 1px solid #2a2a3a;">
+          <div class="flex items-center justify-between mb-3">
+            <h4 class="font-semibold text-sm" style="color: #e8e6e3;">Records</h4>
+          </div>
+          <div id="eval-records-list" class="space-y-2 max-h-[280px] overflow-y-auto" style="color: #8a8a94;">
+            <p class="text-xs">Select a KB to view evaluation history</p>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- Footer links -->
@@ -691,8 +777,10 @@ def generate_chat_ui_html() -> str:
     const fileInputCreate = document.getElementById('file-input-create');
     const tabKnowledge = document.getElementById('tab-knowledge');
     const tabDocuments = document.getElementById('tab-documents');
+    const tabEvaluate = document.getElementById('tab-evaluate');
     const tabKnowledgeContent = document.getElementById('tab-knowledge-content');
     const tabDocumentsContent = document.getElementById('tab-documents-content');
+    const tabEvaluateContent = document.getElementById('tab-evaluate-content');
     const kbStatus = document.getElementById('kb-status');
     const dropZone = document.getElementById('drop-zone');
     const fileInput = document.getElementById('file-input');
@@ -1213,6 +1301,115 @@ def generate_chat_ui_html() -> str:
         renderOntologyCard(null);
         showEmptyState(false);
       }}
+      populateEvalKbSelector();
+    }}
+
+    function populateEvalKbSelector() {{
+      const sel = document.getElementById('eval-kb-select');
+      if (!sel) return;
+      const items = _kbData || [];
+      const activeId = getActiveKbId();
+      sel.innerHTML = '<option value="">Select a KB</option>' + items.map(k => {{
+        const docs = k.documents || [];
+        const label = k.name + (docs.length ? ' (' + docs.length + ')' : '');
+        return '<option value="' + esc(k.id) + '"' + (k.id === activeId ? ' selected' : '') + '>' + esc(label) + '</option>';
+      }}).join('');
+    }}
+
+    async function fetchEvalHealth(kbId) {{
+      if (!kbId) return;
+      const statsEl = document.getElementById('eval-health-stats');
+      const badgeEl = document.getElementById('eval-health-badge');
+      const warningsEl = document.getElementById('eval-health-warnings');
+      if (statsEl) statsEl.innerHTML = '<span style="color:#8a8a94;">Loading…</span>';
+      try {{
+        const res = await fetch(API + '/knowledge-bases/' + encodeURIComponent(kbId) + '/health');
+        if (!res.ok) {{
+          if (statsEl) statsEl.innerHTML = '<span style="color:#ef4444;">Failed to load health</span>';
+          return;
+        }}
+        const h = await res.json();
+        const s = h.structural || {{}};
+        const badge = h.badge || '—';
+        const score = h.overall_score ?? '—';
+        if (badgeEl) {{
+          badgeEl.textContent = badge + (typeof score === 'number' ? ' (' + score + ')' : '');
+          badgeEl.style.background = badge === 'Healthy' ? 'rgba(34,197,94,0.2)' : badge === 'Critical' ? 'rgba(239,68,68,0.2)' : 'rgba(245,158,11,0.2)';
+          badgeEl.style.color = badge === 'Healthy' ? '#22c55e' : badge === 'Critical' ? '#ef4444' : '#f59e0b';
+        }}
+        if (statsEl) {{
+          statsEl.innerHTML = 'Nodes: ' + (s.node_count ?? '—') + '<br>Edges: ' + (s.edge_count ?? '—') + '<br>Density: ' + (s.density ?? '—') + '<br>Components: ' + (s.connected_components ?? '—') + '<br>Orphans: ' + (s.orphan_nodes ?? '—') + '<br>Relation types: ' + (h.semantic?.unique_relation_types ?? '—') + '<br>Facts/node: ' + (h.retrieval?.facts_per_node ?? '—') + '<br>Hyperedge coverage: ' + (h.retrieval?.hyperedge_coverage ?? '—');
+        }}
+        const orphans = s.orphan_nodes ?? 0;
+        const comps = s.connected_components ?? 0;
+        const warn = [];
+        if (orphans > 0) warn.push(orphans + ' nodes are isolated.');
+        if (comps > 1) warn.push('Graph has ' + comps + ' disconnected subgraphs.');
+        if (warningsEl) {{
+          warningsEl.innerHTML = warn.length ? warn.join('<br>') : '';
+          warningsEl.style.display = warn.length ? '' : 'none';
+        }}
+      }} catch (e) {{
+        console.error('[fetchEvalHealth]', e);
+        if (statsEl) statsEl.innerHTML = '<span style="color:#ef4444;">Error loading health</span>';
+      }}
+    }}
+
+    async function fetchEvalRecords(kbId) {{
+      const listEl = document.getElementById('eval-records-list');
+      if (!listEl) return;
+      if (!kbId) {{
+        listEl.innerHTML = '<p class="text-xs">Select a KB to view evaluation history</p>';
+        return;
+      }}
+      listEl.innerHTML = '<p class="text-xs" style="color:#8a8a94;">Loading records…</p>';
+      try {{
+        const res = await fetch(API + '/knowledge-bases/' + encodeURIComponent(kbId) + '/evaluation-records');
+        if (!res.ok) {{
+          listEl.innerHTML = '<p class="text-xs" style="color:#ef4444;">Failed to load records</p>';
+          return;
+        }}
+        const records = await res.json();
+        if (!records || !records.length) {{
+          listEl.innerHTML = '<p class="text-xs">No evaluation records yet</p>';
+          return;
+        }}
+        listEl.innerHTML = records.map((r, idx) => {{
+          const ts = r.timestamp ? new Date(r.timestamp).toLocaleString() : '—';
+          const scores = r.scores || {{}};
+          const ac = scores.answer_correctness != null ? (scores.answer_correctness * 100).toFixed(0) : '—';
+          const n = r.num_questions ?? 0;
+          const id = 'eval-record-' + idx;
+          const detailId = 'eval-record-detail-' + idx;
+          const perQ = (scores.per_question || []);
+          const detailRows = perQ.slice(0, 50).map(pq => {{
+            const q = (pq.question || '').substring(0, 60) + (pq.question && pq.question.length > 60 ? '…' : '');
+            const cr = pq.context_recall != null ? (pq.context_recall * 100).toFixed(0) : '—';
+            const er = pq.entity_recall != null ? (pq.entity_recall * 100).toFixed(0) : '—';
+            const acq = pq.answer_correctness != null ? (pq.answer_correctness * 100).toFixed(0) : '—';
+            return '<tr><td class="py-1 pr-2 text-left" style="max-width:180px; overflow:hidden; text-overflow:ellipsis;" title="' + esc(pq.question || '') + '">' + esc(q) + '</td><td class="py-1 px-1 text-right">' + cr + '%</td><td class="py-1 px-1 text-right">' + er + '%</td><td class="py-1 px-1 text-right">' + acq + '%</td></tr>';
+          }}).join('');
+          const more = perQ.length > 50 ? '<p class="text-xs mt-1" style="color:#8a8a94;">… and ' + (perQ.length - 50) + ' more</p>' : '';
+          return '<div class="rounded-lg border overflow-hidden" style="border-color:#2a2a3a; background:#14141a;"><button type="button" class="eval-record-header w-full px-3 py-2 flex items-center justify-between text-left hover:opacity-90 transition-opacity" data-id="' + id + '" data-detail="' + detailId + '"><div class="flex flex-col items-start"><span class="text-xs font-medium" style="color:#e8e6e3;">' + esc(ts) + '</span><span class="text-xs mt-0.5" style="color:#8a8a94;">' + n + ' questions · score ' + ac + '%</span></div><svg class="eval-record-chevron w-4 h-4 shrink-0 transition-transform" style="color:#8a8a94;" data-id="' + id + '" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg></button><div id="' + detailId + '" class="eval-record-detail hidden px-3 pb-3 pt-1 border-t" style="border-color:#2a2a3a;"><div class="text-xs space-y-1 mb-2" style="color:#8a8a94;">context_recall: ' + (scores.context_recall != null ? (scores.context_recall * 100).toFixed(1) : '—') + '% · entity_recall: ' + (scores.entity_recall != null ? (scores.entity_recall * 100).toFixed(1) : '—') + '% · answer_correctness: ' + (scores.answer_correctness != null ? (scores.answer_correctness * 100).toFixed(1) : '—') + '% · faithfulness: ' + (scores.faithfulness != null ? (scores.faithfulness * 100).toFixed(1) : '—') + '% · answer_relevancy: ' + (scores.answer_relevancy != null ? (scores.answer_relevancy * 100).toFixed(1) : '—') + '%</div><div class="overflow-x-auto max-h-[200px] overflow-y-auto"><table class="w-full text-xs" style="color:#8a8a94;"><thead><tr><th class="text-left py-1 pr-2">Question</th><th class="text-right py-1 px-1">CR</th><th class="text-right py-1 px-1">ER</th><th class="text-right py-1 px-1">AC</th></tr></thead><tbody>' + detailRows + '</tbody></table></div>' + more + '</div></div>';
+        }}).join('');
+        listEl.querySelectorAll('.eval-record-header').forEach(btn => {{
+          btn.addEventListener('click', () => {{
+            const detailId = btn.getAttribute('data-detail');
+            const chevron = btn.querySelector('.eval-record-chevron');
+            const detail = document.getElementById(detailId);
+            if (detail?.classList.contains('hidden')) {{
+              detail.classList.remove('hidden');
+              if (chevron) chevron.style.transform = 'rotate(180deg)';
+            }} else {{
+              detail?.classList.add('hidden');
+              if (chevron) chevron.style.transform = '';
+            }}
+          }});
+        }});
+      }} catch (e) {{
+        console.error('[fetchEvalRecords]', e);
+        listEl.innerHTML = '<p class="text-xs" style="color:#ef4444;">Error loading records</p>';
+      }}
     }}
 
     const RECENT_KB_KEY = 'clarence_recent_kb_ids';
@@ -1252,20 +1449,242 @@ def generate_chat_ui_html() -> str:
       tabKnowledge.classList.remove('sidebar-tab-inactive');
       tabDocuments?.classList.remove('sidebar-tab-active');
       tabDocuments?.classList.add('sidebar-tab-inactive');
+      tabEvaluate?.classList.remove('sidebar-tab-active');
+      tabEvaluate?.classList.add('sidebar-tab-inactive');
       tabKnowledgeContent?.classList.remove('hidden');
       tabDocumentsContent?.classList.add('hidden');
+      tabEvaluateContent?.classList.add('hidden');
     }});
     tabDocuments?.addEventListener('click', () => {{
       tabDocuments?.classList.add('sidebar-tab-active');
       tabDocuments?.classList.remove('sidebar-tab-inactive');
       tabKnowledge?.classList.remove('sidebar-tab-active');
       tabKnowledge?.classList.add('sidebar-tab-inactive');
+      tabEvaluate?.classList.remove('sidebar-tab-active');
+      tabEvaluate?.classList.add('sidebar-tab-inactive');
       tabDocumentsContent?.classList.remove('hidden');
       tabKnowledgeContent?.classList.add('hidden');
+      tabEvaluateContent?.classList.add('hidden');
+    }});
+    tabEvaluate?.addEventListener('click', () => {{
+      tabEvaluate?.classList.add('sidebar-tab-active');
+      tabEvaluate?.classList.remove('sidebar-tab-inactive');
+      tabKnowledge?.classList.remove('sidebar-tab-active');
+      tabKnowledge?.classList.add('sidebar-tab-inactive');
+      tabDocuments?.classList.remove('sidebar-tab-active');
+      tabDocuments?.classList.add('sidebar-tab-inactive');
+      tabEvaluateContent?.classList.remove('hidden');
+      tabKnowledgeContent?.classList.add('hidden');
+      tabDocumentsContent?.classList.add('hidden');
+      populateEvalKbSelector();
+      const sel = document.getElementById('eval-kb-select');
+      if (sel?.value) {{ fetchEvalHealth(sel.value); fetchEvalRecords(sel.value); }}
     }});
 
     if (jobQueueToggle && jobQueueSection) {{
       jobQueueToggle.addEventListener('click', () => jobQueueSection.classList.toggle('collapsed'));
+    }}
+
+    document.getElementById('eval-kb-select')?.addEventListener('change', (e) => {{
+      const kbId = e.target?.value;
+      if (kbId) {{ fetchEvalHealth(kbId); fetchEvalRecords(kbId); }}
+      else {{
+        document.getElementById('eval-health-stats').innerHTML = 'Select a KB to view health';
+        document.getElementById('eval-health-badge').textContent = '—';
+        document.getElementById('eval-health-warnings').innerHTML = '';
+        fetchEvalRecords('');
+      }}
+    }});
+    document.getElementById('eval-refresh-btn')?.addEventListener('click', () => {{
+      const kbId = document.getElementById('eval-kb-select')?.value;
+      if (kbId) fetchEvalHealth(kbId);
+    }});
+    document.getElementById('eval-repair-btn')?.addEventListener('click', runRepair);
+    document.getElementById('eval-run-btn')?.addEventListener('click', runEvaluation);
+
+    async function runEvaluation() {{
+      const kbId = document.getElementById('eval-kb-select')?.value;
+      if (!kbId) return;
+      const numQuestions = Math.min(500, Math.max(1, parseInt(document.getElementById('eval-num-questions')?.value || '5', 10) || 5));
+      const evalPanel = document.getElementById('eval-eval-panel');
+      const progressPanel = document.getElementById('eval-eval-progress');
+      const logEl = document.getElementById('eval-eval-log');
+      const stageLabel = document.getElementById('eval-eval-stage-label');
+      const progressBar = document.getElementById('eval-eval-progress-bar');
+      const errorEl = document.getElementById('eval-eval-error');
+      const runBtn = document.getElementById('eval-run-btn');
+      if (!evalPanel || !progressPanel || !logEl) return;
+      evalPanel.classList.add('hidden');
+      progressPanel.classList.remove('hidden');
+      logEl.innerHTML = '';
+      errorEl?.classList.add('hidden');
+      if (runBtn) runBtn.disabled = true;
+      function addLog(icon, msg) {{
+        const div = document.createElement('div');
+        div.innerHTML = (icon || '▸') + ' ' + (msg || '');
+        logEl.appendChild(div);
+        logEl.scrollTop = logEl.scrollHeight;
+      }}
+      try {{
+        const res = await fetch(API + '/knowledge-bases/' + encodeURIComponent(kbId) + '/evaluate?num_questions=' + numQuestions, {{ method: 'POST' }});
+        if (!res.ok) {{
+          const err = await res.json().catch(() => ({{}}));
+          throw new Error(parseError(err) || res.statusText);
+        }}
+        const reader = res.body?.getReader();
+        const dec = new TextDecoder();
+        if (reader) {{
+          let buf = '';
+          while (true) {{
+            const {{ done, value }} = await reader.read();
+            if (done) break;
+            buf += dec.decode(value, {{ stream: true }});
+            const lines = buf.split('\\n');
+            buf = lines.pop() || '';
+            for (const line of lines) {{
+              if (line.startsWith('data: ')) {{
+                try {{
+                  const data = JSON.parse(line.slice(6));
+                  if (data.type === 'step') {{
+                    stageLabel.textContent = data.message || 'Evaluating...';
+                    addLog('✓', data.message);
+                  }} else if (data.type === 'progress') {{
+                    const pct = data.total ? (100 * data.current / data.total) : 0;
+                    progressBar.style.width = pct + '%';
+                    addLog('▸', data.question ? 'Q: ' + data.question.substring(0, 50) + '...' : '');
+                  }} else if (data.type === 'complete') {{
+                    stageLabel.textContent = 'Done';
+                    progressBar.style.width = '100%';
+                    addLog('✓', 'Evaluation complete');
+                    const scores = data.scores || {{}};
+                    const statsEl = document.getElementById('eval-eval-stats');
+                    const badgeEl = document.getElementById('eval-eval-badge');
+                    if (statsEl) {{
+                      const parts = [];
+                      if (scores.context_recall != null) parts.push('context_recall: ' + (scores.context_recall * 100).toFixed(1) + '%');
+                      if (scores.entity_recall != null) parts.push('entity_recall: ' + (scores.entity_recall * 100).toFixed(1) + '%');
+                      if (scores.answer_correctness != null) parts.push('answer_correctness: ' + (scores.answer_correctness * 100).toFixed(1) + '%');
+                      if (scores.faithfulness != null) parts.push('faithfulness: ' + (scores.faithfulness * 100).toFixed(1) + '%');
+                      if (scores.answer_relevancy != null) parts.push('answer_relevancy: ' + (scores.answer_relevancy * 100).toFixed(1) + '%');
+                      statsEl.innerHTML = parts.join('<br>') || '—';
+                    }}
+                    if (badgeEl) {{
+                      const avg = scores.answer_correctness != null ? (scores.answer_correctness * 100).toFixed(0) : '—';
+                      badgeEl.textContent = avg + '%';
+                      badgeEl.style.background = 'rgba(236,72,153,0.2)';
+                      badgeEl.style.color = '#ec4899';
+                    }}
+                    await fetchEvalHealth(kbId);
+                    fetchEvalRecords(kbId);
+                    populateEvalKbSelector();
+                  }} else if (data.type === 'error') {{
+                    errorEl.textContent = data.message || 'Error';
+                    errorEl.classList.remove('hidden');
+                    addLog('✗', data.message || 'Error');
+                  }}
+                }} catch (_) {{}}
+              }}
+            }}
+          }}
+        }}
+      }} catch (e) {{
+        errorEl.textContent = e.message || 'Evaluation failed';
+        errorEl.classList.remove('hidden');
+        addLog('✗', e.message || 'Evaluation failed');
+      }} finally {{
+        if (runBtn) runBtn.disabled = false;
+        setTimeout(() => {{
+          progressPanel.classList.add('hidden');
+          evalPanel.classList.remove('hidden');
+          progressBar.style.width = '0%';
+        }}, 1500);
+      }}
+    }}
+
+    async function runRepair() {{
+      const kbId = document.getElementById('eval-kb-select')?.value;
+      if (!kbId) return;
+      const panelA = document.getElementById('eval-panel-state-a');
+      const panelB = document.getElementById('eval-panel-state-b');
+      const logFeed = document.getElementById('eval-log-feed');
+      const stageLabel = document.getElementById('eval-stage-label');
+      const progressBar = document.getElementById('eval-progress-bar');
+      const errorBanner = document.getElementById('eval-error-banner');
+      const repairBtn = document.getElementById('eval-repair-btn');
+      if (!panelA || !panelB || !logFeed) return;
+      panelA.classList.add('hidden');
+      panelB.classList.remove('hidden');
+      logFeed.innerHTML = '';
+      errorBanner?.classList.add('hidden');
+      if (repairBtn) repairBtn.disabled = true;
+      const steps = ['Loading graph', 'Adding root concept', 'Linking orphans', 'Bridging components', 'Running inference', 'Computing health', 'Saving', 'Rebuilding index', 'Done'];
+      let stepIdx = 0;
+      function addLog(icon, msg) {{
+        const div = document.createElement('div');
+        div.innerHTML = (icon || '▸') + ' ' + (msg || '');
+        logFeed.appendChild(div);
+        logFeed.scrollTop = logFeed.scrollHeight;
+      }}
+      try {{
+        const res = await fetch(API + '/knowledge-bases/' + encodeURIComponent(kbId) + '/repair', {{ method: 'POST' }});
+        if (!res.ok) {{
+          const err = await res.json().catch(() => ({{}}));
+          throw new Error(parseError(err) || res.statusText);
+        }}
+        const reader = res.body?.getReader();
+        const dec = new TextDecoder();
+        if (reader) {{
+          let buf = '';
+          while (true) {{
+            const {{ done, value }} = await reader.read();
+            if (done) break;
+            buf += dec.decode(value, {{ stream: true }});
+            const lines = buf.split('\\n');
+            buf = lines.pop() || '';
+            for (const line of lines) {{
+              if (line.startsWith('data: ')) {{
+                try {{
+                  const data = JSON.parse(line.slice(6));
+                  if (data.type === 'step') {{
+                    stepIdx = Math.min(stepIdx + 1, steps.length - 1);
+                    stageLabel.textContent = data.message || steps[stepIdx];
+                    progressBar.style.width = (100 * stepIdx / (steps.length - 1)) + '%';
+                    addLog('✓', data.message || steps[stepIdx]);
+                  }} else if (data.type === 'done') {{
+                    stageLabel.textContent = 'Done' + (data.edges_added ? ' (' + data.edges_added + ' edges added)' : '');
+                    progressBar.style.width = '100%';
+                    addLog('✓', 'Repair complete');
+                    await fetchEvalHealth(kbId);
+                    populateEvalKbSelector();
+                  }} else if (data.type === 'error') {{
+                    errorBanner.textContent = data.message || 'Error';
+                    errorBanner.classList.remove('hidden');
+                    addLog('✗', data.message || 'Error');
+                  }}
+                }} catch (_) {{}}
+              }}
+            }}
+          }}
+        }} else {{
+          const data = await res.json();
+          stageLabel.textContent = 'Done' + (data.report?.edges_added ? ' (' + data.report.edges_added + ' edges added)' : '');
+          progressBar.style.width = '100%';
+          addLog('✓', 'Repair complete');
+          await fetchEvalHealth(kbId);
+          populateEvalKbSelector();
+        }}
+      }} catch (e) {{
+        errorBanner.textContent = e.message || 'Repair failed';
+        errorBanner.classList.remove('hidden');
+        addLog('✗', e.message || 'Repair failed');
+      }} finally {{
+        if (repairBtn) repairBtn.disabled = false;
+        setTimeout(() => {{
+          panelB.classList.add('hidden');
+          panelA.classList.remove('hidden');
+          progressBar.style.width = '0%';
+        }}, 1500);
+      }}
     }}
 
     function fillPrompt(text) {{
