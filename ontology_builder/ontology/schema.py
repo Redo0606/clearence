@@ -119,6 +119,30 @@ class OntologyExtraction(BaseModel):
             names.add(i.name)
         return names
 
+    @classmethod
+    def merge(cls, extractions: list["OntologyExtraction"]) -> "OntologyExtraction":
+        """Merge multiple extractions into one (concatenate all lists). Used for batched graph update."""
+        if not extractions:
+            return cls()
+        classes: list[OntologyClass] = []
+        instances: list[OntologyInstance] = []
+        object_properties: list[ObjectProperty] = []
+        data_properties: list[DataProperty] = []
+        axioms: list[Axiom] = []
+        for ext in extractions:
+            classes.extend(ext.classes)
+            instances.extend(ext.instances)
+            object_properties.extend(ext.object_properties)
+            data_properties.extend(ext.data_properties)
+            axioms.extend(ext.axioms)
+        return cls(
+            classes=classes,
+            instances=instances,
+            object_properties=object_properties,
+            data_properties=data_properties,
+            axioms=axioms,
+        )
+
     def to_legacy_dict(self) -> dict[str, Any]:
         """Convert to the legacy {entities, relations} format for backward compat."""
         entities = []
