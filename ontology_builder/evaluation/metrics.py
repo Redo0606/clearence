@@ -240,6 +240,7 @@ class PipelineReport:
 
     elapsed_seconds: float = 0.0
     extraction_mode: str = "sequential"
+    quality: Any = None  # OntologyQualityReport (Plan 2 P2-8)
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -277,6 +278,7 @@ class PipelineReport:
             },
             "elapsed_seconds": round(self.elapsed_seconds, 2),
             "extraction_mode": self.extraction_mode,
+            "quality": self.quality.to_dict() if self.quality is not None and hasattr(self.quality, "to_dict") else None,
         }
 
 
