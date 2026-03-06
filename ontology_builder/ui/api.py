@@ -67,7 +67,7 @@ _active_pipelines: dict[str, threading.Event] = {}
 # ---------------------------------------------------------------------------
 
 class PipelineReportResponse(BaseModel):
-    """Pipeline execution report with extraction and reasoning stats."""
+    """Pipeline execution report with extraction, reasoning, and quality stats (Plan 2)."""
 
     document_path: str = Field("", description="Path to source document")
     total_chunks: int = Field(0, description="Number of text chunks processed")
@@ -79,6 +79,7 @@ class PipelineReportResponse(BaseModel):
     extraction_mode: str = Field("sequential", description="legacy, parallel, or sequential")
     chunk_stats: list[dict[str, Any]] = Field(default_factory=list, description="Per-chunk extraction stats")
     ontology_name: str = Field("", description="Display name of the ontology")
+    quality: dict[str, Any] | None = Field(None, description="OntologyQualityReport: structural metrics, reliability grade, recommended actions")
 
 
 class BuildOntologyResponse(BaseModel):
@@ -169,55 +170,89 @@ def get_app_settings() -> SettingsResponse:
     )
 
 
+def _normalize_files(
+    file: UploadFile | None = None,
+    files: list[UploadFile] | None = None,
+) -> list[UploadFile]:
+    """Normalize single file or multiple files into a list."""
+    if files:
+        return [f for f in files if f.filename]
+    if file and file.filename:
+        return [file]
+    return []
+
+
 @router.post("/build_ontology", response_model=BuildOntologyResponse)
 async def build_ontology(
-    file: UploadFile = File(..., description="Document (PDF, DOCX, TXT, MD)"),
-    title: str | None = Form(None, description="Ontology title (default: filename stem)"),
+    file: UploadFile | None = File(None, description="Single document (PDF, DOCX, TXT, MD)"),
+    files: list[UploadFile] | None = File(None, description="Multiple documents"),
+    title: str | None = Form(None, description="Ontology title (default: first filename stem)"),
     description: str | None = Form(None, description="Ontology description"),
     run_inference: bool = Query(True, description="Run LLM relation inference after extraction"),
     sequential: bool = Query(True, description="Use 3-stage sequential extraction (Bakker B)"),
     run_reasoning: bool = Query(True, description="Run OWL 2 RL reasoning after extraction"),
     parallel: bool = Query(True, description="Process chunks in parallel (4 workers); if False, sequential"),
 ):
-    """Upload a document and run the theory-grounded ontology pipeline.
+    """Upload one or more documents and run the theory-grounded ontology pipeline.
 
-    Returns the graph and a full pipeline report with per-chunk stats.
+    Provide either `file` (single) or `files` (multiple). Returns the merged graph
+    and a full pipeline report with per-chunk stats.
     """
-    if not file.filename:
-        raise HTTPException(400, "Missing filename")
-    suffix = Path(file.filename).suffix.lower()
-    if suffix not in _ALLOWED_SUFFIXES:
-        raise HTTPException(400, f"Unsupported format. Use one of: {', '.join(_ALLOWED_SUFFIXES)}")
+    uploads = _normalize_files(file=file, files=files)
+    if not uploads:
+        raise HTTPException(400, "Provide at least one document: use 'file' or 'files'")
 
-    logger.info("[BuildOntology] file=%s inference=%s sequential=%s parallel=%s reasoning=%s",
-                file.filename, run_inference, sequential, parallel, run_reasoning)
+    for u in uploads:
+        suffix = Path(u.filename or "").suffix.lower()
+        if suffix not in _ALLOWED_SUFFIXES:
+            raise HTTPException(
+                400, f"Unsupported format for {u.filename}. Use one of: {', '.join(_ALLOWED_SUFFIXES)}"
+            )
+
+    logger.info("[BuildOntology] files=%s inference=%s sequential=%s parallel=%s reasoning=%s",
+                [u.filename for u in uploads], run_inference, sequential, parallel, run_reasoning)
 
     _DOCUMENTS_RAW.mkdir(parents=True, exist_ok=True)
-    unique_name = f"{uuid.uuid4().hex}{suffix}"
-    temp_path = _DOCUMENTS_RAW / unique_name
+    temp_paths: list[Path] = []
+    doc_names: list[str] = []
 
     try:
-        content = await file.read()
-        temp_path.write_bytes(content)
-    except Exception as e:
-        logger.exception("Failed to save upload")
-        raise HTTPException(500, f"Failed to save file: {e}") from e
+        for u in uploads:
+            suffix = Path(u.filename or "").suffix.lower()
+            unique_name = f"{uuid.uuid4().hex}{suffix}"
+            tp = _DOCUMENTS_RAW / unique_name
+            content = await u.read()
+            tp.write_bytes(content)
+            temp_paths.append(tp)
+            doc_names.append(u.filename or unique_name)
 
-    try:
-        graph, report = await asyncio.to_thread(
-            process_document,
-            str(temp_path),
-            run_inference=run_inference,
-            verbose=False,
-            sequential=sequential,
-            run_reasoning=run_reasoning,
-            parallel_extraction=parallel,
-        )
+        graph = None
+        all_reports: list[dict[str, Any]] = []
+        for i, (tp, doc_name) in enumerate(zip(temp_paths, doc_names)):
+            _graph, report = await asyncio.to_thread(
+                process_document,
+                str(tp),
+                run_inference=run_inference,
+                verbose=False,
+                sequential=sequential,
+                run_reasoning=run_reasoning,
+                parallel_extraction=parallel,
+            )
+            if graph is None:
+                graph = _graph
+            else:
+                graph.merge_from(_graph)
+            all_reports.append(report.to_dict())
+
+        if graph is None or not all_reports:
+            raise HTTPException(500, "Pipeline produced no result")
+
         set_graph(graph, document_subject=None)
         await asyncio.to_thread(build_qa_index, graph, False)
 
         kb_id = uuid.uuid4().hex
-        name = (title or Path(file.filename).stem or f"ontology-{kb_id[:8]}").strip() or f"ontology-{kb_id[:8]}"
+        first_stem = Path(doc_names[0]).stem if doc_names else ""
+        name = (title or first_stem or f"ontology-{kb_id[:8]}").strip() or f"ontology-{kb_id[:8]}"
         saved_path = _ONTOLOGY_GRAPHS / f"{kb_id}.json"
         _ONTOLOGY_GRAPHS.mkdir(parents=True, exist_ok=True)
         save_to_path_with_metadata(
@@ -225,25 +260,37 @@ async def build_ontology(
             name=name,
             kb_id=kb_id,
             description=description or "",
-            documents=[file.filename] if file.filename else [],
+            documents=doc_names,
         )
         set_current_kb_id(kb_id)
 
-        report_dict = report.to_dict()
+        last_report_dict = all_reports[-1]
+        export = graph.export()
+        final_stats = export.get("stats", {})
+        combined = _build_report_dict(
+            last_report_dict,
+            name,
+            totals=final_stats,
+            document_display=", ".join(doc_names) if len(doc_names) > 1 else (doc_names[0] if doc_names else ""),
+            all_reports=all_reports if len(all_reports) > 1 else None,
+            doc_names=doc_names if len(doc_names) > 1 else None,
+        )
+
         return BuildOntologyResponse(
-            graph=graph.export(),
+            graph=export,
             kb_id=kb_id,
             pipeline_report=PipelineReportResponse(
-                document_path=report_dict.get("document_path", ""),
-                total_chunks=report_dict.get("total_chunks", 0),
-                totals=report_dict.get("totals", {}),
-                extraction_totals=report_dict.get("extraction_totals", {}),
-                llm_inferred_relations=report_dict.get("llm_inferred_relations", 0),
-                reasoning=report_dict.get("reasoning", {}),
-                elapsed_seconds=report_dict.get("elapsed_seconds", 0.0),
-                extraction_mode=report_dict.get("extraction_mode", ""),
-                chunk_stats=report_dict.get("chunk_stats", []),
+                document_path=combined.get("document_path", ""),
+                total_chunks=combined.get("total_chunks", 0),
+                totals=combined.get("totals", final_stats),
+                extraction_totals=combined.get("extraction_totals", {}),
+                llm_inferred_relations=combined.get("llm_inferred_relations", 0),
+                reasoning=combined.get("reasoning", {}),
+                elapsed_seconds=combined.get("elapsed_seconds", 0.0),
+                extraction_mode=combined.get("extraction_mode", ""),
+                chunk_stats=combined.get("chunk_stats", []),
                 ontology_name=name,
+                quality=combined.get("quality"),
             ),
         )
     except FileNotFoundError as e:
@@ -254,11 +301,12 @@ async def build_ontology(
         logger.exception("Pipeline failed")
         raise HTTPException(500, f"Pipeline failed: {e}") from e
     finally:
-        if temp_path.exists():
-            try:
-                temp_path.unlink()
-            except OSError:
-                pass
+        for tp in temp_paths:
+            if tp.exists():
+                try:
+                    tp.unlink()
+                except OSError:
+                    pass
 
 
 def _sse_event(data: dict) -> str:
@@ -313,16 +361,46 @@ def _build_report_dict(
     ontology_name: str,
     totals: dict[str, Any] | None = None,
     document_display: str | None = None,
+    all_reports: list[dict[str, Any]] | None = None,
+    doc_names: list[str] | None = None,
 ) -> dict[str, Any]:
     """Build pipeline_report dict for SSE complete event.
 
     If totals is None, uses report_dict.get('totals', {}).
     Normalizes totals so 'relations' is set from 'edges' when missing (e.g. from graph.export() stats).
+    If all_reports and doc_names are provided (multi-doc), aggregates total_chunks and chunk_stats
+    across all documents and sets document_path to comma-separated doc names.
     """
     raw_totals = totals if totals is not None else report_dict.get("totals", {})
     totals_normalized = dict(raw_totals)
     if "relations" not in totals_normalized and "edges" in totals_normalized:
         totals_normalized["relations"] = totals_normalized["edges"]
+
+    if all_reports and doc_names and len(doc_names) > 1:
+        total_chunks = sum(r.get("total_chunks", 0) for r in all_reports)
+        chunk_stats: list[dict[str, Any]] = []
+        for doc_idx, r in enumerate(all_reports):
+            for cs in r.get("chunk_stats", []):
+                entry = dict(cs)
+                entry["doc_index"] = doc_idx + 1
+                entry["document"] = doc_names[doc_idx] if doc_idx < len(doc_names) else ""
+                chunk_stats.append(entry)
+        document_path = ", ".join(doc_names)
+        # Use last report for inference/reasoning/elapsed (they apply to the merged run)
+        last = all_reports[-1] if all_reports else report_dict
+        return {
+            "document_path": document_path,
+            "total_chunks": total_chunks,
+            "totals": totals_normalized,
+            "extraction_totals": last.get("extraction_totals", {}),
+            "llm_inferred_relations": last.get("llm_inferred_relations", 0),
+            "reasoning": last.get("reasoning", {}),
+            "elapsed_seconds": sum(r.get("elapsed_seconds", 0) for r in all_reports),
+            "extraction_mode": last.get("extraction_mode", ""),
+            "chunk_stats": chunk_stats,
+            "ontology_name": ontology_name,
+            "quality": last.get("quality"),
+        }
     return {
         "document_path": document_display or report_dict.get("document_path", ""),
         "total_chunks": report_dict.get("total_chunks", 0),
@@ -334,6 +412,7 @@ def _build_report_dict(
         "extraction_mode": report_dict.get("extraction_mode", ""),
         "chunk_stats": report_dict.get("chunk_stats", []),
         "ontology_name": ontology_name,
+        "quality": report_dict.get("quality"),
     }
 
 
@@ -349,8 +428,9 @@ def _streaming_sse_headers() -> dict[str, str]:
 @router.post("/build_ontology_stream")
 async def build_ontology_stream(
     request: Request,
-    file: UploadFile = File(..., description="Document (PDF, DOCX, TXT, MD)"),
-    title: str | None = Form(None, description="Ontology title (default: filename stem)"),
+    file: UploadFile | None = File(None, description="Single document (PDF, DOCX, TXT, MD)"),
+    files: list[UploadFile] | None = File(None, description="Multiple documents"),
+    title: str | None = Form(None, description="Ontology title (default: first filename stem)"),
     description: str | None = Form(None, description="Ontology description"),
     model: str | None = Form(None, description="LLM model override (e.g. gpt-4.1o-mini)"),
     workers: int | None = Form(None, description="Parallel workers for extraction"),
@@ -362,29 +442,40 @@ async def build_ontology_stream(
     run_reasoning: bool = Query(True, description="Run OWL 2 RL reasoning after extraction"),
     parallel: bool = Query(True, description="Process chunks in parallel; if False, sequential"),
 ):
-    """Upload a document and run the pipeline, streaming progress via SSE.
+    """Upload one or more documents and run the pipeline, streaming progress via SSE.
 
-    Response is text/event-stream. Each event is JSON: {step, data} for progress,
-    or {type: "complete", ...} for the final result.
+    Provide either `file` (single) or `files` (multiple). Response is text/event-stream.
+    Each event is JSON: {step, data} for progress, or {type: "complete", ...} for the final result.
     """
-    if not file.filename:
-        raise HTTPException(400, "Missing filename")
-    suffix = Path(file.filename).suffix.lower()
-    if suffix not in _ALLOWED_SUFFIXES:
-        raise HTTPException(400, f"Unsupported format. Use one of: {', '.join(_ALLOWED_SUFFIXES)}")
+    uploads = _normalize_files(file=file, files=files)
+    if not uploads:
+        raise HTTPException(400, "Provide at least one document: use 'file' or 'files'")
 
-    logger.info("[BuildOntologyStream] file=%s", file.filename)
+    for u in uploads:
+        suffix = Path(u.filename or "").suffix.lower()
+        if suffix not in _ALLOWED_SUFFIXES:
+            raise HTTPException(
+                400, f"Unsupported format for {u.filename}. Use one of: {', '.join(_ALLOWED_SUFFIXES)}"
+            )
+
+    logger.info("[BuildOntologyStream] files=%s", [u.filename for u in uploads])
 
     _DOCUMENTS_RAW.mkdir(parents=True, exist_ok=True)
-    unique_name = f"{uuid.uuid4().hex}{suffix}"
-    temp_path = _DOCUMENTS_RAW / unique_name
+    temp_paths: list[Path] = []
+    doc_names: list[str] = []
 
     try:
-        content = await file.read()
-        temp_path.write_bytes(content)
+        for u in uploads:
+            suffix = Path(u.filename or "").suffix.lower()
+            unique_name = f"{uuid.uuid4().hex}{suffix}"
+            tp = _DOCUMENTS_RAW / unique_name
+            content = await u.read()
+            tp.write_bytes(content)
+            temp_paths.append(tp)
+            doc_names.append(u.filename or unique_name)
     except Exception as e:
-        logger.exception("Failed to save upload")
-        raise HTTPException(500, f"Failed to save file: {e}") from e
+        logger.exception("Failed to save uploads")
+        raise HTTPException(500, f"Failed to save files: {e}") from e
 
     progress_queue: Queue = Queue()
     cancel_event = threading.Event()
@@ -414,7 +505,12 @@ async def build_ontology_stream(
         _active_pipelines[job_id] = cancel_event
 
         extraction_mode = "legacy" if not sequential else ("parallel" if parallel else "sequential")
-        yield _sse_event({"type": "job_started", "job_id": job_id, "extraction_mode": extraction_mode})
+        yield _sse_event({
+            "type": "job_started",
+            "job_id": job_id,
+            "extraction_mode": extraction_mode,
+            "file_count": len(temp_paths),
+        })
 
         disconnect_task = asyncio.create_task(watch_disconnect())
 
@@ -428,21 +524,45 @@ async def build_ontology_stream(
                 temperature=temperature,
             )
             try:
-                graph, report = process_document(
-                    str(temp_path),
-                    run_inference=run_inference,
-                    verbose=False,
-                    sequential=sequential,
-                    run_reasoning=run_reasoning,
-                    parallel_extraction=parallel,
-                    progress_callback=progress_callback,
-                    cancel_check=cancel_event.is_set,
-                )
+                graph = None
+                all_reports: list[dict[str, Any]] = []
+                for i, (tp, doc_name) in enumerate(zip(temp_paths, doc_names)):
+                    if cancel_event.is_set():
+                        raise PipelineCancelledError("Cancelled by client")
+                    if len(temp_paths) > 1:
+                        progress_queue.put({
+                            "step": "file_start",
+                            "data": {
+                                "file_index": i + 1,
+                                "total_files": len(temp_paths),
+                                "filename": doc_name,
+                            },
+                        })
+                    _graph, report = process_document(
+                        str(tp),
+                        run_inference=run_inference,
+                        verbose=False,
+                        sequential=sequential,
+                        run_reasoning=run_reasoning,
+                        parallel_extraction=parallel,
+                        progress_callback=progress_callback,
+                        cancel_check=cancel_event.is_set,
+                    )
+                    if graph is None:
+                        graph = _graph
+                    else:
+                        graph.merge_from(_graph)
+                    all_reports.append(report.to_dict())
+
+                if graph is None or not all_reports:
+                    raise ValueError("Pipeline produced no result")
+
                 set_graph(graph, document_subject=None)
                 build_qa_index(graph, False)
 
                 kb_id = uuid.uuid4().hex
-                name = (title or Path(file.filename).stem or f"ontology-{kb_id[:8]}").strip() or f"ontology-{kb_id[:8]}"
+                first_stem = Path(doc_names[0]).stem if doc_names else ""
+                name = (title or first_stem or f"ontology-{kb_id[:8]}").strip() or f"ontology-{kb_id[:8]}"
                 saved_path = _ONTOLOGY_GRAPHS / f"{kb_id}.json"
                 _ONTOLOGY_GRAPHS.mkdir(parents=True, exist_ok=True)
                 save_to_path_with_metadata(
@@ -450,17 +570,23 @@ async def build_ontology_stream(
                     name=name,
                     kb_id=kb_id,
                     description=description or "",
-                    documents=[file.filename] if file.filename else [],
+                    documents=doc_names,
                 )
                 set_current_kb_id(kb_id)
 
-                report_dict = report.to_dict()
+                last_report_dict = all_reports[-1]
+                export = graph.export()
                 result_holder = {
                     "type": "complete",
-                    "graph": graph.export(),
+                    "graph": export,
                     "kb_id": kb_id,
                     "pipeline_report": _build_report_dict(
-                        report_dict, name, document_display=file.filename
+                        last_report_dict,
+                        name,
+                        totals=export.get("stats", {}),
+                        document_display=", ".join(doc_names) if len(doc_names) > 1 else (doc_names[0] if doc_names else ""),
+                        all_reports=all_reports if len(all_reports) > 1 else None,
+                        doc_names=doc_names if len(doc_names) > 1 else None,
                     ),
                 }
             except PipelineCancelledError:
@@ -472,11 +598,12 @@ async def build_ontology_stream(
             finally:
                 _restore_env(old_env)
                 _active_pipelines.pop(job_id, None)
-                if temp_path.exists():
-                    try:
-                        temp_path.unlink()
-                    except OSError:
-                        pass
+                for tp in temp_paths:
+                    if tp.exists():
+                        try:
+                            tp.unlink()
+                        except OSError:
+                            pass
                 progress_queue.put({"type": "end"})
 
         pipeline_task = asyncio.create_task(asyncio.to_thread(run_pipeline))
@@ -523,7 +650,8 @@ async def build_ontology_stream(
 async def extend_kb_stream(
     kb_id: str,
     request: Request,
-    file: UploadFile = File(..., description="Document (PDF, DOCX, TXT, MD)"),
+    file: UploadFile | None = File(None, description="Single document (PDF, DOCX, TXT, MD)"),
+    files: list[UploadFile] | None = File(None, description="Multiple documents"),
     model: str | None = Form(None, description="LLM model override (e.g. gpt-4.1o-mini)"),
     workers: int | None = Form(None, description="Parallel workers for extraction"),
     chunk_size: int | None = Form(None, description="Chunk size in chars"),
@@ -534,29 +662,40 @@ async def extend_kb_stream(
     run_reasoning: bool = Query(True),
     parallel: bool = Query(True),
 ):
-    """Upload a document and merge its extracted ontology into an existing KB, streaming progress via SSE."""
+    """Upload one or more documents and merge their extracted ontologies into an existing KB, streaming progress via SSE."""
     kb_path = _ONTOLOGY_GRAPHS / f"{kb_id}.json"
     if not kb_path.exists():
         raise HTTPException(404, f"Knowledge base '{kb_id}' not found.")
 
-    if not file.filename:
-        raise HTTPException(400, "Missing filename")
-    suffix = Path(file.filename).suffix.lower()
-    if suffix not in _ALLOWED_SUFFIXES:
-        raise HTTPException(400, f"Unsupported format. Use one of: {', '.join(_ALLOWED_SUFFIXES)}")
+    uploads = _normalize_files(file=file, files=files)
+    if not uploads:
+        raise HTTPException(400, "Provide at least one document: use 'file' or 'files'")
 
-    logger.info("[ExtendKBStream] kb_id=%s file=%s", kb_id, file.filename)
+    for u in uploads:
+        suffix = Path(u.filename or "").suffix.lower()
+        if suffix not in _ALLOWED_SUFFIXES:
+            raise HTTPException(
+                400, f"Unsupported format for {u.filename}. Use one of: {', '.join(_ALLOWED_SUFFIXES)}"
+            )
+
+    logger.info("[ExtendKBStream] kb_id=%s files=%s", kb_id, [u.filename for u in uploads])
 
     _DOCUMENTS_RAW.mkdir(parents=True, exist_ok=True)
-    unique_name = f"{uuid.uuid4().hex}{suffix}"
-    temp_path = _DOCUMENTS_RAW / unique_name
+    temp_paths: list[Path] = []
+    doc_names: list[str] = []
 
     try:
-        content = await file.read()
-        temp_path.write_bytes(content)
+        for u in uploads:
+            suffix = Path(u.filename or "").suffix.lower()
+            unique_name = f"{uuid.uuid4().hex}{suffix}"
+            tp = _DOCUMENTS_RAW / unique_name
+            content = await u.read()
+            tp.write_bytes(content)
+            temp_paths.append(tp)
+            doc_names.append(u.filename or unique_name)
     except Exception as e:
-        logger.exception("Failed to save upload")
-        raise HTTPException(500, f"Failed to save file: {e}") from e
+        logger.exception("Failed to save uploads")
+        raise HTTPException(500, f"Failed to save files: {e}") from e
 
     # Read existing metadata before entering the thread
     meta_path = _ONTOLOGY_GRAPHS / f"{kb_id}.meta.json"
@@ -592,7 +731,12 @@ async def extend_kb_stream(
         _active_pipelines[job_id] = cancel_event
 
         extraction_mode = "legacy" if not sequential else ("parallel" if parallel else "sequential")
-        yield _sse_event({"type": "job_started", "job_id": job_id, "extraction_mode": extraction_mode})
+        yield _sse_event({
+            "type": "job_started",
+            "job_id": job_id,
+            "extraction_mode": extraction_mode,
+            "file_count": len(temp_paths),
+        })
 
         disconnect_task = asyncio.create_task(watch_disconnect())
 
@@ -607,19 +751,33 @@ async def extend_kb_stream(
             )
             try:
                 existing_graph = load_from_path(kb_path)
+                all_reports: list[dict[str, Any]] = []
 
-                new_graph, report = process_document(
-                    str(temp_path),
-                    run_inference=run_inference,
-                    verbose=False,
-                    sequential=sequential,
-                    run_reasoning=run_reasoning,
-                    parallel_extraction=parallel,
-                    progress_callback=progress_callback,
-                    cancel_check=cancel_event.is_set,
-                )
+                for i, (tp, doc_name) in enumerate(zip(temp_paths, doc_names)):
+                    if cancel_event.is_set():
+                        raise PipelineCancelledError("Cancelled by client")
+                    if len(temp_paths) > 1:
+                        progress_queue.put({
+                            "step": "file_start",
+                            "data": {
+                                "file_index": i + 1,
+                                "total_files": len(temp_paths),
+                                "filename": doc_name,
+                            },
+                        })
+                    new_graph, report = process_document(
+                        str(tp),
+                        run_inference=run_inference,
+                        verbose=False,
+                        sequential=sequential,
+                        run_reasoning=run_reasoning,
+                        parallel_extraction=parallel,
+                        progress_callback=progress_callback,
+                        cancel_check=cancel_event.is_set,
+                    )
+                    existing_graph.merge_from(new_graph)
+                    all_reports.append(report.to_dict())
 
-                existing_graph.merge_from(new_graph)
                 set_graph(existing_graph, document_subject=None)
                 build_qa_index(existing_graph, False)
 
@@ -629,21 +787,24 @@ async def extend_kb_stream(
                     name=kb_name,
                     kb_id=kb_id,
                     description=kb_description,
-                    documents=[file.filename] if file.filename else [],
+                    documents=doc_names,
                     merge_documents=True,
                 )
                 set_current_kb_id(kb_id)
 
-                report_dict = report.to_dict()
+                last_report_dict = all_reports[-1] if all_reports else {}
+                export = existing_graph.export()
                 result_holder = {
                     "type": "complete",
-                    "graph": existing_graph.export(),
+                    "graph": export,
                     "kb_id": kb_id,
                     "pipeline_report": _build_report_dict(
-                        report_dict,
+                        last_report_dict,
                         kb_name,
-                        totals=existing_graph.export().get("stats", {}),
-                        document_display=file.filename,
+                        totals=export.get("stats", {}),
+                        document_display=", ".join(doc_names) if len(doc_names) > 1 else (doc_names[0] if doc_names else ""),
+                        all_reports=all_reports if len(all_reports) > 1 else None,
+                        doc_names=doc_names if len(doc_names) > 1 else None,
                     ),
                 }
             except PipelineCancelledError:
@@ -655,11 +816,12 @@ async def extend_kb_stream(
             finally:
                 _restore_env(old_env)
                 _active_pipelines.pop(job_id, None)
-                if temp_path.exists():
-                    try:
-                        temp_path.unlink()
-                    except OSError:
-                        pass
+                for tp in temp_paths:
+                    if tp.exists():
+                        try:
+                            tp.unlink()
+                        except OSError:
+                            pass
                 progress_queue.put({"type": "end"})
 
         pipeline_task = asyncio.create_task(asyncio.to_thread(run_extend))
@@ -815,13 +977,15 @@ async def get_kb_health(kb_id: str):
             load_graph_health,
             save_graph_health,
         )
-        graph = await asyncio.to_thread(load_from_path, path)
+        graph = await asyncio.to_thread(
+            load_from_path, path, False
+        )
         health = compute_graph_health(graph, kb_id=kb_id)
         _REPORTS_DIR.mkdir(parents=True, exist_ok=True)
         await asyncio.to_thread(save_graph_health, kb_id, health, _REPORTS_DIR)
         return health
     except Exception as e:
-        logger.exception("Failed to compute health for kb_id=%s", kb_id)
+        logger.exception("Failed to compute health for kb_id=%s: %s", kb_id, e)
         raise HTTPException(500, f"Failed to compute health: {e}") from e
 
 
@@ -900,7 +1064,7 @@ def _run_evaluation_sync(
 ) -> dict:
     """Run evaluation in sync (for thread pool). Returns record dict."""
     from ontology_builder.evaluation.eval_pipeline import run_evaluation
-    graph = load_from_path(path)
+    graph = load_from_path(path, seed_canonicalizer=False)
     record = run_evaluation(
         graph,
         kb_id=kb_id,
