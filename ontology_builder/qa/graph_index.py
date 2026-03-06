@@ -18,16 +18,15 @@ from dataclasses import dataclass, field
 from typing import Any
 
 import numpy as np
-from sentence_transformers import SentenceTransformer
 from tqdm import tqdm
 
 from ontology_builder.constants import ENCODE_BATCH_SIZE, MAX_RETRIEVAL_FACTS
+from ontology_builder.embeddings import get_embedding_model
 from ontology_builder.storage.graphdb import OntologyGraph
 from ontology_builder.storage.hypergraph import HyperGraph, build_hypergraph
 
 logger = logging.getLogger(__name__)
 
-_model: SentenceTransformer | None = None
 _lock = threading.Lock()
 _records: list[dict[str, Any]] = []
 _key_embeddings: np.ndarray | None = None
@@ -37,14 +36,6 @@ _node_to_record_indices: dict[str, list[int]] = {}
 _hyperedges: list[list[int]] = []
 _graph_ref: OntologyGraph | None = None
 _hypergraph_ref: HyperGraph | None = None
-
-
-def _get_model() -> SentenceTransformer:
-    global _model
-    with _lock:
-        if _model is None:
-            _model = SentenceTransformer("all-MiniLM-L6-v2")
-        return _model
 
 
 # ---------------------------------------------------------------------------
@@ -192,6 +183,12 @@ def build_index(graph: OntologyGraph, verbose: bool = True) -> None:
 
     nodes = graph.get_graph().number_of_nodes()
     edges = graph.get_graph().number_of_edges()
+
+    with _lock:
+        if graph is _graph_ref and _key_embeddings is not None:
+            logger.debug("[QAIndex] Skipping rebuild: index already for same graph")
+            return
+
     logger.info("[QAIndex] Building index | nodes=%d | edges=%d", nodes, edges)
 
     records = _graph_to_records(graph)
@@ -216,7 +213,7 @@ def build_index(graph: OntologyGraph, verbose: bool = True) -> None:
     keys = [r["key"] for r in records]
     values = [r["value"] for r in records]
     logger.debug("[QAIndex] Encoding %d records", len(records))
-    model = _get_model()
+    model = get_embedding_model()
     key_chunks = []
     value_chunks = []
     for i in tqdm(
@@ -320,7 +317,7 @@ def retrieve(query: str, top_k: int = 10) -> list[str]:
     if not records or key_emb is None or value_emb is None:
         return []
 
-    model = _get_model()
+    model = get_embedding_model()
     q_emb = model.encode(query, convert_to_numpy=True, show_progress_bar=False)
     key_scores = _cosine_scores(q_emb, key_emb)
     value_scores = _cosine_scores(q_emb, value_emb)
@@ -351,7 +348,7 @@ def retrieve_with_context(query: str, top_k: int = 10) -> RetrievalResult:
     if not records or key_emb is None or value_emb is None:
         return RetrievalResult()
 
-    model = _get_model()
+    model = get_embedding_model()
     q_emb = model.encode(query, convert_to_numpy=True, show_progress_bar=False)
     key_scores = _cosine_scores(q_emb, key_emb)
     value_scores = _cosine_scores(q_emb, value_emb)
@@ -390,7 +387,7 @@ def retrieve_hyperedges(query: str, k_nodes: int = 10, max_hyperedges: int = 5) 
     if not records or key_emb is None or value_emb is None or not hyperedges:
         return []
 
-    model = _get_model()
+    model = get_embedding_model()
     q_emb = model.encode(query, convert_to_numpy=True, show_progress_bar=False)
     key_scores = _cosine_scores(q_emb, key_emb)
     value_scores = _cosine_scores(q_emb, value_emb)
