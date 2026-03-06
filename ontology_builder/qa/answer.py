@@ -62,6 +62,7 @@ def answer_question(
     context_snippets: list[str],
     source_refs: list[str] | None = None,
     ontological_context: str = "",
+    answer_language: str | None = None,
 ) -> QAResult:
     """Generate an answer from question and retrieved ontology facts.
 
@@ -71,6 +72,8 @@ def answer_question(
         source_refs: Parallel list of source reference IDs for attribution.
             If None, uses fact:0, fact:1, ...
         ontological_context: OntoRAG-style taxonomy context (parents, children, defs).
+        answer_language: ISO 639-1 code for answer language (e.g. en, fr). If None,
+            the model is instructed to answer in the same language as the question.
 
     Returns:
         QAResult with answer text, sources, ontological_context, num_facts_used.
@@ -89,7 +92,9 @@ def answer_question(
         logger.debug("[QA] Truncating context from %d to %d chars", len(context), max_context_chars)
         context = context[:max_context_chars] + "\n[... truncated ...]"
 
-    user = build_qa_user_prompt(context, question, ontological_context)
+    user = build_qa_user_prompt(
+        context, question, ontological_context, answer_language=answer_language
+    )
     response_text = complete(
         system=QA_SYSTEM,
         user=user,

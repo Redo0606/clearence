@@ -1,5 +1,30 @@
 """Prompt templates for ontology-grounded QA (RAG) with fact-level attribution."""
 
+# Language names for answer-language instruction (user's language, not ontology language)
+_ANSWER_LANGUAGE_NAMES = {
+    "en": "English",
+    "fr": "French",
+    "de": "German",
+    "es": "Spanish",
+    "it": "Italian",
+    "pt": "Portuguese",
+    "nl": "Dutch",
+    "ar": "Arabic",
+    "zh": "Chinese",
+    "ja": "Japanese",
+    "ko": "Korean",
+    "ru": "Russian",
+}
+
+
+def _answer_language_instruction(answer_language: str | None) -> str:
+    """Return instruction so the model answers in the user's language (not the ontology language)."""
+    if answer_language:
+        name = _ANSWER_LANGUAGE_NAMES.get(answer_language.lower(), answer_language)
+        return f"\n\nYou must respond in {name} only. Both the reasoning and answer must be in {name}."
+    return "\n\nYou must respond in the same language as the user's question. Use that language for both the reasoning and the answer."
+
+
 QA_SYSTEM = """\
 You answer questions about a domain using only the provided ontology information.
 
@@ -25,6 +50,7 @@ Retrieved facts:
 {context}
 
 Question: {question}
+{answer_language_instruction}
 
 Respond with JSON only: {{"reasoning": "...", "answer": "..."}}"""
 
@@ -33,11 +59,19 @@ def build_qa_user_prompt(
     context: str,
     question: str,
     ontological_context: str = "",
+    answer_language: str | None = None,
 ) -> str:
-    """Build QA user prompt with optional ontological context."""
+    """Build QA user prompt with optional ontological context and answer language.
+
+    answer_language: ISO 639-1 code (e.g. en, fr). If None, instructs the model to
+    answer in the same language as the user's question (so the user always gets
+    answers in their language regardless of ontology language).
+    """
     onto = ontological_context.strip() if ontological_context else "(no ontological context available)"
+    answer_instruction = _answer_language_instruction(answer_language)
     return QA_USER_TEMPLATE.format(
         ontological_context=onto,
         context=context.strip(),
         question=question.strip(),
+        answer_language_instruction=answer_instruction,
     )
