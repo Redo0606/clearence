@@ -15,6 +15,9 @@ Each stage returns structured JSON matching the formal schema O = {C, R, I, P}.
 EXTRACT_CLASSES_SYSTEM = (
     "You are a formal ontology engineer. "
     "Extract only the conceptual classes (universals / categories) from the text. "
+    "Extract only classes that represent general categories or types, not specific named individuals or one-off instances. "
+    "Prefer broader classes over overly narrow subclasses unless the document explicitly distinguishes them. "
+    "Do not invent classes that are not evidenced in the provided text. "
     "Output ONLY valid JSON — no markdown, no code fences, no commentary."
 )
 
@@ -38,6 +41,11 @@ Rules:
 - Include "synonyms" only when the text uses alternative terms for the same concept (e.g. "Vehicle" -> ["Car", "Automobile"]).
 - Set "parent" only when the text explicitly states an is-a / subclass relationship.
 - Every class must have a non-empty description grounded in the text.
+- Extract no more than 20 classes per chunk.
+
+Do NOT extract:
+- Hallucinated classes (e.g. "QuantumEntanglementModule" when the text only discusses vehicles).
+- Specific instances as classes (e.g. "JohnSmith" or "ProjectAlpha" as a class; use them as instances of a class like "Person" or "Project").
 
 Text:
 {chunk}
@@ -157,11 +165,26 @@ Text:
 
 INFERENCE_PROMPT = """\
 Given an ontology graph, infer subclass relations, causal relations, dependencies, rules, and missing connections.
+Prioritize inferring relations between entities that appear in different clusters or sections of the graph, to connect otherwise disconnected parts.
 
 Return valid JSON only (no markdown, no code fences). Use one top-level key:
 - relations: array of objects, each with source, relation, target, and confidence (0 to 1)
 
 Ontology graph:
+"""
+
+# Used by cross-component relation inference (entity pairs from disconnected clusters)
+CROSS_COMPONENT_INFERENCE_PROMPT = """\
+Given an ontology graph and a list of entity pairs from different disconnected clusters, infer plausible relations that could connect them (e.g. part_of, depends_on, related_to, type, subClassOf).
+
+Return valid JSON only (no markdown, no code fences). Use one top-level key:
+- relations: array of objects, each with source, relation, target, and confidence (0 to 1). Only include relations where both source and target are from the entity pairs or the graph.
+
+Ontology graph (summary):
+{graph_summary}
+
+Entity pairs to connect (source, target from different clusters):
+{pairs_text}
 """
 
 # ---------------------------------------------------------------------------

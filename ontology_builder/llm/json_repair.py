@@ -186,6 +186,14 @@ def _strip_non_json_lines(s: str) -> str:
     return "\n".join(kept)
 
 
+def _slice_from_first_brace_to_end(s: str) -> str:
+    """Slice from first { to end of string. Use when LLM output is truncated (no closing brace)."""
+    start = s.find("{")
+    if start == -1:
+        return s
+    return s[start:]
+
+
 def _close_truncated(s: str) -> str:
     """Close any unclosed brackets/braces to recover from truncated output."""
     stack: list[str] = []
@@ -259,6 +267,12 @@ def repair_json(raw: str) -> object:
         if result is not None:
             logger.debug("[JSONRepair] Repaired with strategy=fenced_block_%d+clean", idx)
             return result
+        # Truncated JSON inside fence: close brackets/braces and try again
+        closed = _close_truncated(cleaned)
+        result = _try(closed)
+        if result is not None:
+            logger.debug("[JSONRepair] Repaired with strategy=fenced_block_%d+close_truncated", idx)
+            return result
 
     # --- Phase 2: progressive strategies on stripped base ---------------
     last_block = _extract_last_json_block(base)
@@ -287,6 +301,9 @@ def repair_json(raw: str) -> object:
                                _remove_js_comments(stripped)))),
         ("close_trunc",    _close_truncated(_fix_trailing_commas(
                                _extract_json_block(_remove_js_comments(base))))),
+        # Truncated at end of response: from first { to end, then close brackets
+        ("truncated_close", _close_truncated(_fix_trailing_commas(_remove_js_comments(
+                               _slice_from_first_brace_to_end(base))))),
     ]
 
     for name, candidate in strategies:
