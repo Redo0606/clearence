@@ -43,7 +43,8 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONPATH="/app" \
     MPLCONFIGDIR=/tmp/matplotlib \
     HF_HOME=/tmp/huggingface \
-    TRANSFORMERS_CACHE=/tmp/huggingface
+    TRANSFORMERS_CACHE=/tmp/huggingface \
+    NLTK_DATA=/tmp/nltk_data
 
 # Create app user and group (no login shell, no home dir)
 RUN groupadd --gid ${APP_GID} app \
@@ -59,9 +60,9 @@ COPY app/ ./app/
 COPY core/ ./core/
 COPY ontology_builder/ ./ontology_builder/
 
-# Create writable directories for uploads and persisted graphs
-RUN mkdir -p /app/documents/raw /app/documents/ontology_graphs \
-    && chown -R app:app /app
+# Create writable directories for uploads, persisted graphs, and NLTK data (wordnet in canonicalizer)
+RUN mkdir -p /app/documents/raw /app/documents/ontology_graphs /tmp/nltk_data \
+    && chown -R app:app /app /tmp/nltk_data
 
 # Switch to non-root user
 USER app
