@@ -1,0 +1,2158 @@
+[
+  {
+    "id": "29a4deea-12f3-45e8-8930-0f5631dcb13b",
+    "kb_id": "5ef0b7c679d7424d8f9461d4065a88eb",
+    "kb_name": "Professor Chen",
+    "timestamp": "2026-03-06T00:46:38.306444+00:00",
+    "scores": {
+      "context_recall": 0.2533333333333333,
+      "entity_recall": 0.6013082974392581,
+      "answer_correctness": 0.46871456564598696,
+      "faithfulness": 0.099,
+      "answer_relevancy": 0.35899999999999993,
+      "context_precision": 0.84,
+      "per_question": [
+        {
+          "question": "What is a trainer?",
+          "answer": "A trainer is an individual who battles with Pok\u00e9mon and strategizes their use.",
+          "context_recall": 0.5,
+          "entity_recall": 0.7,
+          "answer_correctness": 0.48484848484848486
+        },
+        {
+          "question": "What is Pok\u00e9mon?",
+          "answer": "Pok\u00e9mon are creatures used in battles, each with unique abilities and characteristics.",
+          "context_recall": 0.5,
+          "entity_recall": 0.68,
+          "answer_correctness": 0.48275862068965514
+        },
+        {
+          "question": "What is a battle?",
+          "answer": "A battle is a competitive encounter between Trainers using their Pok\u00e9mon.",
+          "context_recall": 0.5,
+          "entity_recall": 0.7058823529411765,
+          "answer_correctness": 0.4444444444444445
+        },
+        {
+          "question": "What is a type?",
+          "answer": "A type is a fundamental characteristic of a Pok\u00e9mon that serves as its primary form of defense and influences its strengths and weaknesses in battles.",
+          "context_recall": 0.0,
+          "entity_recall": 0.5609756097560976,
+          "answer_correctness": 0.2692307692307692
+        },
+        {
+          "question": "What is a moveset?",
+          "answer": "A moveset is the combination of Fast and Charge Attacks assigned to a Pok\u00e9mon.",
+          "context_recall": 0.5,
+          "entity_recall": 0.6666666666666666,
+          "answer_correctness": 0.5833333333333334
+        },
+        {
+          "question": "What is a stat product?",
+          "answer": "A stat product is a total measure of a Pok\u00e9mon's stats that reflects its effectiveness in battles.",
+          "context_recall": 0.5,
+          "entity_recall": 0.8518518518518519,
+          "answer_correctness": 0.4444444444444444
+        },
+        {
+          "question": "What is combat power?",
+          "answer": "Combat Power is a numerical measure of a Pok\u00e9mon's strength in battles.",
+          "context_recall": 0.5,
+          "entity_recall": 0.4444444444444444,
+          "answer_correctness": 0.3870967741935483
+        },
+        {
+          "question": "What is type effectiveness?",
+          "answer": "Type effectiveness is the set of guidelines that determine how different Pok\u00e9mon types interact, affecting their strengths and weaknesses in battles.",
+          "context_recall": 0.5,
+          "entity_recall": 0.6111111111111112,
+          "answer_correctness": 0.5531914893617021
+        },
+        {
+          "question": "What is resistance?",
+          "answer": "Resistance is a characteristic that reduces damage taken from certain types of moves in Pok\u00e9mon battles.",
+          "context_recall": 0.5,
+          "entity_recall": 0.5862068965517241,
+          "answer_correctness": 0.5945945945945945
+        },
+        {
+          "question": "What is weakness?",
+          "answer": "Weakness is a characteristic that increases damage taken from certain types of moves in Pok\u00e9mon battles.",
+          "context_recall": 0.5,
+          "entity_recall": 0.71875,
+          "answer_correctness": 0.5555555555555556
+        },
+        {
+          "question": "What is wild Su San Boyle?",
+          "answer": "wildSuSanBoyle is a Trainer participating in Pok\u00e9mon GO Trainer Battles.",
+          "context_recall": 1.0,
+          "entity_recall": 0.9230769230769231,
+          "answer_correctness": 0.5
+        },
+        {
+          "question": "What is Bastiodon?",
+          "answer": "Bastiodon is a Steel-type Pok\u00e9mon known for its ability to resist Flying, Ice, and Psychic attacks.",
+          "context_recall": 0.5,
+          "entity_recall": 0.8823529411764706,
+          "answer_correctness": 0.64
+        },
+        {
+          "question": "What are trainer battles?",
+          "answer": "Trainer Battles are a fun and strategic competitive format where players battle each other using their Pok\u00e9mon.",
+          "context_recall": 0.5,
+          "entity_recall": 0.7777777777777778,
+          "answer_correctness": 0.7027027027027025
+        },
+        {
+          "question": "What is a trainer battle?",
+          "answer": "A trainer battle is a competitive format where players battle each other using their Pok\u00e9mon.",
+          "context_recall": 0.5,
+          "entity_recall": 0.7407407407407407,
+          "answer_correctness": 0.5142857142857142
+        },
+        {
+          "question": "What is a fast attack?",
+          "answer": "A fast attack is a quick move in Pok\u00e9mon GO that deals damage and generates energy when activated by tapping the screen.",
+          "context_recall": 0.3333333333333333,
+          "entity_recall": 0.7619047619047619,
+          "answer_correctness": 0.5306122448979592
+        },
+        {
+          "question": "What is a charge attack?",
+          "answer": "A Charge Attack is a powerful move that alters a Pok\u00e9mon's Attack and Defense stats and requires energy accumulated from Fast Attacks.",
+          "context_recall": 0.5,
+          "entity_recall": 0.75,
+          "answer_correctness": 0.6285714285714286
+        },
+        {
+          "question": "What is the same type attack bonus?",
+          "answer": "The Same Type Attack Bonus is a 20% damage boost for moves used by a Pok\u00e9mon of the same type.",
+          "context_recall": 0.5,
+          "entity_recall": 0.6764705882352942,
+          "answer_correctness": 0.5555555555555556
+        },
+        {
+          "question": "What is energy?",
+          "answer": "Energy is a resource generated by Fast Attacks and used to cast Charge Attacks.",
+          "context_recall": 0.5,
+          "entity_recall": 0.5789473684210527,
+          "answer_correctness": 0.5833333333333334
+        },
+        {
+          "question": "What is a turn?",
+          "answer": "A turn is a unit of time used to measure moves in Pok\u00e9mon GO.",
+          "context_recall": 0.5,
+          "entity_recall": 0.5357142857142857,
+          "answer_correctness": 0.5
+        },
+        {
+          "question": "What is a stat product?",
+          "answer": "A stat product is a measure of a Pok\u00e9mon's effectiveness based on its total statistics.",
+          "context_recall": 0.5,
+          "entity_recall": 0.8518518518518519,
+          "answer_correctness": 0.3529411764705882
+        },
+        {
+          "question": "What is a fast attack?",
+          "answer": "A fast attack is a quick move in Pok\u00e9mon GO that deals damage and generates energy by tapping the screen during battle.",
+          "context_recall": 0.6666666666666666,
+          "entity_recall": 0.7857142857142857,
+          "answer_correctness": 0.5306122448979592
+        },
+        {
+          "question": "What is the same type attack bonus?",
+          "answer": "The Same Type Attack Bonus is a 20% damage boost for moves used by a Pok\u00e9mon of the same type.",
+          "context_recall": 0.5,
+          "entity_recall": 0.6764705882352942,
+          "answer_correctness": 0.5555555555555556
+        },
+        {
+          "question": "What are charge attacks?",
+          "answer": "Charge attacks are powerful moves in Pok\u00e9mon that can only be executed using energy gained from Fast Attacks.",
+          "context_recall": 0.3333333333333333,
+          "entity_recall": 0.71875,
+          "answer_correctness": 0.4736842105263157
+        },
+        {
+          "question": "What is a game mechanic?",
+          "answer": "A game mechanic is a system designed to govern and guide player actions in a game.",
+          "context_recall": 0.3333333333333333,
+          "entity_recall": 0.625,
+          "answer_correctness": 0.25
+        },
+        {
+          "question": "What is a matchup?",
+          "answer": "A matchup is a battle pairing between two Pok\u00e9mon that describes the outcome of their encounter.",
+          "context_recall": 0.0,
+          "entity_recall": 0.6111111111111112,
+          "answer_correctness": 0.41860465116279066
+        },
+        {
+          "question": "What is a buff?",
+          "answer": "A buff is a strengthening effect that enhances the attributes or capabilities of a character or entity.",
+          "context_recall": 0.0,
+          "entity_recall": 0.5333333333333333,
+          "answer_correctness": 0.4545454545454546
+        },
+        {
+          "question": "What is a debuff?",
+          "answer": "A debuff is a weakening effect that reduces the effectiveness of a character or entity.",
+          "context_recall": 0.0,
+          "entity_recall": 0.5333333333333333,
+          "answer_correctness": 0.43478260869565216
+        },
+        {
+          "question": "What is a minigame?",
+          "answer": "A minigame is an interactive game-like experience that occurs when performing a Charge Attack, involving tapping and swiping icons.",
+          "context_recall": 0.5,
+          "entity_recall": 0.6551724137931034,
+          "answer_correctness": 0.5365853658536585
+        },
+        {
+          "question": "What is razor leaf?",
+          "answer": "Razor Leaf is a powerful Fast Attack known for its high damage but low energy generation.",
+          "context_recall": 0.0,
+          "entity_recall": 0.5483870967741935,
+          "answer_correctness": 0.4848484848484849
+        },
+        {
+          "question": "What is bullet seed?",
+          "answer": "Bullet Seed is a Grass-type Fast Attack used in Pok\u00e9mon battles that focuses on generating energy.",
+          "context_recall": 0.5,
+          "entity_recall": 0.7916666666666666,
+          "answer_correctness": 0.6206896551724139
+        },
+        {
+          "question": "What are player actions?",
+          "answer": "Player actions are strategic decisions made by players during battles, governed by game mechanics.",
+          "context_recall": 0.0,
+          "entity_recall": 0.65625,
+          "answer_correctness": 0.5365853658536585
+        },
+        {
+          "question": "What is an outcome?",
+          "answer": "An outcome is the result of a matchup in Pok\u00e9mon battles, influenced by various strategic factors.",
+          "context_recall": 0.0,
+          "entity_recall": 0.4,
+          "answer_correctness": 0.4444444444444444
+        },
+        {
+          "question": "What is damage?",
+          "answer": "Damage is a fundamental concept in Pok\u00e9mon GO, representing the harm dealt to opponents through various types of attacks.",
+          "context_recall": 0.0,
+          "entity_recall": 0.5135135135135135,
+          "answer_correctness": 0.47619047619047616
+        },
+        {
+          "question": "What is a stat-changing effect?",
+          "answer": "A stat-changing effect modifies a Pok\u00e9mon's Attack and Defense stats, impacting its performance in battles.",
+          "context_recall": 0.0,
+          "entity_recall": 0.6875,
+          "answer_correctness": 0.3888888888888889
+        },
+        {
+          "question": "What is a player?",
+          "answer": "A player is an individual who participates in Pok\u00e9mon battles, controlling Pok\u00e9mon and making strategic decisions.",
+          "context_recall": 0.5,
+          "entity_recall": 0.7428571428571429,
+          "answer_correctness": 0.47619047619047616
+        },
+        {
+          "question": "What is a switch?",
+          "answer": "A switch is the action of changing one Pok\u00e9mon for another during a match.",
+          "context_recall": 0.5,
+          "entity_recall": 0.7333333333333333,
+          "answer_correctness": 0.5
+        },
+        {
+          "question": "What is an effect?",
+          "answer": "An effect is a temporary stat modifier linked to Charge Attacks that influences damage dealt and received.",
+          "context_recall": 0.0,
+          "entity_recall": 0.45714285714285713,
+          "answer_correctness": 0.5116279069767442
+        },
+        {
+          "question": "What is a stat modifier?",
+          "answer": "A stat modifier refers to changes in a Pok\u00e9mon's Attack and Defense stats, which can be increased or decreased.",
+          "context_recall": 0.0,
+          "entity_recall": 0.5769230769230769,
+          "answer_correctness": 0.29411764705882354
+        },
+        {
+          "question": "What is a PvP mechanic?",
+          "answer": "A PvP mechanic is a set of rules and strategies that govern player versus player interactions in battles.",
+          "context_recall": 0.5,
+          "entity_recall": 0.4857142857142857,
+          "answer_correctness": 0.45454545454545453
+        },
+        {
+          "question": "What is Empoleon?",
+          "answer": "Empoleon is a Steel-type Pok\u00e9mon known for its resistance to Flying, Ice, and Psychic attacks, but it is weak against Fighting types.",
+          "context_recall": 0.5,
+          "entity_recall": 0.8387096774193549,
+          "answer_correctness": 0.6666666666666667
+        },
+        {
+          "question": "What is drill peck?",
+          "answer": "Drill Peck is a Charge Attack move in Pok\u00e9mon that effectively threatens opponents.",
+          "context_recall": 0.5,
+          "entity_recall": 0.7333333333333333,
+          "answer_correctness": 0.45714285714285713
+        },
+        {
+          "question": "What is Hydro Cannon?",
+          "answer": "Hydro Cannon is a powerful Charge Attack.",
+          "context_recall": 1.0,
+          "entity_recall": 0.7777777777777778,
+          "answer_correctness": 0.5
+        },
+        {
+          "question": "What is Flash Cannon?",
+          "answer": "Flash Cannon is a powerful Charge Attack.",
+          "context_recall": 0.5,
+          "entity_recall": 0.75,
+          "answer_correctness": 0.45454545454545453
+        },
+        {
+          "question": "What is Blizzard?",
+          "answer": "Blizzard is a powerful Charge Attack that deals damage to opponents and can lower their stats.",
+          "context_recall": 1.0,
+          "entity_recall": 0.9047619047619048,
+          "answer_correctness": 0.6666666666666666
+        },
+        {
+          "question": "What is Hydro Pump?",
+          "answer": "Hydro Pump is a powerful Charge Attack that deals damage to opponents and can lower their stats.",
+          "context_recall": 0.5,
+          "entity_recall": 0.9,
+          "answer_correctness": 0.7333333333333334
+        },
+        {
+          "question": "What is Brave Bird?",
+          "answer": "Brave Bird is a powerful ChargeAttack move that deals more damage than expected for its energy cost and can lower the opponent's stats.",
+          "context_recall": 1.0,
+          "entity_recall": 0.8571428571428571,
+          "answer_correctness": 0.6829268292682927
+        },
+        {
+          "question": "What is superpower?",
+          "answer": "Superpower is a ChargeAttack that lowers both Attack and Defense stats in battles.",
+          "context_recall": 0.5,
+          "entity_recall": 0.84,
+          "answer_correctness": 0.43750000000000006
+        },
+        {
+          "question": "What is power-up punch?",
+          "answer": "Power-Up Punch is a Charge Attack that guarantees an Attack boost in battles.",
+          "context_recall": 0.5,
+          "entity_recall": 0.7241379310344828,
+          "answer_correctness": 0.6153846153846153
+        },
+        {
+          "question": "What are PvP mechanics?",
+          "answer": "PvP mechanics are the rules and strategies that govern player versus player interactions in battles.",
+          "context_recall": 0.5,
+          "entity_recall": 0.6666666666666666,
+          "answer_correctness": 0.5
+        },
+        {
+          "question": "What is a role?",
+          "answer": "A role is a habitat within the Pok\u00e9mon ecosystem.",
+          "context_recall": 0.0,
+          "entity_recall": 0.6,
+          "answer_correctness": 0.38095238095238093
+        },
+        {
+          "question": "What is meta?",
+          "answer": "The meta is an ecosystem that influences Pok\u00e9mon interactions and strategies, particularly in competitive formats like the GO Battle League.",
+          "context_recall": 0.0,
+          "entity_recall": 0.6071428571428571,
+          "answer_correctness": 0.717948717948718
+        },
+        {
+          "question": "What is a line?",
+          "answer": "A line is a team of three Pok\u00e9mon used in Pok\u00e9mon GO Trainer Battles.",
+          "context_recall": 0.5,
+          "entity_recall": 0.5416666666666666,
+          "answer_correctness": 0.5925925925925926
+        },
+        {
+          "question": "What is a simulation?",
+          "answer": "A simulation is a tool that depicts the outcome of Pok\u00e9mon matchups.",
+          "context_recall": 0.0,
+          "entity_recall": 0.45161290322580644,
+          "answer_correctness": 0.2941176470588235
+        },
+        {
+          "question": "What is Venusaur?",
+          "answer": "Venusaur is a Grass and Poison-type Pok\u00e9mon known for excelling against Fighting and Water types.",
+          "context_recall": 0.0,
+          "entity_recall": 0.5833333333333334,
+          "answer_correctness": 0.6428571428571429
+        },
+        {
+          "question": "What is Galarian Stunfisk?",
+          "answer": "Galarian Stunfisk is a Pok\u00e9mon known for its strategic versatility in battles.",
+          "context_recall": 0.5,
+          "entity_recall": 0.625,
+          "answer_correctness": 0.35714285714285715
+        },
+        {
+          "question": "What is the GO Battle League?",
+          "answer": "The GO Battle League is a competitive format where Pok\u00e9mon battle against each other, requiring Trainers to participate.",
+          "context_recall": 0.5,
+          "entity_recall": 0.7857142857142857,
+          "answer_correctness": 0.7027027027027027
+        },
+        {
+          "question": "What is PvPoke?",
+          "answer": "PvPoke is a battle simulator that helps trainers choose the right Pok\u00e9mon for matchups.",
+          "context_recall": 0.0,
+          "entity_recall": 0.5833333333333334,
+          "answer_correctness": 0.4375
+        },
+        {
+          "question": "What is grass?",
+          "answer": "Grass is an entity that represents a type of living organism, particularly significant in the context of Pok\u00e9mon as a Grass-type classification.",
+          "context_recall": 0.0,
+          "entity_recall": 0.3333333333333333,
+          "answer_correctness": 0.25531914893617025
+        },
+        {
+          "question": "What is poison?",
+          "answer": "Poison is an entity characterized by specific strengths and weaknesses, particularly against certain types like Sol and Plante.",
+          "context_recall": 0.0,
+          "entity_recall": 0.5151515151515151,
+          "answer_correctness": 0.45
+        },
+        {
+          "question": "What is steel?",
+          "answer": "Steel is a fundamental entity that represents a type associated with certain Pok\u00e9mon, influencing their abilities and resistances.",
+          "context_recall": 0.0,
+          "entity_recall": 0.4827586206896552,
+          "answer_correctness": 0.2702702702702703
+        },
+        {
+          "question": "What is Pok\u00e9mon advantage?",
+          "answer": "Pok\u00e9mon Advantage is the strategic benefit gained from having more health or Pok\u00e9mon in Trainer Battles.",
+          "context_recall": 0.3333333333333333,
+          "entity_recall": 0.5348837209302325,
+          "answer_correctness": 0.3555555555555555
+        },
+        {
+          "question": "What is matchup advantage?",
+          "answer": "Matchup Advantage is a specific aspect of Pok\u00e9mon Advantage that includes factors like Typing, Stat Product, and Moveset, affecting the outcome of Pok\u00e9mon battles.",
+          "context_recall": 0.5,
+          "entity_recall": 0.7428571428571429,
+          "answer_correctness": 0.4583333333333333
+        },
+        {
+          "question": "What is switch advantage?",
+          "answer": "Switch Advantage allows a player to choose the matchup after switching a Pok\u00e9mon during a battle.",
+          "context_recall": 0.0,
+          "entity_recall": 0.6428571428571429,
+          "answer_correctness": 0.4571428571428572
+        },
+        {
+          "question": "What is energy advantage?",
+          "answer": "Energy Advantage refers to the importance of generating and conserving energy, which is essential for executing impactful Charge Attacks.",
+          "context_recall": 0.0,
+          "entity_recall": 0.47058823529411764,
+          "answer_correctness": 0.3902439024390244
+        },
+        {
+          "question": "What is Pok\u00e9mon advantage?",
+          "answer": "Pok\u00e9mon Advantage is the strategic benefit in battles, defined by having more health or Pok\u00e9mon, influencing the outcome of Trainer Battles.",
+          "context_recall": 0.0,
+          "entity_recall": 0.5555555555555556,
+          "answer_correctness": 0.4285714285714285
+        },
+        {
+          "question": "What is matchup advantage?",
+          "answer": "Matchup Advantage refers to the various strategic factors that affect the outcome of a battle pairing between two Pok\u00e9mon.",
+          "context_recall": 0.5,
+          "entity_recall": 0.7428571428571429,
+          "answer_correctness": 0.5217391304347825
+        },
+        {
+          "question": "What is switch advantage?",
+          "answer": "Switch Advantage allows a player to decide which matchup occurs after switching a Pok\u00e9mon during a battle.",
+          "context_recall": 0.0,
+          "entity_recall": 0.6206896551724138,
+          "answer_correctness": 0.4210526315789474
+        },
+        {
+          "question": "What is energy advantage?",
+          "answer": "Energy Advantage refers to the importance of generating and conserving energy for impactful Charge Attacks in Pok\u00e9mon battles.",
+          "context_recall": 0.0,
+          "entity_recall": 0.5,
+          "answer_correctness": 0.3888888888888889
+        },
+        {
+          "question": "What is Cresselia?",
+          "answer": "Cresselia is a versatile Pok\u00e9mon known for its damage and energy-based strategies.",
+          "context_recall": 1.0,
+          "entity_recall": 0.8148148148148148,
+          "answer_correctness": 0.30769230769230765
+        },
+        {
+          "question": "What is flying?",
+          "answer": "Flying is an entity that classifies certain Pok\u00e9mon known for their flight capabilities.",
+          "context_recall": 0.0,
+          "entity_recall": 0.48148148148148145,
+          "answer_correctness": 0.25806451612903225
+        },
+        {
+          "question": "What is ice?",
+          "answer": "Ice is an entity that represents a fundamental type in the Pok\u00e9mon taxonomy, associated with various Pok\u00e9mon like Lamantine and Artikodin de Galar.",
+          "context_recall": 0.0,
+          "entity_recall": 0.7037037037037037,
+          "answer_correctness": 0.6285714285714286
+        },
+        {
+          "question": "What is psychic?",
+          "answer": "Psychic is a type of entity, particularly associated with certain Pok\u00e9mon like Mewtwo, characterized by specific strengths and weaknesses.",
+          "context_recall": 0.0,
+          "entity_recall": 0.39473684210526316,
+          "answer_correctness": 0.36363636363636365
+        },
+        {
+          "question": "What is an attack?",
+          "answer": "An attack is a move used in Pok\u00e9mon battles to deal damage or generate energy.",
+          "context_recall": 0.5,
+          "entity_recall": 0.7142857142857143,
+          "answer_correctness": 0.4736842105263158
+        },
+        {
+          "question": "What is an opponent?",
+          "answer": "An opponent is an entity that competes against a Trainer's Pok\u00e9mon in battles.",
+          "context_recall": 0.0,
+          "entity_recall": 0.6333333333333333,
+          "answer_correctness": 0.411764705882353
+        },
+        {
+          "question": "What are the opponent's stats?",
+          "answer": "The opponent's stats are a collection of attributes that define its combat capabilities, but specific values are not provided.",
+          "context_recall": 0.0,
+          "entity_recall": 0.5555555555555556,
+          "answer_correctness": 0.4210526315789474
+        },
+        {
+          "question": "What is normal?",
+          "answer": "Normal is a class of entities within the combat category, characterized by specific attributes and various instances.",
+          "context_recall": 0.0,
+          "entity_recall": 0.52,
+          "answer_correctness": 0.411764705882353
+        },
+        {
+          "question": "What is combat?",
+          "answer": "Combat is a competitive encounter between Trainers using their Pok\u00e9mon.",
+          "context_recall": 0.0,
+          "entity_recall": 0.5,
+          "answer_correctness": 0.30769230769230765
+        },
+        {
+          "question": "What is Feu?",
+          "answer": "Feu is a Fire-type Pok\u00e9mon with specific strengths and weaknesses.",
+          "context_recall": 0.0,
+          "entity_recall": 0.4838709677419355,
+          "answer_correctness": 0.25
+        },
+        {
+          "question": "What is eau?",
+          "answer": "Eau is a water-type entity known for its strengths against Plante, Feu, Sol, and Roche, but it is weak against Elektric.",
+          "context_recall": 0.0,
+          "entity_recall": 0.5161290322580645,
+          "answer_correctness": 0.5128205128205129
+        },
+        {
+          "question": "What is a plant?",
+          "answer": "A plant is a type of organism that has specific elemental weaknesses and strengths, and can evolve into different forms.",
+          "context_recall": 0.0,
+          "entity_recall": 0.19148936170212766,
+          "answer_correctness": 0.22641509433962262
+        },
+        {
+          "question": "What is Sol?",
+          "answer": "Sol is a Class entity with specific strengths and weaknesses, particularly effective against Fire, Electric, Poison, Rock, and Steel types, but vulnerable to Water, Grass, and Ice types.",
+          "context_recall": 0.0,
+          "entity_recall": 0.6153846153846154,
+          "answer_correctness": 0.3
+        },
+        {
+          "question": "What is Glace?",
+          "answer": "Glace is a class type with strengths against Sol, Roche, Vol, Dragon, Insecte, and Plante, but weaknesses against Acier, Feu, and Combat.",
+          "context_recall": 0.0,
+          "entity_recall": 0.6363636363636364,
+          "answer_correctness": 0.8823529411764706
+        },
+        {
+          "question": "What is Roche?",
+          "answer": "Roche is a type classified as a Class, with specific strengths and weaknesses against various other types.",
+          "context_recall": 0.0,
+          "entity_recall": 0.125,
+          "answer_correctness": 0.4102564102564102
+        },
+        {
+          "question": "What is an insect?",
+          "answer": "An insect is a type of entity classified under the category 'Class' with unique strengths and weaknesses.",
+          "context_recall": 0.0,
+          "entity_recall": 0.1935483870967742,
+          "answer_correctness": 0.2222222222222222
+        },
+        {
+          "question": "What is Acier?",
+          "answer": "Acier is a type of Pok\u00e9mon class in the Kanto region with specific strengths and weaknesses.",
+          "context_recall": 0.0,
+          "entity_recall": 0.6,
+          "answer_correctness": 0.46153846153846156
+        },
+        {
+          "question": "What is electric?",
+          "answer": "Electric refers to a classification of entities characterized by their electric properties and abilities.",
+          "context_recall": 0.0,
+          "entity_recall": 0.43478260869565216,
+          "answer_correctness": 0.35714285714285715
+        },
+        {
+          "question": "What is vol?",
+          "answer": "Vol is a class that represents a type of entity with specific strengths and weaknesses.",
+          "context_recall": 0.0,
+          "entity_recall": 0.6470588235294118,
+          "answer_correctness": 0.5
+        },
+        {
+          "question": "What is Electrik?",
+          "answer": "Electrik is a class of entities with strengths against Eau, Vol, and Dragon types, and a weakness against Sol.",
+          "context_recall": 0.0,
+          "entity_recall": 0.6521739130434783,
+          "answer_correctness": 0.6249999999999999
+        },
+        {
+          "question": "What is a dragon?",
+          "answer": "A dragon is a powerful creature classified within a specific category, with various species and notable strengths and weaknesses.",
+          "context_recall": 0.0,
+          "entity_recall": 0.16666666666666666,
+          "answer_correctness": 0.35000000000000003
+        },
+        {
+          "question": "What is Psy?",
+          "answer": "Psy is a class of entities with specific strengths and weaknesses in combat.",
+          "context_recall": 0.0,
+          "entity_recall": 0.48,
+          "answer_correctness": 0.3125
+        },
+        {
+          "question": "What is Tenebres?",
+          "answer": "Tenebres is a Dark-type Class entity with strengths against Psy and Spectre, but weaknesses against Combat and Insecte.",
+          "context_recall": 0.0,
+          "entity_recall": 0.4666666666666667,
+          "answer_correctness": 0.5882352941176471
+        },
+        {
+          "question": "What is a spectre?",
+          "answer": "A spectre is a supernatural entity classified under the type Class, known for its strengths and a specific weakness.",
+          "context_recall": 0.0,
+          "entity_recall": 0.5263157894736842,
+          "answer_correctness": 0.5714285714285715
+        },
+        {
+          "question": "What is a fee?",
+          "answer": "A Fee is a class that has specific strengths and weaknesses, and it serves as a parent class for subclasses like Melofee.",
+          "context_recall": 0.0,
+          "entity_recall": 0.5185185185185185,
+          "answer_correctness": 0.2631578947368421
+        },
+        {
+          "question": "What is one?",
+          "answer": "One refers to the numeric value '1', associated with the first generation of Pok\u00e9mon, particularly Bulbizarre.",
+          "context_recall": 0.0,
+          "entity_recall": 0.47058823529411764,
+          "answer_correctness": 0.5714285714285713
+        },
+        {
+          "question": "What is Bulbasaur?",
+          "answer": "Bulbizarre, or Bulbasaur, is a dual-type Plant and Poison Pok\u00e9mon from the Kanto region that evolves into Herbizarre.",
+          "context_recall": 0.0,
+          "entity_recall": 0.3333333333333333,
+          "answer_correctness": 0.48648648648648657
+        },
+        {
+          "question": "What is Herbizarre?",
+          "answer": "Herbizarre is a Pok\u00e9mon from the Kanto region and is the evolved form of Bulbizarre.",
+          "context_recall": 0.0,
+          "entity_recall": 0.47619047619047616,
+          "answer_correctness": 0.4761904761904762
+        },
+        {
+          "question": "What is Kanto?",
+          "answer": "Kanto is a region in the Pok\u00e9mon universe that serves as a habitat for various Pok\u00e9mon.",
+          "context_recall": 0.0,
+          "entity_recall": 0.20833333333333334,
+          "answer_correctness": 0.4285714285714285
+        },
+        {
+          "question": "What is two?",
+          "answer": "Two refers to the Pok\u00e9mon 'Herbizarre', a plant-type Pok\u00e9mon from the Kanto region.",
+          "context_recall": 0.0,
+          "entity_recall": 0.5,
+          "answer_correctness": 0.36363636363636365
+        },
+        {
+          "question": "What is Florizarre?",
+          "answer": "Florizarre is a plant-type Pok\u00e9mon classified as Herbizarre and Bulbizarre.",
+          "context_recall": 0.3333333333333333,
+          "entity_recall": 0.5217391304347826,
+          "answer_correctness": 0.32
+        },
+        {
+          "question": "What is three?",
+          "answer": "Three refers to the Pok\u00e9mon Florizarre.",
+          "context_recall": 0.0,
+          "entity_recall": 0.4,
+          "answer_correctness": 0.4210526315789474
+        }
+      ]
+    },
+    "health": {
+      "structural": {
+        "node_count": 519,
+        "edge_count": 1734,
+        "edge_to_node_ratio": 3.341,
+        "density": 0.0129,
+        "connected_components": 4,
+        "largest_component_coverage": 0.985,
+        "avg_degree": 6.68,
+        "max_degree": 149,
+        "degree_std": 10.92,
+        "orphan_nodes": 0
+      },
+      "semantic": {
+        "unlabeled_nodes_pct": 0.0,
+        "unique_relation_types": 86,
+        "relation_type_entropy": 4.265,
+        "avg_property_count": 1.95,
+        "class_instance_ratio": 16.3
+      },
+      "retrieval": {
+        "index_record_count": 2253,
+        "hyperedge_count": 519,
+        "facts_per_node": 4.34,
+        "hyperedge_coverage": 1.0
+      },
+      "overall_score": 100.0,
+      "badge": "Healthy",
+      "kb_id": "5ef0b7c679d7424d8f9461d4065a88eb"
+    },
+    "report_url": "",
+    "num_questions": 100
+  },
+  {
+    "id": "ddd0feb6-958a-460e-a6b0-7f34dcfc156b",
+    "kb_id": "5ef0b7c679d7424d8f9461d4065a88eb",
+    "kb_name": "Professor Chen",
+    "timestamp": "2026-03-06T00:45:38.926961+00:00",
+    "scores": {
+      "context_recall": 0.4,
+      "entity_recall": 0.6542249417249417,
+      "answer_correctness": 0.4559003831417624,
+      "faithfulness": 0.0,
+      "answer_relevancy": 0.3,
+      "context_precision": 0.84,
+      "per_question": [
+        {
+          "question": "What is a trainer?",
+          "answer": "A trainer is an individual who battles with Pok\u00e9mon and strategizes their use.",
+          "context_recall": 0.5,
+          "entity_recall": 0.7692307692307693,
+          "answer_correctness": 0.5517241379310345
+        },
+        {
+          "question": "What is Pok\u00e9mon?",
+          "answer": "Pok\u00e9mon are creatures used by players in battles, each with unique abilities and characteristics.",
+          "context_recall": 0.5,
+          "entity_recall": 0.6666666666666666,
+          "answer_correctness": 0.5
+        },
+        {
+          "question": "What is a battle?",
+          "answer": "A battle is a competitive encounter between Trainers using their Pok\u00e9mon.",
+          "context_recall": 0.5,
+          "entity_recall": 0.6060606060606061,
+          "answer_correctness": 0.4444444444444445
+        },
+        {
+          "question": "What is a type?",
+          "answer": "A type is a fundamental characteristic of a Pok\u00e9mon that serves as its primary defense and influences its interactions in battles.",
+          "context_recall": 0.0,
+          "entity_recall": 0.5625,
+          "answer_correctness": 0.2
+        },
+        {
+          "question": "What is a moveset?",
+          "answer": "A moveset is the combination of Fast and Charge Attacks assigned to a Pok\u00e9mon.",
+          "context_recall": 0.5,
+          "entity_recall": 0.6666666666666666,
+          "answer_correctness": 0.5833333333333334
+        }
+      ]
+    },
+    "health": {
+      "structural": {
+        "node_count": 519,
+        "edge_count": 1734,
+        "edge_to_node_ratio": 3.341,
+        "density": 0.0129,
+        "connected_components": 4,
+        "largest_component_coverage": 0.985,
+        "avg_degree": 6.68,
+        "max_degree": 149,
+        "degree_std": 10.92,
+        "orphan_nodes": 0
+      },
+      "semantic": {
+        "unlabeled_nodes_pct": 0.0,
+        "unique_relation_types": 86,
+        "relation_type_entropy": 4.265,
+        "avg_property_count": 1.95,
+        "class_instance_ratio": 16.3
+      },
+      "retrieval": {
+        "index_record_count": 2253,
+        "hyperedge_count": 519,
+        "facts_per_node": 4.34,
+        "hyperedge_coverage": 1.0
+      },
+      "overall_score": 100.0,
+      "badge": "Healthy",
+      "kb_id": "5ef0b7c679d7424d8f9461d4065a88eb"
+    },
+    "report_url": "",
+    "num_questions": 5
+  },
+  {
+    "id": "577ab148-24b8-46c9-b8e2-acbc00513db5",
+    "kb_id": "5ef0b7c679d7424d8f9461d4065a88eb",
+    "kb_name": "Professor Chen",
+    "timestamp": "2026-03-06T00:42:11.911129+00:00",
+    "scores": {
+      "context_recall": 0.5433333333333333,
+      "entity_recall": 1.0,
+      "answer_correctness": 0.45909295235706726,
+      "faithfulness": 0.972,
+      "answer_relevancy": 0.319,
+      "context_precision": 0.84,
+      "per_question": [
+        {
+          "question": "What is a trainer?",
+          "answer": "A trainer is an individual who battles with Pok\u00e9mon and strategizes their use.",
+          "context_recall": 0.5,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.489795918367347
+        },
+        {
+          "question": "What is Pok\u00e9mon?",
+          "answer": "Pok\u00e9mon are creatures used by players in battles, each with unique abilities and characteristics.",
+          "context_recall": 0.5,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.42553191489361697
+        },
+        {
+          "question": "What is a battle?",
+          "answer": "A battle is a competitive encounter between Trainers using their Pok\u00e9mon.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.4390243902439024
+        },
+        {
+          "question": "What is a type?",
+          "answer": "A type is a Pok\u00e9mon's primary characteristic that serves as its main form of defense and influences its interactions in battles.",
+          "context_recall": 0.6666666666666666,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.2769230769230769
+        },
+        {
+          "question": "What is a moveset?",
+          "answer": "A moveset is the combination of Fast and Charge Attacks assigned to a Pok\u00e9mon.",
+          "context_recall": 0.5,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.65
+        },
+        {
+          "question": "What is a stat product?",
+          "answer": "A stat product is a total measure of a Pok\u00e9mon's stats that indicates its effectiveness in battles.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.5000000000000001
+        },
+        {
+          "question": "What is combat power?",
+          "answer": "Combat power is a numerical measure of a Pok\u00e9mon's strength in battles.",
+          "context_recall": 0.5,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.39999999999999997
+        },
+        {
+          "question": "What is type effectiveness?",
+          "answer": "Type effectiveness is the guidelines that dictate how different Pok\u00e9mon types interact in terms of strengths and weaknesses.",
+          "context_recall": 0.5,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.48275862068965514
+        },
+        {
+          "question": "What is resistance?",
+          "answer": "Resistance is a characteristic that reduces damage taken from certain types of moves in Pok\u00e9mon battles.",
+          "context_recall": 0.5,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.6666666666666667
+        },
+        {
+          "question": "What is weakness?",
+          "answer": "Weakness is a characteristic that increases damage taken from certain types of moves in Pok\u00e9mon battles.",
+          "context_recall": 0.5,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.5490196078431373
+        },
+        {
+          "question": "What is wild Su San Boyle?",
+          "answer": "wildSuSanBoyle is a Trainer who participates in Pok\u00e9mon GO Trainer Battles.",
+          "context_recall": 0.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.7826086956521738
+        },
+        {
+          "question": "What is Bastiodon?",
+          "answer": "Bastiodon is a Steel-type Pok\u00e9mon known for its ability to resist Flying, Ice, and Psychic attacks.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.6666666666666665
+        },
+        {
+          "question": "What are trainer battles?",
+          "answer": "Trainer Battles are a fun and strategic competitive format where players battle against each other using their Pok\u00e9mon.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.52
+        },
+        {
+          "question": "What is a trainer battle?",
+          "answer": "A Trainer Battle is a competitive format where players battle each other using their Pok\u00e9mon in a fun and strategic way.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.5833333333333334
+        },
+        {
+          "question": "What is a fast attack?",
+          "answer": "A fast attack is a quick move in Pok\u00e9mon GO that deals damage and generates energy by tapping the screen during battle.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.6538461538461537
+        },
+        {
+          "question": "What is a charge attack?",
+          "answer": "A Charge Attack is a powerful move that alters Pok\u00e9mon's Attack and Defense stats and requires energy accumulated from Fast Attacks.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.5714285714285714
+        },
+        {
+          "question": "What is the same type attack bonus?",
+          "answer": "The Same Type Attack Bonus is a 20% damage boost for moves used by a Pok\u00e9mon of the same type.",
+          "context_recall": 0.5,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.5882352941176471
+        },
+        {
+          "question": "What is energy?",
+          "answer": "Energy is a resource generated by Fast Attacks and consumed to cast Charge Attacks.",
+          "context_recall": 0.5,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.717948717948718
+        },
+        {
+          "question": "What is a turn?",
+          "answer": "A turn is a unit of time used to measure moves in Pok\u00e9mon GO.",
+          "context_recall": 0.5,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.6153846153846155
+        },
+        {
+          "question": "What is a stat product?",
+          "answer": "A stat product is a total measure of a Pok\u00e9mon's stats that reflects its effectiveness in combat.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.5000000000000001
+        },
+        {
+          "question": "What is a fast attack?",
+          "answer": "A fast attack is a basic move in Pok\u00e9mon GO that deals damage and generates energy when activated by tapping the screen.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.4918032786885245
+        },
+        {
+          "question": "What is the same type attack bonus?",
+          "answer": "The Same Type Attack Bonus is a 20% damage boost for moves used by a Pok\u00e9mon of the same type.",
+          "context_recall": 0.5,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.5882352941176471
+        },
+        {
+          "question": "What are charge attacks?",
+          "answer": "Charge attacks are powerful moves in Pok\u00e9mon that require energy accumulated from Fast Attacks to execute.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.5660377358490566
+        },
+        {
+          "question": "What is a game mechanic?",
+          "answer": "A game mechanic is a system designed to govern and guide player actions.",
+          "context_recall": 0.3333333333333333,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.25925925925925924
+        },
+        {
+          "question": "What is a matchup?",
+          "answer": "A matchup is a battle pairing between two Pok\u00e9mon that describes the outcome of their encounter.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.3548387096774194
+        },
+        {
+          "question": "What is a buff?",
+          "answer": "A buff is a strengthening effect that enhances a Pok\u00e9mon's stats in battles.",
+          "context_recall": 0.5,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.3888888888888889
+        },
+        {
+          "question": "What is a debuff?",
+          "answer": "A debuff is a weakening effect that reduces the effectiveness of a character or entity.",
+          "context_recall": 0.5,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.5714285714285714
+        },
+        {
+          "question": "What is a minigame?",
+          "answer": "A minigame is an interactive game-like experience that occurs when casting a Charge Attack, involving tapping and swiping icons.",
+          "context_recall": 0.5,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.6
+        },
+        {
+          "question": "What is razor leaf?",
+          "answer": "Razor Leaf is a powerful Fast Attack known for its high damage but low energy generation.",
+          "context_recall": 0.5,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.4680851063829787
+        },
+        {
+          "question": "What is bullet seed?",
+          "answer": "Bullet Seed is a Grass-type Fast Attack used in Pok\u00e9mon battles that focuses on energy generation.",
+          "context_recall": 0.5,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.6511627906976744
+        },
+        {
+          "question": "What are player actions?",
+          "answer": "Player actions are the strategic decisions and interactions made by players during battles, governed by game mechanics.",
+          "context_recall": 0.5,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.4814814814814815
+        },
+        {
+          "question": "What is an outcome?",
+          "answer": "An outcome is the result of a Pok\u00e9mon battle or matchup, influenced by various strategic factors.",
+          "context_recall": 0.5,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.5098039215686275
+        },
+        {
+          "question": "What is damage?",
+          "answer": "Damage is a fundamental concept in Pok\u00e9mon GO, representing the impact of attacks on opponents.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.2711864406779661
+        },
+        {
+          "question": "What is a stat-changing effect?",
+          "answer": "A stat-changing effect temporarily modifies a Pok\u00e9mon's Attack and Defense stats during battles.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.2608695652173913
+        },
+        {
+          "question": "What is a player?",
+          "answer": "A player is an individual who participates in matches, controlling Pok\u00e9mon and making strategic decisions.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.4727272727272728
+        },
+        {
+          "question": "What is a switch?",
+          "answer": "A switch is the action of changing one Pok\u00e9mon for another during a match.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.5909090909090909
+        },
+        {
+          "question": "What is an effect?",
+          "answer": "An effect is a temporary stat modifier associated with Charge Attacks that influences damage dealt and received.",
+          "context_recall": 0.5,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.6938775510204082
+        },
+        {
+          "question": "What is a stat modifier?",
+          "answer": "A stat modifier is a change to a Pok\u00e9mon's Attack and Defense stats, which can be raised or lowered.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.5306122448979592
+        },
+        {
+          "question": "What is a PvP mechanic?",
+          "answer": "A PvP mechanic is a set of rules and strategies that govern player versus player interactions in battles.",
+          "context_recall": 0.5,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.46428571428571436
+        },
+        {
+          "question": "What is Empoleon?",
+          "answer": "Empoleon is a Steel-type Pok\u00e9mon known for its resistance to Flying, Ice, and Psychic attacks, but it is weak against Fighting types.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.6181818181818182
+        },
+        {
+          "question": "What is drill peck?",
+          "answer": "Drill Peck is a Charge Attack move that effectively threatens opponents in Pok\u00e9mon battles.",
+          "context_recall": 0.5,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.4782608695652174
+        },
+        {
+          "question": "What is Hydro Cannon?",
+          "answer": "Hydro Cannon is a powerful Charge Attack.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.33333333333333326
+        },
+        {
+          "question": "What is Flash Cannon?",
+          "answer": "Flash Cannon is a powerful Charge Attack used in battles.",
+          "context_recall": 0.5,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.48484848484848486
+        },
+        {
+          "question": "What is Blizzard?",
+          "answer": "Blizzard is a powerful Charge Attack that deals damage to opponents and can lower their stats.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.6666666666666667
+        },
+        {
+          "question": "What is hydro pump?",
+          "answer": "Hydro Pump is a powerful Charge Attack that deals damage to opponents and can lower their stats.",
+          "context_recall": 0.5,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.6222222222222222
+        },
+        {
+          "question": "What is Brave Bird?",
+          "answer": "Brave Bird is a powerful ChargeAttack move that deals more damage than expected for its energy cost and can lower the opponent's stats.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.4999999999999999
+        },
+        {
+          "question": "What is superpower?",
+          "answer": "Superpower is a ChargeAttack that lowers both Attack and Defense stats in battles.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.45454545454545453
+        },
+        {
+          "question": "What is power-up punch?",
+          "answer": "Power-Up Punch is a Charge Attack that guarantees an Attack boost in battles.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.55
+        },
+        {
+          "question": "What are PvP mechanics?",
+          "answer": "PvP mechanics are the rules and strategies that govern player versus player interactions in battles.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.5416666666666667
+        },
+        {
+          "question": "What is a role?",
+          "answer": "A role is a habitat within the Pok\u00e9mon ecosystem.",
+          "context_recall": 0.5,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.4999999999999999
+        },
+        {
+          "question": "What is meta?",
+          "answer": "The meta is an ecosystem that influences Pok\u00e9mon interactions and strategies.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.45000000000000007
+        },
+        {
+          "question": "What is a line?",
+          "answer": "A line is a team of three Pok\u00e9mon used in Pok\u00e9mon GO Trainer Battles.",
+          "context_recall": 0.5,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.6153846153846153
+        },
+        {
+          "question": "What is a simulation?",
+          "answer": "A simulation is a tool that predicts the outcomes of Pok\u00e9mon matchups.",
+          "context_recall": 0.5,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.33333333333333337
+        },
+        {
+          "question": "What is Venusaur?",
+          "answer": "Venusaur is a Grass and Poison-type Pok\u00e9mon known for excelling against Fighting and Water types.",
+          "context_recall": 0.5,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.6666666666666666
+        },
+        {
+          "question": "What is Galarian Stunfisk?",
+          "answer": "Galarian Stunfisk is a Pok\u00e9mon from the Galar region known for its strategic versatility in battles.",
+          "context_recall": 0.5,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.4888888888888889
+        },
+        {
+          "question": "What is the GO Battle League?",
+          "answer": "The GO Battle League is a competitive format where Pok\u00e9mon battle against each other, requiring Trainers to participate.",
+          "context_recall": 0.5,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.5652173913043479
+        },
+        {
+          "question": "What is PvPoke?",
+          "answer": "PvPoke is a battle simulator that helps trainers choose the right Pok\u00e9mon for matchups.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.5
+        },
+        {
+          "question": "What is grass?",
+          "answer": "Grass is an entity that is part of the broader classification of plants.",
+          "context_recall": 0.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.19230769230769232
+        },
+        {
+          "question": "What is poison?",
+          "answer": "Poison is an entity with specific strengths and weaknesses, particularly effective against Plante and vulnerable to Sol, Psy, Acier, and Psychic.",
+          "context_recall": 0.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.41379310344827586
+        },
+        {
+          "question": "What is steel?",
+          "answer": "Steel is a fundamental entity that serves as a type for various Pok\u00e9mon.",
+          "context_recall": 0.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.2745098039215686
+        },
+        {
+          "question": "What is Pok\u00e9mon advantage?",
+          "answer": "Pok\u00e9mon Advantage is the strategic benefit in battles, defined by having more health or Pok\u00e9mon, influencing the outcome of Trainer Battles.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.39344262295081966
+        },
+        {
+          "question": "What is matchup advantage?",
+          "answer": "Matchup Advantage refers to the various factors that affect the outcome of a battle pairing between two Pok\u00e9mon, including their types, stats, moves, and health.",
+          "context_recall": 0.5,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.5217391304347827
+        },
+        {
+          "question": "What is switch advantage?",
+          "answer": "Switch Advantage is the ability to choose the matchup after a Pok\u00e9mon leaves the battle, allowing for strategic play.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.39999999999999997
+        },
+        {
+          "question": "What is energy advantage?",
+          "answer": "Energy Advantage refers to the importance of generating and conserving energy, which is essential for executing impactful Charge Attacks.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.326530612244898
+        },
+        {
+          "question": "What is a Pok\u00e9mon advantage?",
+          "answer": "A Pok\u00e9mon advantage is a strategic benefit in battles, including having more health or Pok\u00e9mon, and encompasses Matchup and Switch advantages.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.4347826086956521
+        },
+        {
+          "question": "What is matchup advantage?",
+          "answer": "Matchup Advantage refers to the various factors that affect the outcome of a battle pairing between two Pok\u00e9mon, including their types, stats, moves, and health.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.5757575757575758
+        },
+        {
+          "question": "What is switch advantage?",
+          "answer": "Switch Advantage allows a player to choose the matchup after a Pok\u00e9mon leaves the battle, giving them strategic control.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.4
+        },
+        {
+          "question": "What is energy advantage?",
+          "answer": "Energy Advantage refers to the significance of generating and conserving energy for powerful Charge Attacks in Pok\u00e9mon battles.",
+          "context_recall": 0.5,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.4
+        },
+        {
+          "question": "What is Cresselia?",
+          "answer": "Cresselia is a Pok\u00e9mon known for its damage and energy-based alternatives.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.4
+        },
+        {
+          "question": "What is flying?",
+          "answer": "Flying is a type of entity that includes various Pok\u00e9mon known for their aerial abilities.",
+          "context_recall": 0.5,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.3555555555555555
+        },
+        {
+          "question": "What is ice?",
+          "answer": "Ice is a fundamental entity that can take various forms, including specific Pok\u00e9mon like Lamantine and Artikodin de Galar.",
+          "context_recall": 0.5,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.509090909090909
+        },
+        {
+          "question": "What is psychic?",
+          "answer": "Psychic is a type of entity in the Pok\u00e9mon universe, associated with specific Pok\u00e9mon that have psychic abilities.",
+          "context_recall": 0.5,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.27450980392156865
+        },
+        {
+          "question": "What is an attack?",
+          "answer": "An attack is a move used by Pok\u00e9mon during battles to deal damage or affect stats.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.38596491228070173
+        },
+        {
+          "question": "What is an opponent?",
+          "answer": "An opponent is an entity that competes in battles, particularly in Trainer Battles using Pok\u00e9mon.",
+          "context_recall": 0.5,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.35294117647058826
+        },
+        {
+          "question": "What are the opponent's stats?",
+          "answer": "The opponent's stats represent the combat capabilities of their Pok\u00e9mon, but specific details about these stats are not provided.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.2745098039215686
+        },
+        {
+          "question": "What is normal?",
+          "answer": "Normal is a subclass of Combat that includes various entities with specific attributes and strengths.",
+          "context_recall": 0.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.5
+        },
+        {
+          "question": "What is combat?",
+          "answer": "Combat is a competitive encounter between Trainers using their Pok\u00e9mon.",
+          "context_recall": 0.5,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.23809523809523808
+        },
+        {
+          "question": "What is Feu?",
+          "answer": "Feu is a type of Pok\u00e9mon known for its strengths against Grass, Ice, Bug, Steel, and Fighting types, and weaknesses against Water, Ground, Rock, and Normal types.",
+          "context_recall": 0.5,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.2413793103448276
+        },
+        {
+          "question": "What is eau?",
+          "answer": "Eau is a type that has strengths against Plante, Feu, Sol, and Roche, but is weak against Elektric.",
+          "context_recall": 0.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.43137254901960786
+        },
+        {
+          "question": "What is a plant?",
+          "answer": "A plant is a type of organism characterized by specific weaknesses and strengths, and it can evolve into more complex forms.",
+          "context_recall": 0.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.28985507246376807
+        },
+        {
+          "question": "What is Sol?",
+          "answer": "Sol is a class type with specific strengths and weaknesses, related to various entities like Raichu and Pikachu.",
+          "context_recall": 0.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.34782608695652173
+        },
+        {
+          "question": "What is glace?",
+          "answer": "Glace is a class of entities with strengths against several types and weaknesses against others.",
+          "context_recall": 0.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.38095238095238093
+        },
+        {
+          "question": "What is Roche?",
+          "answer": "Roche is a type classified as a Class with specific strengths and weaknesses in battles.",
+          "context_recall": 0.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.40740740740740744
+        },
+        {
+          "question": "What is an insect?",
+          "answer": "An insect is a type of entity classified under 'Insecte', which includes various species with specific strengths and weaknesses.",
+          "context_recall": 0.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.2758620689655173
+        },
+        {
+          "question": "What is Acier?",
+          "answer": "Acier is a type classified within the Kanto region, known for its specific strengths and weaknesses against other types.",
+          "context_recall": 0.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.3829787234042553
+        },
+        {
+          "question": "What is electric?",
+          "answer": "Electric refers to a category of entities characterized by electrical properties, including various Pok\u00e9mon like Pikachu and Magnezone.",
+          "context_recall": 0.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.3773584905660377
+        },
+        {
+          "question": "What is vol?",
+          "answer": "Vol is a classification within the Pok\u00e9mon universe that includes various types and their strengths and weaknesses.",
+          "context_recall": 0.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.27027027027027023
+        },
+        {
+          "question": "What is Electrik?",
+          "answer": "Electrik is an Electric-type entity with strengths against Eau, Vol, and Dragon, but it is weak to Sol.",
+          "context_recall": 0.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.2857142857142857
+        },
+        {
+          "question": "What is a dragon?",
+          "answer": "A dragon is a powerful creature classified under the 'Class' category, known for its strengths and weaknesses.",
+          "context_recall": 0.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.2857142857142857
+        },
+        {
+          "question": "What is Psy?",
+          "answer": "Psy is a class that has specific strengths and weaknesses in the context of the game.",
+          "context_recall": 0.5,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.44
+        },
+        {
+          "question": "What is Tenebres?",
+          "answer": "Tenebres is a Dark type entity classified as a Class, with strengths in Psy and Spectre and weaknesses in Combat and Insecte.",
+          "context_recall": 0.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.4800000000000001
+        },
+        {
+          "question": "What is a spectre?",
+          "answer": "A spectre is a type of entity known for its strengths and weaknesses, classified within the Class category.",
+          "context_recall": 0.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.3921568627450981
+        },
+        {
+          "question": "What is a fee?",
+          "answer": "A Fee is a class of entities with specific strengths and weaknesses, including subclasses like Melofee.",
+          "context_recall": 0.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.27906976744186046
+        },
+        {
+          "question": "What is one?",
+          "answer": "One refers to the Pok\u00e9mon Bulbizarre, a Grass-type from the Kanto region.",
+          "context_recall": 0.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.4705882352941176
+        },
+        {
+          "question": "What is Bulbasaur?",
+          "answer": "Bulbasaur is a plant and poison Pok\u00e9mon that evolves into Herbizarre and is part of the Kanto region.",
+          "context_recall": 0.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.4444444444444445
+        },
+        {
+          "question": "What is Herbizarre?",
+          "answer": "Herbizarre is a Pok\u00e9mon that evolves from Bulbizarre and is part of the Kanto region's Pok\u00e9mon classification.",
+          "context_recall": 0.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.5555555555555556
+        },
+        {
+          "question": "What is Kanto?",
+          "answer": "Kanto is a geographical region that serves as a class for various entities, including Pok\u00e9mon.",
+          "context_recall": 0.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.3111111111111111
+        },
+        {
+          "question": "What is two?",
+          "answer": "The entity 'two' refers to the Pok\u00e9mon Herbizarre.",
+          "context_recall": 0.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.25
+        },
+        {
+          "question": "What is Florizarre?",
+          "answer": "Florizarre is a plant-like entity classified as a Herbizarre and is also known for its evolution into Mega Florizarre.",
+          "context_recall": 0.3333333333333333,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.5116279069767442
+        },
+        {
+          "question": "What is three?",
+          "answer": "Three refers to the Pok\u00e9mon Florizarre, which is a Plant and Poison type from the Kanto region.",
+          "context_recall": 0.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.5106382978723403
+        }
+      ]
+    },
+    "health": {
+      "structural": {
+        "node_count": 519,
+        "edge_count": 1734,
+        "edge_to_node_ratio": 3.341,
+        "density": 0.0129,
+        "connected_components": 4,
+        "largest_component_coverage": 0.985,
+        "avg_degree": 6.68,
+        "max_degree": 149,
+        "degree_std": 10.92,
+        "orphan_nodes": 0
+      },
+      "semantic": {
+        "unlabeled_nodes_pct": 0.0,
+        "unique_relation_types": 86,
+        "relation_type_entropy": 4.265,
+        "avg_property_count": 1.95,
+        "class_instance_ratio": 16.3
+      },
+      "retrieval": {
+        "index_record_count": 2253,
+        "hyperedge_count": 519,
+        "facts_per_node": 4.34,
+        "hyperedge_coverage": 1.0
+      },
+      "overall_score": 100.0,
+      "badge": "Healthy",
+      "kb_id": "5ef0b7c679d7424d8f9461d4065a88eb"
+    },
+    "report_url": "",
+    "num_questions": 100
+  },
+  {
+    "id": "f80c4608-6dd8-4e16-834e-270708387afe",
+    "kb_id": "5ef0b7c679d7424d8f9461d4065a88eb",
+    "kb_name": "Professor Chen",
+    "timestamp": "2026-03-06T00:41:10.760604+00:00",
+    "scores": {
+      "context_recall": 0.7333333333333333,
+      "entity_recall": 1.0,
+      "answer_correctness": 0.5135851716439778,
+      "faithfulness": 1.0,
+      "answer_relevancy": 0.34500000000000003,
+      "context_precision": 0.84,
+      "per_question": [
+        {
+          "question": "What is a trainer?",
+          "answer": "A trainer is an individual who battles with Pok\u00e9mon and strategizes their use in competitive formats.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.5957446808510638
+        },
+        {
+          "question": "What is Pok\u00e9mon?",
+          "answer": "Pok\u00e9mon are creatures used in battles, each with unique abilities and characteristics.",
+          "context_recall": 0.5,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.4347826086956522
+        },
+        {
+          "question": "What is a battle?",
+          "answer": "A battle is a competitive encounter between Trainers using their Pok\u00e9mon.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.3829787234042553
+        },
+        {
+          "question": "What is a type?",
+          "answer": "A type is a Pok\u00e9mon's primary characteristic that influences its defense and interactions in battles.",
+          "context_recall": 0.6666666666666666,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.2807017543859649
+        },
+        {
+          "question": "What is a moveset?",
+          "answer": "A moveset is the combination of Fast and Charge Attacks assigned to a Pok\u00e9mon.",
+          "context_recall": 0.5,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.6
+        },
+        {
+          "question": "What is a stat product?",
+          "answer": "A stat product is a total measure of a Pok\u00e9mon's stats that reflects its effectiveness in battle.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.5531914893617021
+        },
+        {
+          "question": "What is combat power?",
+          "answer": "Combat Power is a numerical measure of a Pok\u00e9mon's strength in battles.",
+          "context_recall": 0.5,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.43902439024390244
+        },
+        {
+          "question": "What is type effectiveness?",
+          "answer": "Type effectiveness is a set of guidelines that determines how different Pok\u00e9mon types interact regarding strengths and weaknesses.",
+          "context_recall": 0.5,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.36666666666666675
+        },
+        {
+          "question": "What is resistance?",
+          "answer": "Resistance is a characteristic that reduces damage from specific types of moves in Pok\u00e9mon.",
+          "context_recall": 0.5,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.55
+        },
+        {
+          "question": "What is weakness?",
+          "answer": "Weakness is a characteristic that makes Pok\u00e9mon take more damage from specific types of moves.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.46153846153846156
+        },
+        {
+          "question": "What is wild Su San Boyle?",
+          "answer": "Wild Su San Boyle is a player participating in Pok\u00e9mon GO Trainer Battles.",
+          "context_recall": 0.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.8461538461538461
+        },
+        {
+          "question": "What is Bastiodon?",
+          "answer": "Bastiodon is a dual-type Pok\u00e9mon, specifically a Steel and Rock type, known for its resistance to Flying, Ice, and Psychic attacks.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.5641025641025641
+        },
+        {
+          "question": "What are trainer battles?",
+          "answer": "Trainer Battles are competitive formats where players use their Pok\u00e9mon to battle against each other in a fun and strategic way.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.5357142857142858
+        },
+        {
+          "question": "What is a trainer battle?",
+          "answer": "A trainer battle is a competitive format where players battle against each other using their Pok\u00e9mon.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.43478260869565216
+        },
+        {
+          "question": "What is a fast attack?",
+          "answer": "A Fast Attack is a basic attack in Pok\u00e9mon GO that deals damage and generates energy when activated by tapping the screen.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.48484848484848486
+        },
+        {
+          "question": "What is a charge attack?",
+          "answer": "A Charge Attack is a powerful move that alters Pok\u00e9mon stats and requires energy accumulated from Fast Attacks.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.5833333333333333
+        },
+        {
+          "question": "What is the same type attack bonus?",
+          "answer": "The Same Type Attack Bonus is a 20% damage boost for moves used by a Pok\u00e9mon of the same type.",
+          "context_recall": 0.5,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.6
+        },
+        {
+          "question": "What is energy?",
+          "answer": "Energy is a resource generated by Fast Attacks and consumed to cast Charge Attacks.",
+          "context_recall": 0.5,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.6
+        },
+        {
+          "question": "What is a turn?",
+          "answer": "A turn is a unit of time used to measure moves in Pok\u00e9mon GO.",
+          "context_recall": 0.5,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.5581395348837209
+        },
+        {
+          "question": "What is a stat product?",
+          "answer": "A stat product is a measure of a Pok\u00e9mon's effectiveness based on its total statistics.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.4
+        }
+      ]
+    },
+    "health": {
+      "structural": {
+        "node_count": 519,
+        "edge_count": 1734,
+        "edge_to_node_ratio": 3.341,
+        "density": 0.0129,
+        "connected_components": 4,
+        "largest_component_coverage": 0.985,
+        "avg_degree": 6.68,
+        "max_degree": 149,
+        "degree_std": 10.92,
+        "orphan_nodes": 0
+      },
+      "semantic": {
+        "unlabeled_nodes_pct": 0.0,
+        "unique_relation_types": 86,
+        "relation_type_entropy": 4.265,
+        "avg_property_count": 1.95,
+        "class_instance_ratio": 16.3
+      },
+      "retrieval": {
+        "index_record_count": 2253,
+        "hyperedge_count": 519,
+        "facts_per_node": 4.34,
+        "hyperedge_coverage": 1.0
+      },
+      "overall_score": 100.0,
+      "badge": "Healthy",
+      "kb_id": "5ef0b7c679d7424d8f9461d4065a88eb"
+    },
+    "report_url": "",
+    "num_questions": 20
+  },
+  {
+    "id": "7ba9123f-967b-454b-bb77-9ffd0f68cb73",
+    "kb_id": "5ef0b7c679d7424d8f9461d4065a88eb",
+    "kb_name": "Professor Chen",
+    "timestamp": "2026-03-06T00:36:39.015228+00:00",
+    "scores": {
+      "context_recall": 0.8416666666666666,
+      "entity_recall": 1.0,
+      "answer_correctness": 0.5618968091326713,
+      "faithfulness": 1.0,
+      "answer_relevancy": 0.4000000000000001,
+      "context_precision": 0.84,
+      "per_question": [
+        {
+          "question": "What is Trainer?",
+          "answer": "A Trainer is an individual who battles with Pok\u00e9mon and strategizes their use.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.5333333333333333
+        },
+        {
+          "question": "What is Pok\u00e9mon?",
+          "answer": "Pok\u00e9mon are creatures used by players in battles, each with unique abilities and characteristics.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.5365853658536585
+        },
+        {
+          "question": "What is Battle?",
+          "answer": "A Battle is a competitive encounter between Trainers using their Pok\u00e9mon.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.4390243902439024
+        },
+        {
+          "question": "What is Type?",
+          "answer": "Type is a Pok\u00e9mon's primary form of defense, influencing its interactions in battles.",
+          "context_recall": 0.6666666666666666,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.29508196721311475
+        },
+        {
+          "question": "What is Moveset?",
+          "answer": "A Moveset is the combination of Fast and Charge Attacks assigned to a Pok\u00e9mon.",
+          "context_recall": 0.5,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.6153846153846155
+        },
+        {
+          "question": "What is StatProduct?",
+          "answer": "StatProduct is a measure of a Pok\u00e9mon's effectiveness based on its total statistics.",
+          "context_recall": 0.5,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.4150943396226415
+        },
+        {
+          "question": "What is CombatPower?",
+          "answer": "CombatPower is a numerical measure of a Pok\u00e9mon's strength in battles.",
+          "context_recall": 0.5,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.5161290322580645
+        },
+        {
+          "question": "What is TypeEffectiveness?",
+          "answer": "TypeEffectiveness provides guidelines on how different Pok\u00e9mon types interact in terms of strengths and weaknesses.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.5652173913043478
+        },
+        {
+          "question": "What is Resistance?",
+          "answer": "Resistance is a characteristic that reduces damage taken from certain types of moves in Pok\u00e9mon battles.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.5957446808510638
+        },
+        {
+          "question": "What is Weakness?",
+          "answer": "Weakness is a characteristic that increases damage taken from specific types of moves in Pok\u00e9mon battles.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.56
+        },
+        {
+          "question": "What is wildSuSanBoyle?",
+          "answer": "wildSuSanBoyle is a Trainer participating in Pok\u00e9mon GO Trainer Battles.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.8421052631578948
+        },
+        {
+          "question": "What is Bastiodon?",
+          "answer": "Bastiodon is a Steel-type Pok\u00e9mon known for its ability to resist Flying, Ice, and Psychic attacks.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.5882352941176471
+        },
+        {
+          "question": "What is Trainer Battles?",
+          "answer": "Trainer Battles is a fun and easy competitive format where players battle each other using their Pok\u00e9mon.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.5531914893617021
+        },
+        {
+          "question": "What is TrainerBattle?",
+          "answer": "TrainerBattle is a competitive format where players battle each other using their Pok\u00e9mon.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.65
+        },
+        {
+          "question": "What is FastAttack?",
+          "answer": "FastAttack is a type of attack in Pok\u00e9mon GO that deals damage and generates energy when activated by tapping the screen during battle.",
+          "context_recall": 0.6666666666666666,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.6451612903225806
+        },
+        {
+          "question": "What is ChargeAttack?",
+          "answer": "ChargeAttack is a powerful move in Pok\u00e9mon that alters Attack and Defense stats and requires energy to use.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.5660377358490566
+        },
+        {
+          "question": "What is SameTypeAttackBonus?",
+          "answer": "SameTypeAttackBonus is a 20% damage boost for moves used by a Pok\u00e9mon of the same type.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.4905660377358491
+        },
+        {
+          "question": "What is Energy?",
+          "answer": "Energy is a resource generated by Fast Attacks and consumed to cast Charge Attacks.",
+          "context_recall": 0.5,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.717948717948718
+        },
+        {
+          "question": "What is Turn?",
+          "answer": "A Turn is a unit of time used to measure moves in Pok\u00e9mon GO.",
+          "context_recall": 0.5,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.5714285714285715
+        },
+        {
+          "question": "What is Stat Product?",
+          "answer": "Stat Product is a measure of a Pok\u00e9mon's effectiveness based on the total of its statistics.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.5416666666666667
+        }
+      ]
+    },
+    "health": {
+      "structural": {
+        "node_count": 519,
+        "edge_count": 1734,
+        "edge_to_node_ratio": 3.341,
+        "density": 0.0129,
+        "connected_components": 4,
+        "largest_component_coverage": 0.985,
+        "avg_degree": 6.68,
+        "max_degree": 149,
+        "degree_std": 10.92,
+        "orphan_nodes": 0
+      },
+      "semantic": {
+        "unlabeled_nodes_pct": 0.0,
+        "unique_relation_types": 86,
+        "relation_type_entropy": 4.265,
+        "avg_property_count": 1.95,
+        "class_instance_ratio": 16.3
+      },
+      "retrieval": {
+        "index_record_count": 2253,
+        "hyperedge_count": 519,
+        "facts_per_node": 4.34,
+        "hyperedge_coverage": 1.0
+      },
+      "overall_score": 100.0,
+      "badge": "Healthy",
+      "kb_id": "5ef0b7c679d7424d8f9461d4065a88eb"
+    },
+    "report_url": "",
+    "num_questions": 20
+  },
+  {
+    "id": "4d8a49e5-c80b-4518-b9d3-fe7b926bb2f4",
+    "kb_id": "5ef0b7c679d7424d8f9461d4065a88eb",
+    "kb_name": "Professor Chen",
+    "timestamp": "2026-03-06T00:34:39.183985+00:00",
+    "scores": {
+      "context_recall": 0.8,
+      "entity_recall": 1.0,
+      "answer_correctness": 0.49438072173326103,
+      "faithfulness": 1.0,
+      "answer_relevancy": 0.6,
+      "context_precision": 0.84,
+      "per_question": [
+        {
+          "question": "What is Trainer?",
+          "answer": "A Trainer is an individual who battles with Pok\u00e9mon and strategizes their use.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.5454545454545454
+        },
+        {
+          "question": "What is Pok\u00e9mon?",
+          "answer": "Pok\u00e9mon are creatures used by players in battles, each with unique abilities and characteristics.",
+          "context_recall": 0.5,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.5238095238095237
+        },
+        {
+          "question": "What is Battle?",
+          "answer": "A Battle is a competitive encounter between Trainers using their Pok\u00e9mon.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.4347826086956522
+        },
+        {
+          "question": "What is Type?",
+          "answer": "Type is a Pok\u00e9mon's most reliable form of defense, influencing how it interacts with other Pok\u00e9mon in battles.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.30136986301369867
+        },
+        {
+          "question": "What is Moveset?",
+          "answer": "A Moveset is the combination of Fast and Charge Attacks assigned to a Pok\u00e9mon.",
+          "context_recall": 0.5,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.6
+        },
+        {
+          "question": "What is StatProduct?",
+          "answer": "StatProduct is a measure of a Pok\u00e9mon's effectiveness based on its statistics.",
+          "context_recall": 0.5,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.4255319148936171
+        },
+        {
+          "question": "What is CombatPower?",
+          "answer": "CombatPower is a numerical representation of a Pok\u00e9mon's strength in battles.",
+          "context_recall": 0.5,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.4736842105263158
+        },
+        {
+          "question": "What is TypeEffectiveness?",
+          "answer": "TypeEffectiveness refers to the guidelines that dictate how different Pok\u00e9mon types interact in terms of strengths and weaknesses.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.5098039215686274
+        },
+        {
+          "question": "What is Resistance?",
+          "answer": "Resistance is a characteristic that reduces damage from certain types of moves in Pok\u00e9mon battles.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.5909090909090909
+        },
+        {
+          "question": "What is Weakness?",
+          "answer": "Weakness is a characteristic that increases damage taken by Pok\u00e9mon from certain types of moves.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.5384615384615385
+        }
+      ]
+    },
+    "health": {
+      "structural": {
+        "node_count": 518,
+        "edge_count": 1732,
+        "edge_to_node_ratio": 3.344,
+        "density": 0.0129,
+        "connected_components": 5,
+        "largest_component_coverage": 0.986,
+        "avg_degree": 6.69,
+        "max_degree": 149,
+        "degree_std": 10.93,
+        "orphan_nodes": 2
+      },
+      "semantic": {
+        "unlabeled_nodes_pct": 0.0,
+        "unique_relation_types": 86,
+        "relation_type_entropy": 4.262,
+        "avg_property_count": 1.95,
+        "class_instance_ratio": 16.27
+      },
+      "retrieval": {
+        "index_record_count": 2250,
+        "hyperedge_count": 518,
+        "facts_per_node": 4.34,
+        "hyperedge_coverage": 1.0
+      },
+      "overall_score": 100.0,
+      "badge": "Healthy",
+      "kb_id": "5ef0b7c679d7424d8f9461d4065a88eb"
+    },
+    "report_url": "",
+    "num_questions": 10
+  },
+  {
+    "id": "260805e2-a9c5-40ac-a92c-2fd819cac2fe",
+    "kb_id": "5ef0b7c679d7424d8f9461d4065a88eb",
+    "kb_name": "Professor Chen",
+    "timestamp": "2026-03-06T00:17:01.355088+00:00",
+    "scores": {
+      "context_recall": 0.4,
+      "entity_recall": 0.3886936592818946,
+      "answer_correctness": 0.6935566516897365,
+      "faithfulness": 1.0,
+      "answer_relevancy": 0.6,
+      "context_precision": 0.8400000000000001,
+      "per_question": [
+        {
+          "question": "How is Doduo related to Flying?",
+          "answer": "Doduo is classified as a Flying type Pok\u00e9mon.",
+          "context_recall": 0.5,
+          "entity_recall": 0.29411764705882354,
+          "answer_correctness": 0.7128782651641152
+        },
+        {
+          "question": "How are 440 and 4 related?",
+          "answer": "Entities 440 and 4 are both Pok\u00e9mon, but they belong to different types, regions, and generations.",
+          "context_recall": 0.5,
+          "entity_recall": 0.38095238095238093,
+          "answer_correctness": 0.6142214066842023
+        },
+        {
+          "question": "How are 29 and Kanto related?",
+          "answer": "Nidoran_femelle is a Pok\u00e9mon from the Kanto region.",
+          "context_recall": 0.0,
+          "entity_recall": 0.3333333333333333,
+          "answer_correctness": 0.7281526972850164
+        },
+        {
+          "question": "How are Mentali and Eevee related?",
+          "answer": "Mentali is a subclass of Eevee, meaning it is a specific type of Eevee.",
+          "context_recall": 0.0,
+          "entity_recall": 0.36363636363636365,
+          "answer_correctness": 0.8417638931204292
+        },
+        {
+          "question": "What does the outcome represent?",
+          "answer": "The outcome represents the result of a matchup in battles, influenced by various factors.",
+          "context_recall": 1.0,
+          "entity_recall": 0.5714285714285714,
+          "answer_correctness": 0.5707669961949189
+        }
+      ]
+    },
+    "health": {
+      "structural": {
+        "node_count": 518,
+        "edge_count": 1732,
+        "edge_to_node_ratio": 3.344,
+        "density": 0.0065,
+        "connected_components": 5,
+        "largest_component_coverage": 0.986,
+        "avg_degree": 6.69,
+        "max_degree": 149,
+        "degree_std": 10.93,
+        "orphan_nodes": 2
+      },
+      "semantic": {
+        "unlabeled_nodes_pct": 0.0,
+        "unique_relation_types": 86,
+        "relation_type_entropy": 4.262,
+        "avg_property_count": 3.95,
+        "class_instance_ratio": 16.27
+      },
+      "retrieval": {
+        "index_record_count": 2276,
+        "hyperedge_count": 518,
+        "facts_per_node": 4.39,
+        "hyperedge_coverage": 1.0
+      },
+      "kb_id": "5ef0b7c679d7424d8f9461d4065a88eb",
+      "overall_score": 60.0,
+      "badge": "Needs Attention"
+    },
+    "report_url": "/api/v1/reports/eval-5ef0b7c6-a9d62360.html",
+    "num_questions": 5
+  }
+]

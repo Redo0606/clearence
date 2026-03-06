@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Evaluation Dashboard</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+</head>
+<body>
+  <h1>Evaluation Dashboard</h1>
+  <h2>Summary</h2>
+  <table border="1" cellpadding="8">
+    <tr><th>Metric</th><th>Value</th></tr>
+    <tr><td>context_recall</td><td style="background:#f44336">0.000</td></tr><tr><td>entity_recall</td><td style="background:#f44336">0.000</td></tr><tr><td>answer_correctness</td><td style="background:#f44336">0.000</td></tr><tr><td>faithfulness</td><td style="background:#9e9e9e">N/A</td></tr><tr><td>answer_relevancy</td><td style="background:#9e9e9e">N/A</td></tr><tr><td>context_precision</td><td style="background:#9e9e9e">N/A</td></tr>
+  </table>
+  <h2>Radar Chart</h2>
+  <canvas id="radarChart" width="400" height="400"></canvas>
+  
+  <script>
+    new Chart(document.getElementById('radarChart'), {
+      type: 'radar',
+      data: {
+        
+      labels: ['context_recall', 'entity_recall', 'answer_correctness', 'faithfulness', 'answer_relevancy', 'context_precision'],
+      datasets: [{ label: 'Metrics', data: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0], fill: true }]
+    
+      },
+      options: { responsive: true }
+    });
+  </script>
+</body>
+</html>

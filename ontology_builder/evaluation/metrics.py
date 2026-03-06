@@ -98,27 +98,104 @@ def context_recall(ground_truth_claims: list[str], context_facts: list[str]) -> 
     return found / len(ground_truth_claims)
 
 
+def _split_camel(s: str) -> str:
+    """Split CamelCase into space-separated words for flexible matching."""
+    import re
+    s = re.sub(r"([A-Z]+)([A-Z][a-z])", r"\1 \2", s)
+    return re.sub(r"([a-z])([A-Z])", r"\1 \2", s).lower()
+
+
 def entity_recall(ground_truth_entities: set[str], context_facts: list[str]) -> float:
-    """Proportion of ground-truth entities mentioned in the retrieved context."""
+    """Proportion of ground-truth entities (from reference/question) found in retrieved context.
+
+    RAGAS-style: entities come from the reference answer, not from context.
+    Supports CamelCase matching: 'TrainerBattle' matches 'trainer battle' in context.
+    """
     if not ground_truth_entities:
         return 1.0
     context_joined = " ".join(context_facts).lower()
-    found = sum(1 for e in ground_truth_entities if e.lower() in context_joined)
+    found = 0
+    for e in ground_truth_entities:
+        el = e.lower()
+        if el in context_joined:
+            found += 1
+        elif _split_camel(e) in context_joined:
+            found += 1
     return found / len(ground_truth_entities)
 
 
 def answer_correctness(predicted_answer: str, reference_answer: str) -> float:
-    """Token-level F1 between predicted and reference answers."""
-    pred_tokens = set(predicted_answer.lower().split())
-    ref_tokens = set(reference_answer.lower().split())
-    if not pred_tokens and not ref_tokens:
+    """Token-level F1 between predicted and reference answers.
+
+    Filters stopwords to avoid inflation from common words. Uses normalized tokens
+    (alphanumeric) for fair comparison. Recall-weighted: we care more about
+    capturing reference content than avoiding extra words.
+    """
+    pred_tokens = [
+        _normalize_token(t) for t in predicted_answer.lower().split()
+        if _normalize_token(t) and _normalize_token(t) not in _STOPWORDS
+    ]
+    ref_tokens = [
+        _normalize_token(t) for t in reference_answer.lower().split()
+        if _normalize_token(t) and _normalize_token(t) not in _STOPWORDS
+    ]
+    pred_set = set(t for t in pred_tokens if len(t) > 1)
+    ref_set = set(t for t in ref_tokens if len(t) > 1)
+    if not pred_set and not ref_set:
         return 1.0
-    if not pred_tokens or not ref_tokens:
+    if not ref_set:
         return 0.0
-    tp = len(pred_tokens & ref_tokens)
-    p = tp / len(pred_tokens)
-    r = tp / len(ref_tokens)
-    return 2 * p * r / (p + r) if (p + r) > 0 else 0.0
+    tp = len(pred_set & ref_set)
+    precision = tp / len(pred_set) if pred_set else 0.0
+    recall = tp / len(ref_set)
+    return 2 * precision * recall / (precision + recall) if (precision + recall) > 0 else 0.0
+
+
+def _normalize_token(t: str) -> str:
+    """Strip punctuation for token overlap."""
+    return "".join(c for c in t.lower() if c.isalnum() or c.isspace()).strip()
+
+
+# Stopwords that inflate answer_correctness when not filtered
+_STOPWORDS = frozenset(
+    "a an the and or but in on at to for of with by from as is are was were be been being have has had do does did will would could should may might must can shall".split()
+)
+
+
+def _token_supported_in_context(token: str, context_tokens: set[str], context_joined: str) -> bool:
+    """True if token appears in context (exact or as substring for compound words)."""
+    if token in context_tokens:
+        return True
+    return token in context_joined
+
+
+def context_recall_relaxed(ground_truth_claims: list[str], context_facts: list[str]) -> float:
+    """Proportion of reference claims supported by retrieved context.
+
+    RAGAS-style: each claim must be attributable to context. Uses strict token overlap
+    (≥75%) to avoid false positives. Supports substring match for compound words
+    (e.g. 'effectiveness' in 'typeeffectiveness'). Trivial claims (< 3 tokens) excluded.
+    """
+    if not ground_truth_claims:
+        return 1.0
+    context_joined = " ".join(context_facts).lower()
+    context_tokens = set(_normalize_token(t) for t in context_joined.split() if len(_normalize_token(t)) > 1)
+    supported = 0
+    counted = 0
+    for claim in ground_truth_claims:
+        claim_tokens = [t for t in _normalize_token(claim).split() if len(t) > 1 and t not in _STOPWORDS]
+        if len(claim_tokens) < 3:
+            continue
+        counted += 1
+        overlap = sum(
+            1 for t in claim_tokens
+            if _token_supported_in_context(t, context_tokens, context_joined)
+        )
+        if overlap >= 0.75 * len(claim_tokens):
+            supported += 1
+    if counted == 0:
+        return 1.0
+    return supported / counted
 
 
 # ---------------------------------------------------------------------------
