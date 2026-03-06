@@ -16,7 +16,6 @@
     const messagesEl = document.getElementById('messages');
     const emptyStateNoKb = document.getElementById('empty-state-no-kb');
     const emptyStateReady = document.getElementById('empty-state-ready');
-    const chatOntoSticky = document.getElementById('chat-onto-sticky');
     const loadingIndicator = document.getElementById('loading-indicator');
     const chatForm = document.getElementById('chat-form');
     const questionInput = document.getElementById('question-input');
@@ -24,10 +23,8 @@
     const kbList = document.getElementById('kb-list');
     const kbCreateBtn = document.getElementById('kb-create-btn');
     const fileInputCreate = document.getElementById('file-input-create');
-    const tabKnowledge = document.getElementById('tab-knowledge');
     const tabDocuments = document.getElementById('tab-documents');
     const tabEvaluate = document.getElementById('tab-evaluate');
-    const tabKnowledgeContent = document.getElementById('tab-knowledge-content');
     const tabDocumentsContent = document.getElementById('tab-documents-content');
     const tabEvaluateContent = document.getElementById('tab-evaluate-content');
     const kbStatus = document.getElementById('kb-status');
@@ -39,6 +36,9 @@
     const statusBadge = document.getElementById('status-badge');
     const ontoInfoPanel = document.getElementById('onto-info-panel');
     const ontoCardLoading = document.getElementById('onto-card-loading');
+    const currentOntologyStatusBadge = document.getElementById('current-ontology-status-badge');
+    const currentOntologyDocsCount = document.getElementById('current-ontology-docs-count');
+    const currentOntologyReadyBadge = document.getElementById('current-ontology-ready-badge');
     const jobQueueSection = document.getElementById('job-queue-section');
     const jobQueueToggle = document.getElementById('job-queue-toggle');
     const currentOntologyPill = document.getElementById('current-ontology-pill');
@@ -87,7 +87,6 @@
           const res = await fetch(API + '/knowledge-bases/' + chat.kbId + '/activate', { method: 'POST' });
           if (res.ok) addRecentKB(chat.kbId);
         } catch (_) {}
-        setStickySummaryVisible(true);
         const kb = _kbData.find(k => k.id === chat.kbId);
         if (kb) {
           currentOntologyPill.classList.remove('hidden');
@@ -95,24 +94,28 @@
           currentOntologyName.textContent = kb.name || kb.id;
           const stats = kb.stats || {};
           const relCount = stats.relations ?? stats.edges ?? 0;
-          const parts = [];
-          if (stats.classes) parts.push(fmtNum(stats.classes) + ' cls');
-          if (relCount) parts.push(fmtNum(relCount) + ' rel');
-          currentOntologyStats.textContent = parts.join(' · ');
-          const viewerUrl = window.location.origin + API + '/graph/viewer?kb_id=' + encodeURIComponent(chat.kbId);
-          document.querySelectorAll('a.graph-viewer-link').forEach(a => { a.href = viewerUrl; });
-          document.getElementById('chat-onto-sticky-name').textContent = kb.name || kb.id;
-          const stickyDesc = document.getElementById('chat-onto-sticky-desc');
-          if (kb.description) { stickyDesc.textContent = kb.description; stickyDesc.style.display = ''; } else { stickyDesc.style.display = 'none'; }
-          const stickyStats = document.getElementById('chat-onto-sticky-stats');
-          stickyStats.innerHTML = '';
-          [['Classes', stats.classes], ['Instances', stats.instances], ['Relations', relCount]].forEach(([l,v]) => {
-            const chip = document.createElement('div');
-            chip.className = 'text-xs font-mono';
-            chip.style.color = 'var(--text-muted)';
-            chip.textContent = l + ': ' + fmtNum(v ?? 0);
-            stickyStats.appendChild(chip);
-          });
+          const docs = kb.documents || [];
+          const docCount = docs.length;
+          const status = getKbStatus(chat.kbId);
+          const statParts = [
+            fmtNum(stats.classes ?? 0) + ' Classes',
+            fmtNum(stats.instances ?? 0) + ' Instances',
+            fmtNum(relCount) + ' Relations'
+          ];
+          const statParts2 = [
+            fmtNum(stats.axioms ?? 0) + ' Axioms',
+            fmtNum(stats.data_properties ?? 0) + ' Data Props'
+          ];
+          currentOntologyStats.textContent = statParts.join(' · ') + '  |  ' + statParts2.join(' · ');
+          if (currentOntologyDocsCount) currentOntologyDocsCount.textContent = fmtNum(docCount) + ' Documents';
+          if (currentOntologyStatusBadge) {
+            currentOntologyStatusBadge.textContent = status === 'building' ? '● Building' : '';
+            currentOntologyStatusBadge.classList.toggle('hidden', status !== 'building');
+            if (status === 'building') currentOntologyStatusBadge.style.cssText = 'color:var(--warning); background:var(--warning-15);';
+          }
+          if (currentOntologyReadyBadge) {
+            currentOntologyReadyBadge.classList.toggle('hidden', status !== 'ready');
+          }
         }
       } else {
         currentOntologyPill.classList.add('hidden');
@@ -160,7 +163,6 @@
           const hasKb = !!getActiveKbId();
           updateEmptyStatesForChat(hasKb ? { kbId: getActiveKbId(), messages: [] } : { kbId: null, messages: [] });
           setInputsEnabled(hasKb);
-          setStickySummaryVisible(hasKb);
           if (hasKb) {
             currentOntologyPill?.classList.remove('hidden');
             currentOntologyPill?.classList.add('flex');
@@ -169,7 +171,20 @@
               currentOntologyName.textContent = kb.name || kb.id;
               const stats = kb.stats || {};
               const relCount = stats.relations ?? stats.edges ?? 0;
-              currentOntologyStats.textContent = [stats.classes, relCount].filter(Boolean).map(v => fmtNum(v)).join(' · ') || '';
+              const statParts = [
+                fmtNum(stats.classes ?? 0) + ' Classes',
+                fmtNum(stats.instances ?? 0) + ' Instances',
+                fmtNum(relCount) + ' Relations'
+              ];
+              const statParts2 = [fmtNum(stats.axioms ?? 0) + ' Axioms', fmtNum(stats.data_properties ?? 0) + ' Data Props'];
+              currentOntologyStats.textContent = statParts.join(' · ') + '  |  ' + statParts2.join(' · ');
+              if (currentOntologyDocsCount) currentOntologyDocsCount.textContent = fmtNum((kb.documents || []).length) + ' Documents';
+              const status = getKbStatus(kb.id);
+              if (currentOntologyStatusBadge) {
+                currentOntologyStatusBadge.textContent = status === 'building' ? '● Building' : '';
+                currentOntologyStatusBadge.classList.toggle('hidden', status !== 'building');
+              }
+              if (currentOntologyReadyBadge) currentOntologyReadyBadge.classList.toggle('hidden', status !== 'ready');
             }
           } else {
             currentOntologyPill?.classList.add('hidden');
@@ -190,57 +205,24 @@
       emptyStateReady.classList.toggle('flex', hasKb && !hasMsgs);
       setInputsEnabled(!!hasKb);
       setStatusBadge(hasKb ? 'ready' : 'empty');
-      setStickySummaryVisible(!!hasKb);
       if (hasKb && chat) {
         const kb = _kbData.find(k => k.id === chat.kbId);
         if (kb) {
-          document.getElementById('chat-onto-name').textContent = kb.name || kb.id;
-          const descEl = document.getElementById('chat-onto-desc');
-          if (kb.description) { descEl.textContent = kb.description; descEl.style.display = ''; } else { descEl.style.display = 'none'; }
-          const grid = document.getElementById('chat-onto-stats');
-          grid.innerHTML = '';
-          const stats = kb.stats || {};
-          const relCount = stats.relations ?? stats.edges ?? 0;
-          [['Classes', stats.classes], ['Instances', stats.instances], ['Relations', relCount]].forEach(([l,v]) => {
-            const chip = document.createElement('div');
-            chip.className = 'rounded-lg px-3 py-2.5 text-center';
-            chip.innerHTML = '<p class="stat-value text-base font-semibold">' + fmtNum(v ?? 0) + '</p><p class="text-xs mt-0.5 stat-label">' + l + '</p>';
-            grid.appendChild(chip);
-          });
-          const chatDocsEl = document.getElementById('chat-onto-docs');
-          const chatDocsList = document.getElementById('chat-onto-docs-list');
-          const docs = kb.documents || [];
-          if (docs.length) {
-            chatDocsEl.classList.remove('hidden');
-            chatDocsList.innerHTML = '';
-            docs.forEach(d => {
-              const pill = document.createElement('span');
-              pill.className = 'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium';
-              pill.style.cssText = 'background: var(--accent-12); color: var(--text-primary); border: 1px solid var(--accent-3);';
-              pill.innerHTML = '<svg class="w-3.5 h-3.5 shrink-0" style="color:var(--accent);" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>'
-                + '<span class="truncate max-w-[180px]">' + esc(d) + '</span>';
-              chatDocsList.appendChild(pill);
-            });
-          } else {
-            chatDocsEl.classList.add('hidden');
-          }
+          /* Top bar and sticky are updated in switchToChat / renderOntologyCard; chat-onto-card removed */
         }
       }
     }
 
     function setStatusBadge(status) {
-      statusBadge.className = 'status-badge px-2 py-0.5 rounded-full text-xs font-medium ' + status;
+      if (!statusBadge) return;
       const labels = { ready: 'Active', empty: 'Empty', processing: 'Building' };
+      statusBadge.className = 'status-badge px-2 py-0.5 rounded-full text-xs font-medium ' + status;
       statusBadge.textContent = labels[status] || status;
     }
 
     function setInputsEnabled(enabled) {
       questionInput.disabled = !enabled;
       sendBtn.disabled = !enabled;
-    }
-
-    function setStickySummaryVisible(visible) {
-      chatOntoSticky.classList.toggle('hidden', !visible);
     }
 
     function formatDate(ts) {
@@ -256,170 +238,47 @@
 
     function renderOntologyCard(kb) {
       if (!kb) {
-        ontoInfoPanel.classList.add('hidden');
+        ontoInfoPanel?.classList.add('hidden');
         currentOntologyPill.classList.add('hidden');
         currentOntologyPill.classList.remove('flex');
         const downloadLink = document.getElementById('download-ontology-link');
         if (downloadLink) downloadLink.style.display = 'none';
-        const readyEl = document.getElementById('onto-card-ready');
-        if (readyEl) { readyEl.classList.add('hidden'); readyEl.classList.remove('flex'); }
         return;
       }
       const stats = kb.stats || {};
       const name = kb.name || kb.id;
-      const desc = kb.description || '';
       const relCount = stats.relations ?? stats.edges ?? 0;
+      const docs = kb.documents || [];
+      const status = getKbStatus(kb.id);
 
-      // Sidebar card
-      document.getElementById('onto-card-name').textContent = name;
-      const readyEl = document.getElementById('onto-card-ready');
-      if (readyEl) {
-        readyEl.classList.remove('hidden');
-        readyEl.classList.add('flex');
-        const building = getKbStatus(kb.id) === 'building';
-        readyEl.innerHTML = building
-          ? '<span class="kb-building-dot"></span>Building'
-          : '<span class="kb-ready-dot"></span>Ready';
-        readyEl.style.color = building ? 'var(--warning)' : 'var(--success)';
-        readyEl.style.background = building ? 'var(--warning-15)' : 'var(--success-15)';
-      }
-      const summaryParts = [];
-      if (stats.classes) summaryParts.push(fmtNum(stats.classes) + ' cls');
-      if (stats.instances) summaryParts.push(fmtNum(stats.instances) + ' inst');
-      if (relCount) summaryParts.push(fmtNum(relCount) + ' rel');
-      document.getElementById('onto-card-summary').textContent = summaryParts.length ? summaryParts.join(' · ') : '';
-      const descEl = document.getElementById('onto-card-desc');
-      if (desc) {
-        descEl.textContent = desc;
-        descEl.style.display = '';
-      } else {
-        descEl.style.display = 'none';
-      }
-
-      // Stats grid
-      const grid = document.getElementById('onto-stats-grid');
-      grid.innerHTML = '';
-      const statDefs = [
-        ['Classes', stats.classes ?? 0, 'cls'],
-        ['Instances', stats.instances ?? 0, 'inst'],
-        ['Relations', relCount, 'rel'],
-        ['Axioms', stats.axioms ?? 0, 'ax'],
-        ['Data props', stats.data_properties ?? 0, 'dp'],
-      ];
-      const nonZero = statDefs.filter(([,v]) => v > 0);
-      const show = nonZero.length > 0 ? nonZero : statDefs.slice(0, 3);
-      show.forEach(([label, val]) => {
-        const chip = document.createElement('div');
-        chip.className = 'onto-stat-chip text-center';
-        chip.innerHTML = '<p class="stat-value text-sm font-semibold">' + fmtNum(val) + '</p>'
-          + '<p class="text-xs mt-0.5" style="color:#555;">' + label + '</p>';
-        grid.appendChild(chip);
-      });
-
-      // Date
-      document.getElementById('onto-card-date').textContent = kb.created_at ? formatDate(kb.created_at) : '';
-
-      // Download & View graph links (use active kb_id)
-      const downloadLink = document.getElementById('download-ontology-link');
-      if (downloadLink) {
-        downloadLink.href = API + '/ontology/export?format=owl&kb_id=' + encodeURIComponent(kb.id);
-        downloadLink.style.display = '';
-      }
-      const viewerLinks = document.querySelectorAll('a.graph-viewer-link');
-      const viewerUrl = window.location.origin + API + '/graph/viewer?kb_id=' + encodeURIComponent(kb.id);
-      viewerLinks.forEach(a => { a.href = viewerUrl; });
-
-      ontoInfoPanel.classList.remove('hidden');
-
-      // Header pill
       currentOntologyPill.classList.remove('hidden');
       currentOntologyPill.classList.add('flex');
       currentOntologyName.textContent = name;
-      const statParts = [];
-      if (stats.classes) statParts.push(fmtNum(stats.classes) + ' cls');
-      if (relCount) statParts.push(fmtNum(relCount) + ' rel');
-      currentOntologyStats.textContent = statParts.join(' · ');
-
-      // Chat empty state card
-      document.getElementById('chat-onto-name').textContent = name;
-      const chatDescEl = document.getElementById('chat-onto-desc');
-      if (desc) {
-        chatDescEl.textContent = desc;
-        chatDescEl.style.display = '';
-      } else {
-        chatDescEl.style.display = 'none';
-      }
-
-      const chatStatsGrid = document.getElementById('chat-onto-stats');
-      chatStatsGrid.innerHTML = '';
-      const chatStatDefs = [
-        ['Classes', stats.classes ?? 0],
-        ['Instances', stats.instances ?? 0],
-        ['Relations', relCount],
-        ['Axioms', stats.axioms ?? 0],
-        ['Data Properties', stats.data_properties ?? 0],
+      const statParts = [
+        fmtNum(stats.classes ?? 0) + ' Classes',
+        fmtNum(stats.instances ?? 0) + ' Instances',
+        fmtNum(relCount) + ' Relations'
       ];
-      chatStatDefs.forEach(([label, val]) => {
-        const chip = document.createElement('div');
-        chip.className = 'rounded-lg px-3 py-2.5 text-center';
-        chip.style.cssText = 'background:var(--bg-input); border:1px solid var(--border);';
-        chip.innerHTML = '<p class="stat-value text-base font-semibold">' + fmtNum(val) + '</p>'
-          + '<p class="text-xs mt-0.5 stat-label">' + label + '</p>';
-        chatStatsGrid.appendChild(chip);
-      });
-
-      // Documents list
-      const chatDocsEl = document.getElementById('chat-onto-docs');
-      const chatDocsList = document.getElementById('chat-onto-docs-list');
-      const docs = kb.documents || [];
-      if (docs.length) {
-        chatDocsEl.classList.remove('hidden');
-        chatDocsList.innerHTML = '';
-        docs.forEach(d => {
-          const pill = document.createElement('span');
-          pill.className = 'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium';
-          pill.style.cssText = 'background: var(--accent-12); color: var(--text-primary); border: 1px solid var(--accent-3);';
-          pill.innerHTML = '<svg class="w-3.5 h-3.5 shrink-0" style="color:var(--accent);" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>'
-            + '<span class="truncate max-w-[180px]">' + esc(d) + '</span>';
-          chatDocsList.appendChild(pill);
-        });
-      } else {
-        chatDocsEl.classList.add('hidden');
-      }
-
-      // Sticky chat summary
-      document.getElementById('chat-onto-sticky-name').textContent = name;
-      const stickyDescEl = document.getElementById('chat-onto-sticky-desc');
-      if (desc) {
-        stickyDescEl.textContent = desc;
-        stickyDescEl.style.display = '';
-      } else {
-        stickyDescEl.style.display = 'none';
-      }
-      const stickyStats = document.getElementById('chat-onto-sticky-stats');
-      stickyStats.innerHTML = '';
-      const stickyStatDefs = [
-        ['C', stats.classes ?? 0],
-        ['I', stats.instances ?? 0],
-        ['R', relCount],
+      const statParts2 = [
+        fmtNum(stats.axioms ?? 0) + ' Axioms',
+        fmtNum(stats.data_properties ?? 0) + ' Data Props'
       ];
-      stickyStatDefs.forEach(([label, val]) => {
-        const chip = document.createElement('span');
-        chip.className = 'text-xs font-mono px-2 py-1 rounded-md';
-        chip.style.cssText = 'background:var(--bg-input); border:1px solid var(--border); color:var(--text-muted);';
-        chip.textContent = label + ': ' + fmtNum(val);
-        stickyStats.appendChild(chip);
-      });
+      currentOntologyStats.textContent = statParts.join(' · ') + '  |  ' + statParts2.join(' · ');
+      if (currentOntologyDocsCount) currentOntologyDocsCount.textContent = fmtNum(docs.length) + ' Documents';
+      if (currentOntologyStatusBadge) {
+        currentOntologyStatusBadge.textContent = status === 'building' ? '● Building' : '';
+        currentOntologyStatusBadge.classList.toggle('hidden', status !== 'building');
+        if (status === 'building') currentOntologyStatusBadge.style.cssText = 'color:var(--warning); background:var(--warning-15);';
+      }
+      if (currentOntologyReadyBadge) currentOntologyReadyBadge.classList.toggle('hidden', status !== 'ready');
     }
 
     function showEmptyState(hasKb) {
       if (_hasMessages) {
         emptyStateNoKb.classList.add('hidden');
         emptyStateReady.classList.add('hidden');
-        setStickySummaryVisible(hasKb);
         return;
       }
-      setStickySummaryVisible(false);
       if (hasKb) {
         emptyStateNoKb.classList.add('hidden');
         emptyStateReady.classList.remove('hidden');
@@ -704,7 +563,7 @@
     }
 
     async function activateKB(id) {
-      ontoInfoPanel.classList.remove('hidden');
+      ontoInfoPanel?.classList.remove('hidden');
       if (ontoCardLoading) ontoCardLoading.classList.remove('hidden');
       try {
         const res = await fetch(API + '/knowledge-bases/' + id + '/activate', { method: 'POST' });
@@ -721,40 +580,22 @@
 
     document.getElementById('kb-refresh-btn')?.addEventListener('click', () => { logClick('refresh', 'kb-list'); loadKBs(); });
 
-    tabKnowledge?.addEventListener('click', () => {
-      logClick('tab', 'knowledge');
-      tabKnowledge.classList.add('sidebar-tab-active');
-      tabKnowledge.classList.remove('sidebar-tab-inactive');
-      tabDocuments?.classList.remove('sidebar-tab-active');
-      tabDocuments?.classList.add('sidebar-tab-inactive');
-      tabEvaluate?.classList.remove('sidebar-tab-active');
-      tabEvaluate?.classList.add('sidebar-tab-inactive');
-      tabKnowledgeContent?.classList.remove('hidden');
-      tabDocumentsContent?.classList.add('hidden');
-      tabEvaluateContent?.classList.add('hidden');
-    });
     tabDocuments?.addEventListener('click', () => {
       logClick('tab', 'documents');
       tabDocuments?.classList.add('sidebar-tab-active');
       tabDocuments?.classList.remove('sidebar-tab-inactive');
-      tabKnowledge?.classList.remove('sidebar-tab-active');
-      tabKnowledge?.classList.add('sidebar-tab-inactive');
       tabEvaluate?.classList.remove('sidebar-tab-active');
       tabEvaluate?.classList.add('sidebar-tab-inactive');
       tabDocumentsContent?.classList.remove('hidden');
-      tabKnowledgeContent?.classList.add('hidden');
       tabEvaluateContent?.classList.add('hidden');
     });
     tabEvaluate?.addEventListener('click', () => {
       logClick('tab', 'evaluate');
       tabEvaluate?.classList.add('sidebar-tab-active');
       tabEvaluate?.classList.remove('sidebar-tab-inactive');
-      tabKnowledge?.classList.remove('sidebar-tab-active');
-      tabKnowledge?.classList.add('sidebar-tab-inactive');
       tabDocuments?.classList.remove('sidebar-tab-active');
       tabDocuments?.classList.add('sidebar-tab-inactive');
       tabEvaluateContent?.classList.remove('hidden');
-      tabKnowledgeContent?.classList.add('hidden');
       tabDocumentsContent?.classList.add('hidden');
       populateEvalKbSelector();
       const sel = document.getElementById('eval-kb-select');
@@ -762,6 +603,7 @@
     });
 
     jobQueueToggle?.addEventListener('click', () => { logClick('job-queue', 'toggle'); jobQueueSection?.classList.toggle('collapsed'); });
+    document.getElementById('job-queue-clear')?.addEventListener('click', () => { logClick('job-queue', 'clear'); clearJobsStorage(); });
 
     document.getElementById('eval-kb-select')?.addEventListener('change', (e) => {
       const kbId = e.target?.value;
@@ -977,7 +819,6 @@
       emptyStateNoKb.classList.add('hidden');
       emptyStateReady.classList.add('hidden');
       emptyStateReady.classList.remove('flex');
-      setStickySummaryVisible(Boolean(getActiveKbId()));
     }
 
     function renderInlineMarkdown(value) {
@@ -1365,25 +1206,8 @@
       renderChatTabs();
     }
 
-    const QA_STEPS = ['Retrieving facts...', 'Synthesizing answer...'];
-    let qaStepInterval = null;
-
     function showLoading(show) {
       loadingIndicator.classList.toggle('hidden', !show);
-      const qaLabel = document.getElementById('qa-step-label');
-      const qaDots = loadingIndicator.querySelectorAll('.qa-step-dots span');
-      if (show) {
-        qaLabel.textContent = QA_STEPS[0];
-        qaDots.forEach((d, i) => { d.style.background = i === 0 ? 'var(--accent)' : 'var(--bg-card)'; });
-        qaStepInterval = setInterval(() => {
-          const idx = QA_STEPS.indexOf(qaLabel.textContent);
-          const next = (idx + 1) % QA_STEPS.length;
-          qaLabel.textContent = QA_STEPS[next];
-          qaDots.forEach((d, i) => { d.style.background = i === next ? 'var(--accent)' : 'var(--bg-card)'; });
-        }, 1800);
-      } else {
-        if (qaStepInterval) { clearInterval(qaStepInterval); qaStepInterval = null; }
-      }
     }
 
     chatForm.addEventListener('submit', async (e) => {
@@ -1649,6 +1473,7 @@
     const jobDetailModal = document.getElementById('job-detail-modal');
     const jobDetailContent = document.getElementById('job-detail-content');
     const jobDetailTitle = document.getElementById('job-detail-title');
+    const jobDetailCancelBtn = document.getElementById('job-detail-cancel-job');
 
     modalConfirm?.addEventListener('click', () => {
       logClick('upload-confirm', _modalMode + ' (files: ' + pendingFiles.length + ')');
@@ -1668,7 +1493,9 @@
       const first = files[0];
       const title = modalTitle.value.trim() || first.name.replace(/\\.[^.]+$/, '');
       const description = modalDescription.value.trim();
-      doUpload(files, title, description, parallel);
+      const ontologyLanguageEl = document.getElementById('modal-ontology-language');
+      const ontologyLanguage = (ontologyLanguageEl && ontologyLanguageEl.value) ? ontologyLanguageEl.value : 'en';
+      doUpload(files, title, description, parallel, ontologyLanguage);
     });
 
     dropZone?.addEventListener('drop', (e) => {
@@ -1704,23 +1531,110 @@
       const card = document.createElement('div');
       card.className = 'job-card job-clickable ' + typeClass;
       card.dataset.jobId = job.localId;
-      card.innerHTML = '<div class="flex items-center justify-between gap-2">'
+      card.innerHTML = '<div class="flex items-center justify-between gap-2 min-w-0">'
         + '<div class="flex items-center gap-2 min-w-0 flex-1">'
         + '<span class="job-type-badge text-xs font-medium px-1.5 py-0.5 rounded shrink-0">' + typeLabel + '</span>'
-        + '<p class="text-sm font-medium truncate min-w-0" style="color:var(--text-primary);">' + esc(job.title) + '</p>'
+        + '<p class="job-card-title text-sm font-medium min-w-0" style="color:var(--text-primary);">' + esc(job.title) + '</p>'
         + '</div>'
         + '<button type="button" class="job-cancel shrink-0 w-5 h-5 rounded flex items-center justify-center" style="color:var(--text-muted);">'
         + '<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>'
         + '</button></div>'
-        + (job.description ? '<p class="text-xs mt-0.5 truncate" style="color:var(--text-muted-2);">' + esc(job.description) + '</p>' : '')
-        + '<div class="flex items-center gap-2 mt-1.5">'
-        + '<span class="stage-dot"></span>'
-        + '<span class="stage-label text-xs font-mono" style="color:var(--text-muted);">Starting...</span>'
+        + (job.description ? '<p class="job-card-desc job-card-desc-filename text-xs mt-0.5 min-w-0" style="color:var(--text-muted-2);">' + esc(job.description) + '</p>' : '')
+        + '<div class="flex items-center gap-2 mt-1.5 min-w-0">'
+        + '<span class="stage-dot shrink-0"></span>'
+        + '<span class="stage-label text-xs font-mono min-w-0" style="color:var(--text-muted);">Starting...</span>'
         + '</div>'
-        + '<div class="job-metrics text-xs font-mono mt-1" style="color:#6b6b76; min-height:1em;"></div>';
+        + '<div class="job-metrics text-xs font-mono mt-1 min-w-0" style="color:#6b6b76; min-height:1em;"></div>';
       card.querySelector('.job-cancel').addEventListener('click', (e) => { e.stopPropagation(); logClick('job-cancel', job.localId); cancelJob(job); });
       card.addEventListener('click', (e) => { if (!e.target.closest('.job-cancel')) { logClick('job-detail', job.localId); showJobDetailModal(job); } });
       return card;
+    }
+
+    const JOB_STORAGE_KEY = 'clearence_job_records';
+
+    function jobToRecord(job) {
+      return {
+        localId: job.localId,
+        title: job.title,
+        description: job.description,
+        status: job.status,
+        serverJobId: job.serverJobId,
+        jobType: job.jobType,
+        kbId: job.kbId,
+        pipeline_report: job.pipeline_report,
+        progress: job.progress || {},
+        liveMetrics: job.liveMetrics || {},
+        qualityGrade: job.qualityGrade,
+        qualityScore: job.qualityScore,
+        fileIndex: job.fileIndex,
+        totalFiles: job.totalFiles,
+        currentFilename: job.currentFilename,
+        chunksCompleted: job.chunksCompleted,
+        chunksTotal: job.chunksTotal,
+        extraction_mode: job.extraction_mode,
+      };
+    }
+
+    function persistJobs() {
+      try {
+        const records = jobs.map(jobToRecord);
+        localStorage.setItem(JOB_STORAGE_KEY, JSON.stringify(records));
+      } catch (e) { /* ignore */ }
+    }
+
+    function updateRunningJobIndicator() {
+      const el = document.getElementById('job-queue-running-indicator');
+      if (!el) return;
+      const hasRunning = jobs.some(j => j.status === 'running');
+      if (hasRunning) el.classList.remove('hidden'); else el.classList.add('hidden');
+    }
+
+    function loadJobsFromStorage() {
+      if (!jobQueue) return;
+      try {
+        const raw = localStorage.getItem(JOB_STORAGE_KEY);
+        if (!raw) return;
+        const records = JSON.parse(raw);
+        if (!Array.isArray(records) || records.length === 0) return;
+        const sorted = records.slice().sort((a, b) => (b.localId || 0) - (a.localId || 0));
+        for (const rec of sorted) {
+          const job = { ...rec, card: null, abortController: null, progress: rec.progress || {} };
+          jobs.push(job);
+          job.card = createJobCard(job);
+          const typeClass = job.jobType === 'create' ? 'job-create' : 'job-extend';
+          job.card.className = 'job-card job-clickable ' + typeClass + ' ' + (job.status || 'done');
+          jobQueue.appendChild(job.card);
+          if (job.status === 'done' && job.pipeline_report) {
+            const report = job.pipeline_report;
+            const totals = report.totals || report.extraction_totals || {};
+            const sl = job.card.querySelector('.stage-label');
+            if (sl) sl.textContent = 'Complete';
+            const metricsEl = job.card.querySelector('.job-metrics');
+            if (metricsEl) {
+              const cls = totals.classes ?? 0, inst = totals.instances ?? 0, rel = totals.relations ?? 0;
+              const elapsed = report.elapsed_seconds ?? 0;
+              metricsEl.textContent = (cls + ' cls, ' + inst + ' inst, ' + rel + ' rel' + (elapsed > 0 ? ' · ' + elapsed.toFixed(1) + 's' : ''));
+            }
+          } else if (job.status === 'error' || job.status === 'cancelled') {
+            const sl = job.card.querySelector('.stage-label');
+            if (sl) sl.textContent = job.status === 'cancelled' ? 'Cancelled' : 'Failed';
+            const cancelBtn = job.card.querySelector('.job-cancel');
+            if (cancelBtn) cancelBtn.style.display = 'none';
+          }
+        }
+        updateRunningJobIndicator();
+      } catch (e) { /* ignore */ }
+    }
+
+    function clearJobsStorage() {
+      try {
+        localStorage.removeItem(JOB_STORAGE_KEY);
+        jobs.length = 0;
+        if (jobQueue) {
+          while (jobQueue.firstChild) jobQueue.removeChild(jobQueue.firstChild);
+        }
+        updateRunningJobIndicator();
+      } catch (e) { /* ignore */ }
     }
 
     let _modalJob = null;
@@ -1766,7 +1680,7 @@
           'file_start': (d.total_files > 1) ? 'File ' + (d.file_index || '?') + ' of ' + (d.total_files || '?') + ': ' + (d.filename || '') : 'Loading...',
           'load': 'Loading...', 'load_done': 'Loaded',
           'chunk': 'Chunking...', 'chunk_done': (d.total_chunks || 0) + ' chunks',
-          'extract': chunksTotal > 0 ? chunksDone + ' of ' + chunksTotal + ' chunks' : 'Extracting...',
+          'extract': chunksTotal > 0 ? chunksDone + '/' + chunksTotal + ' chunks' : 'Extracting...',
           'merge_done': 'Merged',
           'cross_component': 'Cross-component relations...', 'cross_component_done': 'Cross-component done',
           'taxonomy': 'Building taxonomy...', 'taxonomy_done': 'Taxonomy built', 'taxonomy_skip': 'Skipped taxonomy',
@@ -1886,8 +1800,9 @@
       if (elapsed > 0) html += '<li>Elapsed: <span class="stat-value">' + elapsed.toFixed(1) + 's</span></li>';
       html += '</ul></div>';
 
+      const entitiesSectionTitle = (job.status === 'done' || job.status === 'error') ? 'What was added' : 'Entities &amp; Relations';
       html += '<div class="rounded-lg p-3" style="background:var(--bg-input); border:1px solid var(--border);">';
-      html += '<p class="text-xs font-medium uppercase tracking-wider mb-2" style="color:var(--text-muted);">Entities &amp; Relations</p>';
+      html += '<p class="text-xs font-medium uppercase tracking-wider mb-2" style="color:var(--text-muted);">' + entitiesSectionTitle + '</p>';
       html += '<div class="grid grid-cols-2 gap-2 text-xs font-mono">';
       html += '<div><span style="color:var(--text-muted);">Classes:</span> <span class="stat-value">' + cls + '</span></div>';
       html += '<div><span style="color:var(--text-muted);">Instances:</span> <span class="stat-value">' + inst + '</span></div>';
@@ -2041,6 +1956,27 @@
         html += '</div>';
       }
 
+      const healthData = report.health;
+      if (healthData && (job.status === 'done' || job.status === 'error')) {
+        const badge = healthData.badge || '—';
+        const overallScore = healthData.overall_score ?? 0;
+        const badgeColor = badge === 'Healthy' ? 'var(--success)' : (badge === 'Needs Attention' ? 'var(--warning)' : 'var(--error-bright)');
+        const str = healthData.structural || {};
+        const sem = healthData.semantic || {};
+        const ret = healthData.retrieval || {};
+        html += '<div class="rounded-lg p-3 mt-3" style="background:var(--bg-input); border:1px solid var(--border);">';
+        html += '<p class="text-xs font-medium uppercase tracking-wider mb-2" style="color:var(--text-muted);">Health</p>';
+        html += '<div class="flex items-center gap-2 mb-3"><span class="px-2 py-1 rounded text-xs font-medium" style="background:var(--border-subtle); color:' + badgeColor + ';">' + esc(badge) + '</span><span class="text-xs font-mono" style="color:var(--text-muted);">Score: ' + Number(overallScore).toFixed(0) + '/100</span></div>';
+        html += '<div class="grid grid-cols-2 gap-2 text-xs font-mono">';
+        html += '<div><span style="color:var(--text-muted);">Nodes</span> <span class="stat-value">' + (str.node_count ?? '—') + '</span></div>';
+        html += '<div><span style="color:var(--text-muted);">Edges</span> <span class="stat-value">' + (str.edge_count ?? '—') + '</span></div>';
+        html += '<div><span style="color:var(--text-muted);">Orphans</span> <span class="stat-value">' + (str.orphan_nodes ?? '—') + '</span></div>';
+        html += '<div><span style="color:var(--text-muted);">Components</span> <span class="stat-value">' + (str.connected_components ?? '—') + '</span></div>';
+        html += '<div><span style="color:var(--text-muted);">Largest component</span> <span class="stat-value">' + (str.largest_component_coverage != null ? (Number(str.largest_component_coverage * 100).toFixed(0) + '%') : '—') + '</span></div>';
+        html += '<div><span style="color:var(--text-muted);">Relation types</span> <span class="stat-value">' + (sem.unique_relation_types ?? '—') + '</span></div>';
+        html += '</div></div>';
+      }
+
       const violations = reasoning.consistency_violations || [];
       if (violations.length > 0) {
         html += '<div class="rounded-lg p-3" style="background:var(--error-15); border:1px solid var(--error);">';
@@ -2052,6 +1988,15 @@
 
       html += '</div>';
       jobDetailContent.innerHTML = html;
+      if (jobDetailCancelBtn) {
+        if (job.status === 'running') {
+          jobDetailCancelBtn.classList.remove('hidden');
+          jobDetailCancelBtn.onclick = () => { logClick('job-cancel', 'modal', job.localId); cancelJob(job); hideJobDetailModal(); };
+        } else {
+          jobDetailCancelBtn.classList.add('hidden');
+          jobDetailCancelBtn.onclick = null;
+        }
+      }
       jobDetailModal.classList.remove('hidden');
     }
 
@@ -2065,6 +2010,8 @@
 
     function setJobStatus(job, status, label) {
       job.status = status;
+      persistJobs();
+      updateRunningJobIndicator();
       if (!job.card) return;
       const typeClass = job.jobType === 'create' ? 'job-create' : 'job-extend';
       job.card.className = 'job-card job-clickable ' + typeClass + ' ' + status;
@@ -2109,7 +2056,7 @@
       }, delay || 0);
     }
 
-    async function doUpload(files, title, description, parallel = true) {
+    async function doUpload(files, title, description, parallel = true, ontologyLanguage = 'en') {
       const fileList = Array.isArray(files) ? files : [files];
       const first = fileList[0];
       const job = {
@@ -2124,8 +2071,10 @@
       };
       jobs.push(job);
       job.card = createJobCard(job);
-      if (jobQueue) jobQueue.appendChild(job.card);
+      if (jobQueue) jobQueue.insertBefore(job.card, jobQueue.firstChild);
       if (jobQueueSection) jobQueueSection.classList.remove('collapsed');
+      persistJobs();
+      updateRunningJobIndicator();
       setStatusBadge('processing');
       tabDocuments?.click();
 
@@ -2137,6 +2086,7 @@
       }
       if (title) fd.append('title', title);
       if (description) fd.append('description', description);
+      fd.append('ontology_language', ontologyLanguage || 'en');
       try {
         const parallelParam = parallel ? 'true' : 'false';
         const res = await fetch(API + '/build_ontology_stream?run_inference=true&sequential=true&run_reasoning=true&parallel=' + parallelParam, {
@@ -2180,7 +2130,7 @@
           await loadKBs();
           if (result.kb_id) setActiveKbId(result.kb_id);
           if (result.pipeline_report && result.kb_id) appendOntologySummary(result.pipeline_report, result.kb_id);
-          removeJobCard(job, 3000);
+          // Keep completed job in the list so user can open the modal for details
           if (kbStatus) { kbStatus.style.display = 'none'; }
         }
       } catch (e) {
@@ -2190,7 +2140,7 @@
           setJobStatus(job, 'error', e.message);
           if (kbStatus) { kbStatus.textContent = 'Job failed: ' + e.message; kbStatus.style.display = ''; kbStatus.style.color = 'var(--error)'; }
         }
-        removeJobCard(job, 4000);
+        // Keep failed/cancelled jobs in the list so user can open the modal for details
       } finally {
         const hasRunning = jobs.some(j => j.status === 'running');
         if (!hasRunning) setStatusBadge(getActiveKbId() ? 'ready' : 'empty');
@@ -2215,8 +2165,10 @@
       };
       jobs.push(job);
       job.card = createJobCard(job);
-      if (jobQueue) jobQueue.appendChild(job.card);
+      if (jobQueue) jobQueue.insertBefore(job.card, jobQueue.firstChild);
       if (jobQueueSection) jobQueueSection.classList.remove('collapsed');
+      persistJobs();
+      updateRunningJobIndicator();
       setStatusBadge('processing');
       tabDocuments?.click();
       if (_kbData && _kbData.length) renderKbList(_kbData, _activeKbId);
@@ -2270,7 +2222,7 @@
           await loadKBs();
           if (result.kb_id) setActiveKbId(result.kb_id);
           if (result.pipeline_report && result.kb_id) appendOntologySummary(result.pipeline_report, result.kb_id);
-          removeJobCard(job, 3000);
+          // Keep completed job in the list so user can open the modal for details
         }
       } catch (e) {
         if (e.name === 'AbortError') {
@@ -2278,7 +2230,7 @@
         } else {
           setJobStatus(job, 'error', e.message);
         }
-        removeJobCard(job, 4000);
+        // Keep failed/cancelled jobs in the list so user can open the modal for details
       } finally {
         const hasRunning = jobs.some(j => j.status === 'running');
         if (!hasRunning) setStatusBadge(getActiveKbId() ? 'ready' : 'empty');
@@ -2348,13 +2300,10 @@
       sidebar?.classList.add('open');
     }
 
-    // Ensure graph viewer links use current origin (fixes about:blank when opened in new tab)
-    const viewerUrl = window.location.origin + API + '/graph/viewer';
-    document.querySelectorAll('a.graph-viewer-link').forEach(function(a) { a.href = viewerUrl; });
-
     (async function init() {
       logClick('init', 'start');
       try {
+        loadJobsFromStorage();
         await loadKBs();
         logClick('init', 'loadKBs done, count=' + (_kbData?.length ?? 0));
         const params = new URLSearchParams(window.location.search);

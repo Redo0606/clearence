@@ -41,12 +41,9 @@ def generate_chat_ui_html(api_base: str = "/api/v1") -> str:
       </div>
     </div>
 
-    <!-- Sidebar tabs -->
+    <!-- Sidebar tabs: Documents + Evaluate only -->
     <div class="flex shrink-0 border-b" style="border-color: var(--border);">
-      <button type="button" id="tab-knowledge" class="sidebar-tab sidebar-tab-active flex-1 px-4 py-3 text-xs font-semibold uppercase tracking-wider transition-all">
-        Knowledge
-      </button>
-      <button type="button" id="tab-documents" class="sidebar-tab sidebar-tab-inactive flex-1 px-4 py-3 text-xs font-semibold uppercase tracking-wider transition-all">
+      <button type="button" id="tab-documents" class="sidebar-tab sidebar-tab-active flex-1 px-4 py-3 text-xs font-semibold uppercase tracking-wider transition-all">
         Documents
       </button>
       <button type="button" id="tab-evaluate" class="sidebar-tab sidebar-tab-inactive flex-1 px-4 py-3 text-xs font-semibold uppercase tracking-wider transition-all">
@@ -54,109 +51,17 @@ def generate_chat_ui_html(api_base: str = "/api/v1") -> str:
       </button>
     </div>
 
-    <!-- Knowledge tab content: single scrollable area so everything fits the tab -->
-    <div id="tab-knowledge-content" class="flex flex-col flex-1 min-h-0 overflow-y-auto">
-      <div class="px-5 py-4 shrink-0" style="border-bottom: 1px solid var(--border);">
-        <div class="flex items-center justify-between mb-3">
-          <p class="text-xs font-semibold uppercase tracking-widest" style="color: var(--text-muted);">Knowledge Bases</p>
-          <span id="status-badge" class="status-badge px-2 py-0.5 rounded-full text-xs font-medium empty" style="background: var(--border-subtle); color: var(--text-muted);">Empty</span>
-        </div>
-        <label for="file-input-create" id="kb-create-btn" class="w-full rounded-lg px-3 py-2.5 text-sm font-medium border transition-all flex items-center justify-center gap-2 cursor-pointer"
-          style="background: var(--accent-12); color: var(--accent); border-color: var(--accent-4);">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/></svg>
-          Create new KB
-        </label>
-        <input type="file" id="file-input-create" class="sr-only" accept=".pdf,.docx,.txt,.md" multiple tabindex="-1">
-      </div>
-      <!-- KB management list: compact cards, all KBs -->
-      <div class="px-3 py-3 shrink-0">
-        <div class="flex items-center justify-between mb-2">
-          <p class="text-xs font-medium" style="color: var(--text-muted);">All knowledge bases <span id="kb-count" class="font-mono" style="color: var(--text-muted-2);"></span></p>
-          <button type="button" id="kb-refresh-btn" class="text-xs font-medium link-teal hover:opacity-80" title="Refresh list">↻</button>
-        </div>
-        <div id="kb-list" class="flex flex-col gap-1.5"></div>
-        <div id="kb-list-empty" class="hidden py-6 text-center">
-          <p class="text-sm" style="color: var(--text-muted-2);">No knowledge bases yet</p>
-          <p class="text-xs mt-1" style="color: #555;">Create one with the button above</p>
-        </div>
-      </div>
-
-    <!-- Ontology Info Card (hidden until KB selected, compact) -->
-    <div id="onto-info-panel" class="hidden px-5 py-3 shrink-0 relative" style="border-top: 1px solid var(--border);">
-      <div id="onto-card-loading" class="hidden absolute inset-0 flex items-center justify-center z-10 rounded-xl" style="background: var(--bg-overlay);">
-        <div class="kb-load-spinner"></div>
-      </div>
-      <div id="onto-card" class="onto-card onto-card-glow rounded-xl p-3 collapsed" style="background: var(--bg-card); border: 1px solid var(--accent-25);">
-        <!-- Header row (clickable: expand + open modal) -->
-        <div id="onto-card-header" class="flex items-start gap-3">
-          <div class="w-9 h-9 rounded-lg flex items-center justify-center shrink-0 mt-0.5" style="background: var(--accent-2);">
-            <svg class="w-4 h-4" style="color: var(--accent);" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
-            </svg>
-          </div>
-          <div class="flex-1 min-w-0">
-            <div class="flex items-center gap-2">
-              <p id="onto-card-name" class="font-semibold text-sm leading-snug" style="color: var(--text-primary);"></p>
-              <span id="onto-card-ready" class="hidden flex items-center gap-1 text-xs font-medium px-1.5 py-0.5 rounded shrink-0 whitespace-nowrap" style="color:var(--success); background:var(--success-15);">
-                <span class="kb-ready-dot"></span>Ready
-              </span>
-            </div>
-            <p id="onto-card-summary" class="text-xs mt-0.5" style="color: var(--text-muted);"></p>
-          </div>
-          <button type="button" id="onto-card-expand-btn" class="shrink-0 p-1 rounded transition-colors" style="color: var(--text-muted);" aria-label="Expand/collapse">
-            <svg id="onto-card-chevron" class="w-4 h-4 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
-            </svg>
-          </button>
-        </div>
-
-        <!-- Expandable content -->
-        <div id="onto-card-expandable" class="onto-card-expandable">
-          <p id="onto-card-desc" class="text-xs mt-2 leading-relaxed" style="color: var(--text-muted); display: none;"></p>
-          <div id="onto-stats-grid" class="grid grid-cols-3 gap-1.5 mt-3"></div>
-          <div id="onto-doc-row" class="hidden flex items-center gap-2 mt-3 pt-3" style="border-top: 1px solid var(--border);">
-            <svg class="w-3.5 h-3.5 shrink-0" style="color: var(--text-muted);" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-            </svg>
-            <span id="onto-doc-name" class="text-xs font-mono truncate" style="color: var(--text-muted);"></span>
-          </div>
-          <div class="flex items-center justify-between mt-3 pt-3" style="border-top: 1px solid var(--border);">
-            <p id="onto-card-date" class="text-xs" style="color: #555;"></p>
-            <div class="flex items-center gap-3" onclick="event.stopPropagation()">
-              <a href="#" class="graph-viewer-link text-xs font-medium flex items-center gap-1 transition-colors link-teal" target="_blank" rel="noopener noreferrer">
-                View graph
-                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
-                </svg>
-              </a>
-              <a href="#" id="download-ontology-link" class="text-xs font-medium flex items-center gap-1 transition-colors link-teal" target="_blank" rel="noopener noreferrer" style="display: none;">
-                Download
-                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
-                </svg>
-              </a>
-              <button type="button" id="delete-kb-btn"
-                class="text-xs font-medium flex items-center gap-1 transition-colors"
-                style="color: var(--text-muted-2);"
-                onmouseover="this.style.color='var(--error)'" onmouseout="this.style.color='var(--text-muted-2)'"
-                onclick="deleteActiveKB()">
-                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
-                </svg>
-                Delete
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-    </div>
-
     <!-- Document Management tab content -->
-    <div id="tab-documents-content" class="hidden flex flex-col flex-1 min-h-0 overflow-hidden">
+    <div id="tab-documents-content" class="flex flex-col flex-1 min-h-0 overflow-hidden">
     <div class="px-5 py-4 flex-1 min-h-0 overflow-y-auto">
       <p class="text-xs font-semibold uppercase tracking-widest mb-3" style="color: var(--text-muted);">Add Documents</p>
-      <p class="text-xs mb-3" style="color: var(--text-muted);">Add documents to the active KB. Select a KB in the Knowledge tab first.</p>
+      <p class="text-xs mb-3" style="color: var(--text-muted);">Add documents to the active KB, or create a new ontology. Start a new chat to choose a knowledge base.</p>
+      <label for="file-input-create" id="kb-create-btn" class="w-full rounded-lg px-3 py-2.5 text-sm font-medium border transition-all flex items-center justify-center gap-2 cursor-pointer mb-3"
+        style="background: var(--accent-12); color: var(--accent); border-color: var(--accent-4);">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/></svg>
+        Create new ontology
+      </label>
+      <input type="file" id="file-input-create" class="sr-only" accept=".pdf,.docx,.txt,.md" multiple tabindex="-1">
       <label for="file-input" id="drop-zone" class="drop-zone border-2 border-dashed rounded-xl p-5 text-center cursor-pointer transition-all block"
         style="border-color: var(--border); color: var(--text-muted); background: var(--bg-card);">
         <div class="drop-icon mx-auto mb-2 w-10 h-10 rounded-full flex items-center justify-center" style="background: var(--accent-1);">
@@ -174,12 +79,16 @@ def generate_chat_ui_html(api_base: str = "/api/v1") -> str:
       </label>
       <div id="job-queue-section" class="job-queue-section mt-3">
         <button type="button" id="job-queue-toggle" class="job-queue-toggle w-full flex items-center justify-between py-2 text-xs font-medium" style="color: var(--text-muted);">
-          <span>Documents &amp; jobs</span>
-          <svg class="job-queue-chevron w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <span class="flex items-center gap-2">
+            <span>Documents &amp; jobs</span>
+            <span id="job-queue-running-indicator" class="job-queue-running-dot hidden" aria-hidden="true" title="Jobs running"></span>
+          </span>
+          <svg class="job-queue-chevron w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
           </svg>
         </button>
         <div id="job-queue" class="job-queue-content mt-2 space-y-2 transition-opacity duration-200"></div>
+        <button type="button" id="job-queue-clear" class="mt-2 text-xs py-1 px-2 rounded" style="color: var(--text-muted);" title="Clear job history">Clear history</button>
       </div>
     </div>
     </div>
@@ -308,6 +217,24 @@ def generate_chat_ui_html(api_base: str = "/api/v1") -> str:
           <label class="block text-xs font-medium mb-1.5 uppercase tracking-wider" style="color: var(--text-muted);">Description <span style="color: #555;">(optional)</span></label>
           <textarea id="modal-description" class="w-full rounded-lg px-3.5 py-2.5 text-sm border resize-none transition-all" rows="3" style="background: var(--bg-input); color: var(--text-primary); border-color: var(--border);" placeholder="What this ontology covers..."></textarea>
         </div>
+        <div>
+          <label class="block text-xs font-medium mb-1.5 uppercase tracking-wider" style="color: var(--text-muted);">Ontology language</label>
+          <select id="modal-ontology-language" class="w-full rounded-lg px-3.5 py-2.5 text-sm border transition-all" style="background: var(--bg-input); color: var(--text-primary); border-color: var(--border);" title="All class/instance names and descriptions will be in this language">
+            <option value="en">English</option>
+            <option value="fr">French</option>
+            <option value="de">German</option>
+            <option value="es">Spanish</option>
+            <option value="it">Italian</option>
+            <option value="pt">Portuguese</option>
+            <option value="nl">Dutch</option>
+            <option value="ar">Arabic</option>
+            <option value="zh">Chinese</option>
+            <option value="ja">Japanese</option>
+            <option value="ko">Korean</option>
+            <option value="ru">Russian</option>
+          </select>
+          <p class="text-xs mt-1" style="color: var(--text-muted);">Concepts and relations will be extracted in this language. Answers in chat can still be in your language.</p>
+        </div>
         <div class="flex items-center gap-2">
           <input type="checkbox" id="modal-parallel" checked class="rounded border-2 w-4 h-4 accent-pink-500" style="border-color: var(--border); background: var(--bg-input);">
           <label for="modal-parallel" class="text-sm" style="color: var(--text-primary);">Parallel extraction (4 workers)</label>
@@ -333,9 +260,12 @@ def generate_chat_ui_html(api_base: str = "/api/v1") -> str:
   <div id="job-detail-modal" class="job-detail-modal fixed inset-0 z-50 hidden" aria-hidden="true">
     <div class="modal-backdrop absolute inset-0 bg-black/60 backdrop-blur-sm" onclick="document.getElementById('job-detail-modal').classList.add('hidden')"></div>
     <div class="modal-content modal-enter absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-2xl rounded-xl p-6 shadow-2xl" style="background: var(--bg-card); border: 1px solid var(--border);" onclick="event.stopPropagation()">
-      <div class="flex items-center justify-between mb-5">
-        <h3 id="job-detail-title" class="font-semibold text-lg" style="color: var(--text-primary);">Job Details</h3>
-        <button type="button" id="job-detail-close" class="p-1.5 rounded-md transition-colors text-xl leading-none" style="color: var(--text-muted);" aria-label="Close">×</button>
+      <div class="flex items-center justify-between gap-2 mb-5">
+        <h3 id="job-detail-title" class="font-semibold text-lg min-w-0 truncate" style="color: var(--text-primary);">Job Details</h3>
+        <div class="flex items-center gap-2 shrink-0">
+          <button type="button" id="job-detail-cancel-job" class="hidden px-3 py-1.5 rounded-lg text-xs font-medium transition-all" style="background: var(--error-15); color: var(--error); border: 1px solid var(--error);" aria-label="Cancel job">Cancel job</button>
+          <button type="button" id="job-detail-close" class="p-1.5 rounded-md transition-colors text-xl leading-none" style="color: var(--text-muted);" aria-label="Close">×</button>
+        </div>
       </div>
       <div id="job-detail-content" class="space-y-4 text-sm" style="color: var(--text-primary);"></div>
     </div>
@@ -417,13 +347,20 @@ def generate_chat_ui_html(api_base: str = "/api/v1") -> str:
           <h1 class="font-semibold text-base" style="color: var(--text-primary);">Clearence</h1>
           <p class="text-xs" style="color: var(--text-muted);">Ontology Assistant · Reda Sarehane</p>
         </div>
-        <!-- Active ontology pill -->
-        <div id="current-ontology-pill" class="hidden items-center gap-2 pl-3 ml-1" style="border-left: 1px solid var(--border);">
-          <div class="w-1.5 h-1.5 rounded-full shrink-0" style="background: var(--accent);"></div>
-          <div>
-            <p class="text-xs font-medium leading-none" style="color: var(--text-primary);"><span id="current-ontology-name"></span></p>
-            <p id="current-ontology-stats" class="text-xs mt-0.5 font-mono" style="color: var(--text-muted);"></p>
+        <!-- Active ontology: name, status, full stats -->
+        <div id="current-ontology-pill" class="hidden flex items-center gap-3 flex-wrap pl-3 ml-1" style="border-left: 1px solid var(--border);">
+          <div class="flex items-center gap-2">
+            <div class="w-1.5 h-1.5 rounded-full shrink-0" style="background: var(--accent);"></div>
+            <span id="current-ontology-name" class="text-xs font-medium" style="color: var(--text-primary);"></span>
           </div>
+          <span id="current-ontology-status-badge" class="text-xs font-medium px-2 py-0.5 rounded-full hidden" style="background: var(--border-subtle); color: var(--text-muted);"></span>
+          <span class="text-xs" style="color: var(--border);">|</span>
+          <span id="current-ontology-stats" class="text-xs font-mono" style="color: var(--text-muted);"></span>
+          <span class="text-xs" style="color: var(--border);">|</span>
+          <span id="current-ontology-docs-count" class="text-xs font-mono" style="color: var(--text-muted);"></span>
+          <span id="current-ontology-ready-badge" class="hidden flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full shrink-0" style="color:var(--success); background:var(--success-15); border: 1px solid var(--success-2);">
+            <span class="kb-ready-dot"></span>Ready
+          </span>
         </div>
       </div>
       <div class="flex items-center gap-2">
@@ -444,23 +381,6 @@ def generate_chat_ui_html(api_base: str = "/api/v1") -> str:
 
     <!-- Messages -->
     <div id="messages" class="flex-1 overflow-y-auto p-6 space-y-5" style="scroll-behavior: smooth; background: var(--bg-body);">
-      <!-- Sticky ontology summary (visible while chatting) -->
-      <div id="chat-onto-sticky" class="chat-onto-sticky hidden sticky top-0 z-20 pb-3">
-        <div class="chat-onto-sticky-card rounded-xl px-4 py-3 flex items-center gap-3">
-          <div class="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style="background: var(--accent-2);">
-            <svg class="w-4 h-4" style="color: var(--accent);" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
-            </svg>
-          </div>
-          <div class="min-w-0">
-            <p id="chat-onto-sticky-name" class="text-sm font-semibold truncate" style="color: var(--text-primary);"></p>
-            <p id="chat-onto-sticky-desc" class="text-xs mt-0.5 truncate" style="color: var(--text-muted); display: none;"></p>
-          </div>
-          <div id="chat-onto-sticky-stats" class="ml-auto flex items-center gap-1.5"></div>
-          <a href="#" class="graph-viewer-link text-xs font-medium link-teal shrink-0" target="_blank" rel="noopener noreferrer">View graph</a>
-        </div>
-      </div>
-
       <!-- Empty state: no ontology selected -->
       <div id="empty-state-no-kb" class="flex flex-col items-center justify-center py-16 text-center">
         <div class="w-16 h-16 rounded-2xl flex items-center justify-center mb-5" style="background: var(--accent-08); border: 1px solid var(--accent-15);">
@@ -474,30 +394,6 @@ def generate_chat_ui_html(api_base: str = "/api/v1") -> str:
 
       <!-- Empty state: ontology selected, ready to chat -->
       <div id="empty-state-ready" class="hidden flex-col items-center justify-center py-10 text-center">
-        <!-- Ontology summary card in chat -->
-        <div id="chat-onto-card" class="w-full max-w-lg rounded-2xl p-6 mb-8" style="background: var(--bg-card); border: 1px solid var(--accent-25); box-shadow: 0 0 0 1px var(--accent-12), 0 8px 32px var(--black-45);">
-          <div class="flex items-center gap-3 mb-4">
-            <div class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style="background: var(--accent-2);">
-              <svg class="w-5 h-5" style="color: var(--accent);" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
-              </svg>
-            </div>
-            <div class="text-left">
-              <p id="chat-onto-name" class="font-semibold" style="color: var(--text-primary);"></p>
-              <p id="chat-onto-desc" class="text-xs mt-0.5" style="color: var(--text-muted); display: none;"></p>
-            </div>
-            <div class="ml-auto">
-              <span class="px-2.5 py-1 rounded-full text-xs font-medium" style="background: var(--success-15); color: var(--success); border: 1px solid var(--success-2);">Ready</span>
-            </div>
-          </div>
-          <div id="chat-onto-stats" class="grid grid-cols-3 gap-2"></div>
-          <div id="chat-onto-docs" class="hidden mt-4 pt-4" style="border-top: 1px solid var(--border);">
-            <p class="text-xs font-semibold uppercase tracking-wider mb-2" style="color: var(--text-muted);">Documents</p>
-            <div id="chat-onto-docs-list" class="flex flex-wrap gap-2"></div>
-          </div>
-          <p class="text-sm mt-5 text-center" style="color: var(--text-muted);">Ask a question about this ontology to get started</p>
-        </div>
-
         <!-- Prompt suggestions -->
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 w-full max-w-lg">
           <button type="button" onclick="fillPrompt('What are the main classes in this ontology?')"
@@ -529,20 +425,23 @@ def generate_chat_ui_html(api_base: str = "/api/v1") -> str:
 
     </div>
 
-    <!-- Typing indicator -->
+    <!-- Thinking / loading indicator (theme-matched animation) -->
     <div id="loading-indicator" class="hidden px-6 py-3 shrink-0">
-      <div class="typing-pill flex items-center gap-3 px-4 py-2 rounded-full" style="background: var(--bg-card); border: 1px solid var(--border); width: fit-content;">
-        <div class="loading-dots flex gap-1.5 items-end">
-          <span class="w-2 h-2 rounded-full" style="background: var(--accent);"></span>
-          <span class="w-2 h-2 rounded-full" style="background: var(--accent-secondary);"></span>
-          <span class="w-2 h-2 rounded-full" style="background: var(--accent);"></span>
+      <div class="thinking-pill flex items-center rounded-xl gap-3 px-4 py-2.5" style="background: var(--bg-card); border: 1px solid var(--border); width: fit-content;">
+        <div class="thinking-orb-wrap">
+          <span class="thinking-ring thinking-ring-1" aria-hidden="true"></span>
+          <span class="thinking-ring thinking-ring-2" aria-hidden="true"></span>
+          <span class="thinking-core" aria-hidden="true"></span>
+          <div class="thinking-orbit" aria-hidden="true">
+            <span class="thinking-particle"></span>
+            <span class="thinking-particle"></span>
+            <span class="thinking-particle"></span>
+            <span class="thinking-particle"></span>
+          </div>
         </div>
-        <div class="flex items-center gap-2">
-          <span id="qa-step-label" class="text-sm" style="color: var(--text-muted);">Retrieving facts...</span>
-          <span class="qa-step-dots flex gap-1">
-            <span class="w-1.5 h-1.5 rounded-full" data-step="0" style="background: var(--accent);"></span>
-            <span class="w-1.5 h-1.5 rounded-full" data-step="1" style="background: var(--border-subtle);"></span>
-          </span>
+        <div class="thinking-label">
+          <span class="thinking-word">QUERYING</span>
+          <span class="thinking-ellipsis thinking-e1">.</span><span class="thinking-ellipsis thinking-e2">.</span><span class="thinking-ellipsis thinking-e3">.</span>
         </div>
       </div>
     </div>
