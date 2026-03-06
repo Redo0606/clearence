@@ -252,17 +252,22 @@ def list_knowledge_bases() -> list[dict[str, Any]]:
     return result
 
 
-def load_from_path(path: Path) -> OntologyGraph:
+def load_from_path(path: Path, seed_canonicalizer: bool = True) -> OntologyGraph:
     """Load an OntologyGraph from a node-link JSON file.
 
-    Seeds the canonicalizer with existing entity names for consistent
-    deduplication when enriching the KB.
+    Args:
+        path: Path to the node-link JSON file.
+        seed_canonicalizer: If True (default), seeds the canonicalizer with existing
+            entity names for consistent deduplication when enriching the KB.
+            Set to False for read-only operations (health, evaluate) to avoid
+            expensive embedding of all entities.
     """
     data = json.loads(path.read_text(encoding="utf-8"))
     graph = _graph_from_export(data)
-    entity_names = list(graph.get_graph().nodes())
-    if entity_names:
-        seed_from_entities(entity_names)
+    if seed_canonicalizer:
+        entity_names = list(graph.get_graph().nodes())
+        if entity_names:
+            seed_from_entities(entity_names)
     return graph
 
 
@@ -289,14 +294,15 @@ def _graph_from_export(data: dict[str, Any]) -> OntologyGraph:
         kind = n.get("kind", "class")
         desc = n.get("description", "")
         index_to_id.append(node_id)
-        extra = {k: v for k, v in n.items() if k not in ("id", "type", "kind", "description")}
+        extra = {k: v for k, v in n.items() if k not in ("id", "type", "kind", "description", "name")}
         graph.add_entity(node_id, node_type, kind=kind, description=desc, **extra)
+    # Build relation dicts (preserve vote_count, chunk_ids, etc.) then add in batch
+    relations_to_add: list[dict] = []
     for link in links_data:
         src = link.get("source", 0)
         tgt = link.get("target", 0)
         rel = link.get("relation", "related_to")
         conf = float(link.get("confidence", 1.0))
-        # Support both NetworkX index-based (source/target as int) and id-based links
         if isinstance(src, int) and isinstance(tgt, int) and 0 <= src < len(index_to_id) and 0 <= tgt < len(index_to_id):
             src_id, tgt_id = index_to_id[src], index_to_id[tgt]
         elif isinstance(src, str) and isinstance(tgt, str):
@@ -304,9 +310,22 @@ def _graph_from_export(data: dict[str, Any]) -> OntologyGraph:
         else:
             continue
         extra = {k: v for k, v in link.items() if k not in ("source", "target", "relation", "confidence")}
-        graph.add_relation(src_id, rel, tgt_id, confidence=conf, **extra)
+        relations_to_add.append({
+            "source": src_id,
+            "relation": rel,
+            "target": tgt_id,
+            "confidence": conf,
+            **extra,
+        })
+    if relations_to_add:
+        graph.add_relations_batch(relations_to_add)
     for axiom in data.get("axioms", []):
         graph.add_axiom(axiom)
+    # Restore embedding cache if present (avoids re-encoding on load)
+    emb_cache = data.get("embedding_cache", {})
+    if isinstance(emb_cache, dict) and emb_cache:
+        import numpy as np
+        graph.embedding_cache = {k: np.array(v, dtype=np.float32) for k, v in emb_cache.items()}
     for dp in data.get("data_properties", []):
         entity = dp.get("entity", "")
         attr = dp.get("attribute", "")
