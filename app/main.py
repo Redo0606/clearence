@@ -56,8 +56,15 @@ async def lifespan(app: FastAPI):
                 graph = load_from_path(path)
                 set_graph(graph, document_subject=None)
                 set_current_kb_id(last_id)
-                await asyncio.to_thread(build_qa_index, graph, False)
-                logger.info("Ontology API | restored active KB: %s", last_id)
+                logger.info("Ontology API | restored active KB: %s (QA index building in background)", last_id)
+                # Build QA index in background so server starts immediately; embedding many chunks can take a long time.
+                async def _build_index_background() -> None:
+                    try:
+                        await asyncio.to_thread(build_qa_index, graph, False)
+                        logger.info("Ontology API | QA index ready for KB: %s", last_id)
+                    except Exception as e:
+                        logger.warning("Ontology API | background QA index build failed for %s: %s", last_id, e)
+                asyncio.create_task(_build_index_background())
             except Exception as e:
                 logger.warning("Ontology API | failed to restore KB %s: %s", last_id, e)
     yield
@@ -150,7 +157,12 @@ async def health():
 def run() -> None:
     """Start uvicorn server on 0.0.0.0:8000 (entry point for ontology-app CLI)."""
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run(
+        app,
+        host="0.0.0.0",
+        port=8000,
+        timeout_keep_alive=30,
+    )
 
 
 if __name__ == "__main__":
