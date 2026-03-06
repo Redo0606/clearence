@@ -203,6 +203,7 @@ def process_document(
     parallel_extraction: bool = True,
     progress_callback: Callable[[str, dict], None] | None = None,
     cancel_check: Callable[[], bool] | None = None,
+    ontology_language: str = "en",
 ) -> tuple[OntologyGraph, PipelineReport]:
     """Load document, chunk, extract, merge, build taxonomy, reason, optional repair.
 
@@ -216,6 +217,7 @@ def process_document(
         parallel_extraction: If True, process chunks in parallel (4 workers); if False, sequentially.
         progress_callback: Optional callback(step, data) for real-time progress.
         cancel_check: Optional callable returning True if pipeline should stop.
+        ontology_language: ISO 639-1 language code (e.g. en, fr). All ontology elements are extracted in this language.
 
     Returns:
         Tuple of (OntologyGraph, PipelineReport).
@@ -267,9 +269,15 @@ def process_document(
         graph = OntologyGraph()
 
         if sequential:
-            _extract_sequential(chunks, graph, text, path, report, settings, verbose, parallel_extraction, _progress, _check_cancel)
+            _extract_sequential(
+                chunks, graph, text, path, report, settings, verbose, parallel_extraction,
+                _progress, _check_cancel, ontology_language=ontology_language or "en",
+            )
         else:
-            _extract_legacy(chunks, graph, report, settings, verbose, parallel_extraction, _progress, _check_cancel)
+            _extract_legacy(
+                chunks, graph, report, settings, verbose, parallel_extraction,
+                _progress, _check_cancel, ontology_language=ontology_language or "en",
+            )
 
         logger.info(
             "[Pipeline] Step 4/6: Merge complete | nodes=%d edges=%d",
@@ -295,7 +303,7 @@ def process_document(
         if run_inference:
             _check_cancel()
             _progress("cross_component", {"message": "Inferring cross-component relations"})
-            cross_rel = infer_cross_component_relations(graph)
+            cross_rel = infer_cross_component_relations(graph, ontology_language=ontology_language or "en")
             if cross_rel:
                 update_graph(graph, {"entities": [], "relations": cross_rel}, verbose=verbose)
                 logger.info("[Pipeline] Cross-component relations added: %d", len(cross_rel))
@@ -303,7 +311,7 @@ def process_document(
             _check_cancel()
             _progress("inference", {"message": "Running LLM relation inference"})
             logger.info("[Pipeline] Step 5/6: Running LLM relation inference")
-            inferred = infer_relations(graph)
+            inferred = infer_relations(graph, ontology_language=ontology_language or "en")
             if inferred:
                 report.llm_inferred_relations = len(inferred)
                 logger.info("[Pipeline] Inferred %d additional relations", len(inferred))
@@ -476,6 +484,7 @@ def _extract_sequential(
     parallel: bool = True,
     progress_callback: Callable[[str, dict], None] | None = None,
     cancel_check: Callable[[], None] | None = None,
+    ontology_language: str = "en",
 ) -> None:
     """3-stage sequential extraction (Bakker B). Chunks processed in parallel or sequentially."""
     workers = settings.get_llm_parallel_workers()
@@ -489,7 +498,9 @@ def _extract_sequential(
             cancel_check()
         if (idx + 1) % 5 == 0 or idx == 0:
             logger.info("[Pipeline] Step 3/6: Extracting | chunk %d/%d", idx + 1, total)
-        extraction = extract_ontology_sequential(chunk, source_document=doc_path)
+        extraction = extract_ontology_sequential(
+            chunk, source_document=doc_path, ontology_language=ontology_language
+        )
         if progress_callback:
             progress_callback("extract", {
                 "current": idx + 1,
@@ -571,6 +582,7 @@ def _extract_legacy(
     parallel: bool = True,
     progress_callback: Callable[[str, dict], None] | None = None,
     cancel_check: Callable[[], None] | None = None,
+    ontology_language: str = "en",
 ) -> None:
     """Legacy single-shot extraction."""
     total = len(chunks)
@@ -584,7 +596,7 @@ def _extract_legacy(
             cancel_check()
         if (idx + 1) % 5 == 0 or idx == 0:
             logger.info("[Pipeline] Step 3/6: Extracting | chunk %d/%d", idx + 1, total)
-        result = extract_ontology(chunk)
+        result = extract_ontology(chunk, ontology_language=ontology_language)
         entities = result.get("entities", [])
         relations = result.get("relations", [])
         if progress_callback:

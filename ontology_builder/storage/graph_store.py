@@ -131,6 +131,7 @@ def save_to_path_with_metadata(
     description: str = "",
     documents: list[str] | None = None,
     merge_documents: bool = False,
+    ontology_language: str = "en",
 ) -> None:
     """Persist current graph export and metadata sidecar.
 
@@ -143,6 +144,7 @@ def save_to_path_with_metadata(
             existing documents; otherwise replaces.
         merge_documents: If True and documents is provided, append to existing meta
             documents instead of replacing.
+        ontology_language: ISO 639-1 language code for the ontology (all node/edge text in this language).
     """
     save_to_path(path)
     meta_path = path.with_suffix(".meta.json")
@@ -173,6 +175,12 @@ def save_to_path_with_metadata(
     else:
         doc_list = existing_docs
 
+    # When extending (merge_documents), keep existing ontology_language; otherwise use provided
+    if merge_documents and existing_meta.get("ontology_language"):
+        lang = existing_meta.get("ontology_language", ontology_language)
+    else:
+        lang = ontology_language or "en"
+
     meta = {
         "id": kb_id,
         "name": name,
@@ -180,12 +188,18 @@ def save_to_path_with_metadata(
         "created_at": created_at,
         "stats": stats,
         "documents": doc_list,
+        "ontology_language": lang,
     }
     meta_path.write_text(json.dumps(meta, indent=2), encoding="utf-8")
 
 
-def update_kb_metadata(kb_id: str, name: str | None = None, description: str | None = None) -> dict[str, Any]:
-    """Update metadata (name, description) for a persisted knowledge base.
+def update_kb_metadata(
+    kb_id: str,
+    name: str | None = None,
+    description: str | None = None,
+    ontology_language: str | None = None,
+) -> dict[str, Any]:
+    """Update metadata (name, description, ontology_language) for a persisted knowledge base.
     Returns the updated meta dict.
     """
     base_dir = get_ontology_graphs_dir()
@@ -197,6 +211,8 @@ def update_kb_metadata(kb_id: str, name: str | None = None, description: str | N
         existing["name"] = name
     if description is not None:
         existing["description"] = description
+    if ontology_language is not None:
+        existing["ontology_language"] = ontology_language
     meta_path.write_text(json.dumps(existing, indent=2), encoding="utf-8")
     return existing
 
@@ -228,6 +244,7 @@ def list_knowledge_bases() -> list[dict[str, Any]]:
                     "created_at": meta.get("created_at", path.stat().st_mtime),
                     "stats": meta.get("stats", {}),
                     "documents": meta.get("documents", []),
+                    "ontology_language": meta.get("ontology_language", "en"),
                 })
             except (json.JSONDecodeError, OSError) as e:
                 logger.warning("[GraphStore] Skipping invalid meta %s: %s", meta_path, e)
@@ -238,6 +255,7 @@ def list_knowledge_bases() -> list[dict[str, Any]]:
                     "created_at": path.stat().st_mtime,
                     "stats": {},
                     "documents": [],
+                    "ontology_language": "en",
                 })
         else:
             result.append({
@@ -247,6 +265,7 @@ def list_knowledge_bases() -> list[dict[str, Any]]:
                 "created_at": path.stat().st_mtime,
                 "stats": {},
                 "documents": [],
+                "ontology_language": "en",
             })
     result.sort(key=lambda x: x["created_at"], reverse=True)
     return result

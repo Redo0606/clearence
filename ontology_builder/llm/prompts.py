@@ -8,6 +8,44 @@ Three-stage extraction:
 Each stage returns structured JSON matching the formal schema O = {C, R, I, P}.
 """
 
+# Common language names for ontology output (so the model uses one language for all node/edge text)
+_LANGUAGE_NAMES = {
+    "en": "English",
+    "fr": "French",
+    "de": "German",
+    "es": "Spanish",
+    "it": "Italian",
+    "pt": "Portuguese",
+    "nl": "Dutch",
+    "ar": "Arabic",
+    "zh": "Chinese",
+    "ja": "Japanese",
+    "ko": "Korean",
+    "ru": "Russian",
+}
+
+
+def ontology_language_instruction(lang: str) -> str:
+    """Return instruction so the model outputs all ontology elements (names, descriptions, labels) in the given language only."""
+    if not lang or lang.lower() == "en":
+        return ""
+    name = _LANGUAGE_NAMES.get(lang.lower(), lang)
+    return (
+        f"\n\nImportant: Output ALL class names, instance names, descriptions, relation labels, synonyms, and any other text in the ontology strictly in {name} only. "
+        "Do not mix languages; every name and description must be in this language."
+    )
+
+
+def inference_language_instruction(lang: str) -> str:
+    """Return instruction for relation inference so inferred relation labels and entity names stay in the ontology language."""
+    if not lang or lang.lower() == "en":
+        return ""
+    name = _LANGUAGE_NAMES.get(lang.lower(), lang)
+    return (
+        f"\n\nOutput all relation labels and any new entity names strictly in {name} only (same language as the existing ontology)."
+    )
+
+
 # ---------------------------------------------------------------------------
 # Stage 1: Class / concept extraction
 # ---------------------------------------------------------------------------
@@ -46,6 +84,7 @@ Rules:
 Do NOT extract:
 - Hallucinated classes (e.g. "QuantumEntanglementModule" when the text only discusses vehicles).
 - Specific instances as classes (e.g. "JohnSmith" or "ProjectAlpha" as a class; use them as instances of a class like "Person" or "Project").
+{ontology_language_instruction}
 
 Text:
 {chunk}
@@ -80,6 +119,7 @@ Return a JSON object:
 Rules:
 - Only create instances that are explicitly mentioned in the text.
 - class_name MUST be one of the known classes listed above.
+{ontology_language_instruction}
 
 Text:
 {chunk}
@@ -138,6 +178,7 @@ Return a JSON object:
 Rules:
 - confidence must be between 0 and 1 based on how explicitly the text supports the relation.
 - Only include axioms if the text provides evidence for them.
+{ontology_language_instruction}
 
 Text:
 {chunk}
@@ -146,6 +187,23 @@ Text:
 # ---------------------------------------------------------------------------
 # Legacy single-shot prompt (kept for backward compat / simple mode)
 # ---------------------------------------------------------------------------
+
+def build_legacy_extraction_prompt(ontology_language: str = "en") -> str:
+    """Build legacy single-shot extraction prompt with optional language constraint."""
+    lang_instruction = ontology_language_instruction(ontology_language)
+    return f"""\
+You are an ontology engineer. Extract ontology components from the text.
+
+Return valid JSON only (no markdown, no code fences). Use exactly two top-level keys:
+- entities: array of objects, each with name, type, and description
+- relations: array of objects, each with source, relation, target, and confidence (0 to 1)
+
+Extract all important concepts as entities and relationships between them as relations.
+{lang_instruction}
+
+Text:
+"""
+
 
 ONTOLOGY_EXTRACTION_PROMPT = """\
 You are an ontology engineer. Extract ontology components from the text.

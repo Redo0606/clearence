@@ -25,6 +25,8 @@ from ontology_builder.llm.prompts import (
     EXTRACT_RELATIONS_SYSTEM,
     EXTRACT_RELATIONS_USER,
     ONTOLOGY_EXTRACTION_PROMPT,
+    build_legacy_extraction_prompt,
+    ontology_language_instruction,
 )
 from ontology_builder.constants import CHARS_PER_TOKEN
 from ontology_builder.ontology.schema import (
@@ -314,11 +316,12 @@ def _fit_chunk_to_budget(chunk: str, system: str, prompt_template: str, token_bu
     return trimmed
 
 
-def extract_ontology(chunk: str) -> dict:
+def extract_ontology(chunk: str, ontology_language: str = "en") -> dict:
     """Call LLM to extract entities and relations from a text chunk.
 
     Args:
         chunk: Text chunk to analyze.
+        ontology_language: ISO 639-1 language code. All names/descriptions are output in this language.
 
     Returns:
         Dict with "entities" and "relations" lists. Expected structure:
@@ -332,12 +335,15 @@ def extract_ontology(chunk: str) -> dict:
     if chunk_for_llm != chunk:
         logger.debug("[Extractor] Truncated chunk %d -> %d chars for context", len(chunk), len(chunk_for_llm))
 
+    legacy_prompt = build_legacy_extraction_prompt(ontology_language or "en")
+    user_msg = legacy_prompt + chunk_for_llm
+
     logger.debug("[Extractor] Calling LLM | chunk_len=%d", len(chunk_for_llm))
     settings = get_settings()
     try:
         response = complete(
             system="You extract ontology structures. Output only valid JSON.",
-            user=ONTOLOGY_EXTRACTION_PROMPT + chunk_for_llm,
+            user=user_msg,
             response_format=LEGACY_EXTRACTION_RESPONSE_FORMAT,
             temperature=getattr(settings, "llm_temperature", 0.1),
         )
@@ -351,7 +357,7 @@ def extract_ontology(chunk: str) -> dict:
             try:
                 response = complete(
                     system="You extract ontology structures. Output only valid JSON.",
-                    user=ONTOLOGY_EXTRACTION_PROMPT + chunk_for_llm,
+                    user=user_msg,
                     force_text_mode=True,
                     temperature=getattr(settings, "llm_temperature", 0.1),
                 )
@@ -381,17 +387,23 @@ def extract_ontology(chunk: str) -> dict:
     return {"entities": entities, "relations": relations}
 
 
-def extract_ontology_sequential(chunk: str, source_document: str = "") -> OntologyExtraction:
+def extract_ontology_sequential(
+    chunk: str,
+    source_document: str = "",
+    ontology_language: str = "en",
+) -> OntologyExtraction:
     """3-stage sequential extraction (Bakker Approach B): classes → instances → relations.
 
     Args:
         chunk: Text chunk to analyze.
         source_document: Path or identifier of the source document for provenance.
+        ontology_language: ISO 639-1 language code (e.g. en, fr). All names/descriptions are output in this language.
 
     Returns:
         OntologyExtraction with classes, instances, object_properties, data_properties, axioms.
     """
     prov = {"source_document": source_document, "source_chunk": chunk}
+    lang_instruction = ontology_language_instruction(ontology_language or "en")
 
     settings = get_settings()
     max_chars = getattr(settings, "llm_max_chunk_chars", 0)
@@ -406,10 +418,11 @@ def extract_ontology_sequential(chunk: str, source_document: str = "") -> Ontolo
         s1_chunk = _fit_chunk_to_budget(
             chunk_for_llm, EXTRACT_CLASSES_SYSTEM, EXTRACT_CLASSES_USER,
             token_budget,
+            ontology_language_instruction=lang_instruction,
         )
         resp1 = complete(
             system=EXTRACT_CLASSES_SYSTEM,
-            user=EXTRACT_CLASSES_USER.format(chunk=s1_chunk),
+            user=EXTRACT_CLASSES_USER.format(chunk=s1_chunk, ontology_language_instruction=lang_instruction),
             temperature=getattr(settings, "llm_temperature", 0.1),
         )
         data1 = repair_json(resp1 or "")
@@ -441,10 +454,15 @@ def extract_ontology_sequential(chunk: str, source_document: str = "") -> Ontolo
         s2_chunk = _fit_chunk_to_budget(
             chunk_for_llm, EXTRACT_INSTANCES_SYSTEM, EXTRACT_INSTANCES_USER,
             token_budget, classes_json=classes_json,
+            ontology_language_instruction=lang_instruction,
         )
         resp2 = complete(
             system=EXTRACT_INSTANCES_SYSTEM,
-            user=EXTRACT_INSTANCES_USER.format(classes_json=classes_json, chunk=s2_chunk),
+            user=EXTRACT_INSTANCES_USER.format(
+                classes_json=classes_json,
+                chunk=s2_chunk,
+                ontology_language_instruction=lang_instruction,
+            ),
             temperature=getattr(settings, "llm_temperature", 0.1),
         )
         data2 = repair_json(resp2 or "")
@@ -471,6 +489,7 @@ def extract_ontology_sequential(chunk: str, source_document: str = "") -> Ontolo
         s3_chunk = _fit_chunk_to_budget(
             chunk_for_llm, EXTRACT_RELATIONS_SYSTEM, EXTRACT_RELATIONS_USER,
             token_budget, classes_json=classes_json, instances_json=instances_json,
+            ontology_language_instruction=lang_instruction,
         )
         resp3 = complete(
             system=EXTRACT_RELATIONS_SYSTEM,
@@ -478,6 +497,7 @@ def extract_ontology_sequential(chunk: str, source_document: str = "") -> Ontolo
                 classes_json=classes_json,
                 instances_json=instances_json,
                 chunk=s3_chunk,
+                ontology_language_instruction=lang_instruction,
             ),
             temperature=getattr(settings, "llm_temperature", 0.1),
         )

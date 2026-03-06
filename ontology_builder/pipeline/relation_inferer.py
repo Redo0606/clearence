@@ -11,7 +11,11 @@ import networkx as nx
 
 from core.config import get_settings
 from ontology_builder.llm.client import complete, complete_batch
-from ontology_builder.llm.prompts import CROSS_COMPONENT_INFERENCE_PROMPT, INFERENCE_PROMPT
+from ontology_builder.llm.prompts import (
+    CROSS_COMPONENT_INFERENCE_PROMPT,
+    INFERENCE_PROMPT,
+    inference_language_instruction,
+)
 from ontology_builder.constants import CONFIDENCE_THRESHOLD
 from ontology_builder.storage.graphdb import OntologyGraph
 
@@ -119,7 +123,7 @@ def _build_graph_text(graph: OntologyGraph, node_count: int = 0) -> str:
         return "Graph unavailable"
 
 
-def infer_relations(graph: OntologyGraph) -> list[dict]:
+def infer_relations(graph: OntologyGraph, ontology_language: str = "en") -> list[dict]:
     """Use LLM to infer additional relations from the current graph.
 
     Infers multiple elements in parallel: 2 workers for local model, 30 for ChatGPT/gpt-4o-mini.
@@ -129,6 +133,7 @@ def infer_relations(graph: OntologyGraph) -> list[dict]:
 
     Args:
         graph: Current ontology graph.
+        ontology_language: ISO 639-1 language code. Inferred relation labels stay in this language.
 
     Returns:
         List of relation dicts (source, relation, target, confidence).
@@ -175,6 +180,8 @@ def infer_relations(graph: OntologyGraph) -> list[dict]:
     def system_fn(batch: list[str]) -> str:
         return "You perform ontology reasoning. Output only valid JSON."
 
+    lang_instruction = inference_language_instruction(ontology_language or "en")
+
     def user_fn(batch: list[str]) -> str:
         focus = ", ".join(batch[:10])  # cap focus list length
         if len(batch) > 10:
@@ -183,6 +190,7 @@ def infer_relations(graph: OntologyGraph) -> list[dict]:
             INFERENCE_PROMPT
             + graph_text
             + f"\n\nFocus on inferring relations involving these entities: {focus}"
+            + lang_instruction
         )
 
     settings = get_settings()
@@ -233,12 +241,18 @@ def infer_relations(graph: OntologyGraph) -> list[dict]:
 def infer_cross_component_relations(
     graph: OntologyGraph,
     max_pairs: int = CROSS_COMPONENT_MAX_PAIRS,
+    ontology_language: str = "en",
 ) -> list[dict]:
     """Infer relations between entities in different connected components.
 
     Picks one representative per non-largest component and pairs them with
     a representative from the largest component; asks LLM to suggest relations.
     Limits to max_pairs to avoid token overflow.
+
+    Args:
+        graph: Current ontology graph.
+        max_pairs: Max entity pairs to send to the LLM.
+        ontology_language: ISO 639-1 language code. Inferred relation labels stay in this language.
 
     Returns:
         List of relation dicts (source, relation, target, confidence).
@@ -268,9 +282,13 @@ def infer_cross_component_relations(
     node_count = g.number_of_nodes()
     graph_summary = _build_graph_text(graph, node_count)
     pairs_text = "\n".join(f"- {src} | {tgt}" for src, tgt in pairs)
-    user = CROSS_COMPONENT_INFERENCE_PROMPT.format(
-        graph_summary=graph_summary,
-        pairs_text=pairs_text,
+    lang_instruction = inference_language_instruction(ontology_language or "en")
+    user = (
+        CROSS_COMPONENT_INFERENCE_PROMPT.format(
+            graph_summary=graph_summary,
+            pairs_text=pairs_text,
+        )
+        + lang_instruction
     )
     settings = get_settings()
     try:
