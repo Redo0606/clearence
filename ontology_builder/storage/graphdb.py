@@ -102,7 +102,9 @@ class OntologyGraph:
             if chunk_ids is not None:
                 attrs["chunk_ids"] = list(chunk_ids)
             attrs["vote_count"] = vc
-        self.graph.add_node(name, type=etype, kind=kind, **attrs)
+        # Avoid duplicate keyword: attrs may contain type/kind when merging existing node
+        node_attrs = {k: v for k, v in attrs.items() if k not in ("type", "kind")}
+        self.graph.add_node(name, type=etype, kind=kind, **node_attrs)
         desc = attrs.get("description", "") or self.graph.nodes[name].get("description", "") or ""
         text = f"{name} {desc}".strip() or name
         try:
