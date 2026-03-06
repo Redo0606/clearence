@@ -127,15 +127,30 @@ def answer_question(
     )
 
 
+QA_SYSTEM_EVAL = """\
+You answer questions using ONLY the provided ontology facts. Your answer is evaluated for faithfulness (context support) and relevancy (addressing the question).
+
+Rules:
+- Base your answer STRICTLY on the retrieved facts. You may use natural language or ontology terms (e.g. "battle power" or "CombatPower" — both are fine).
+- Directly address the question. Be concise: 2-4 sentences in plain prose (no bullet points, headers, or "Based on the ontology..." caveats).
+- Do NOT invent, infer beyond the facts, or add external knowledge.
+- Respond with valid JSON: {"reasoning": "...", "answer": "..."}. The answer field is what is scored."""
+
+
 def answer_questions_batch(
     items: list[tuple[str, list[str], list[str], str]],
+    system_prompt: str | None = None,
 ) -> list[QAResult]:
-    """Answer multiple questions in parallel. Each item is (question, context_snippets, source_refs, onto_ctx)."""
+    """Answer multiple questions in parallel. Each item is (question, context_snippets, source_refs, onto_ctx).
+    Use system_prompt=QA_SYSTEM_EVAL for evaluation (stricter faithfulness/relevancy).
+    """
     if not items:
         return []
 
+    prompt = system_prompt or QA_SYSTEM
+
     def system_fn(_: tuple) -> str:
-        return QA_SYSTEM
+        return prompt
 
     def user_fn(item: tuple[str, list[str], list[str], str]) -> str:
         question, context_snippets, source_refs, onto_ctx = item

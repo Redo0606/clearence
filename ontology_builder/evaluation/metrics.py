@@ -128,8 +128,7 @@ def answer_correctness(predicted_answer: str, reference_answer: str) -> float:
     """Token-level F1 between predicted and reference answers.
 
     Filters stopwords to avoid inflation from common words. Uses normalized tokens
-    (alphanumeric) for fair comparison. Recall-weighted: we care more about
-    capturing reference content than avoiding extra words.
+    (alphanumeric) for fair comparison.
     """
     pred_tokens = [
         _normalize_token(t) for t in predicted_answer.lower().split()

@@ -10,6 +10,9 @@ from ontology_builder.storage.graphdb import OntologyGraph
 
 logger = logging.getLogger(__name__)
 
+# Target ratio: 70% single-hop, 30% multi-hop
+SINGLE_HOP_RATIO = 0.7
+
 
 def generate_ontology_questions(
     graph: OntologyGraph,
@@ -28,21 +31,40 @@ def generate_ontology_questions(
         progress_callback: Optional callback(phase, current, total, question).
 
     Returns:
-        List of question strings.
+        List of question strings (70% single-hop, 30% multi-hop).
     """
+    num_single = max(1, int(num_questions * SINGLE_HOP_RATIO))
+    num_multi = num_questions - num_single
+
+    single_hop = _generate_single_hop_questions(
+        graph, num_single, retrieve_fn, min_facts, progress_callback
+    )
+    multi_hop = _generate_multi_hop_questions(
+        graph, num_multi, retrieve_fn, min_facts, progress_callback
+    )
+
+    questions = single_hop + multi_hop
+    random.shuffle(questions)
+    return questions[:num_questions]
+
+
+def _generate_single_hop_questions(
+    graph: OntologyGraph,
+    num_questions: int,
+    retrieve_fn: Callable[[str], list[str]] | None,
+    min_facts: int,
+    progress_callback: Callable[[str, int, int, str | None], None] | None,
+) -> list[str]:
+    """Generate simple single-relation questions."""
     g = graph.get_graph()
     questions: list[str] = []
     seen: set[str] = set()
-
-    # Entity-based questions
     nodes = list(g.nodes())
     if progress_callback:
         progress_callback("scanning_entities", 0, len(nodes), None)
     for i, node in enumerate(nodes):
         if progress_callback and i % 10 == 0:
             progress_callback("scanning_entities", i, len(nodes), None)
-        data = g.nodes[node]
-        kind = data.get("kind", "class")
         q = f"What is {node}?"
         if q not in seen and _passes_retrieve(q, retrieve_fn, min_facts):
             seen.add(q)
@@ -50,7 +72,6 @@ def generate_ontology_questions(
         if len(questions) >= num_questions:
             break
 
-    # Edge-based questions (How is X related to Y?)
     if len(questions) < num_questions:
         edges = [(u, v, d.get("relation", "related_to")) for u, v, d in g.edges(data=True)]
         if progress_callback:
@@ -65,7 +86,6 @@ def generate_ontology_questions(
             if len(questions) >= num_questions:
                 break
 
-    # Multi-entity questions (How are X and Y related?)
     if len(questions) < num_questions and len(nodes) >= 2:
         for _ in range(num_questions * 2):
             a, b = random.sample(nodes, 2)
@@ -78,6 +98,55 @@ def generate_ontology_questions(
 
     if progress_callback:
         progress_callback("done", len(questions), len(questions), None)
+
+    return questions[:num_questions]
+
+
+def _generate_multi_hop_questions(
+    graph: OntologyGraph,
+    num_questions: int,
+    retrieve_fn: Callable[[str], list[str]] | None,
+    min_facts: int,
+    progress_callback: Callable[[str, int, int, str | None], None] | None,
+) -> list[str]:
+    """Generate multi-hop questions requiring reasoning across relations."""
+    if num_questions <= 0:
+        return []
+    g = graph.get_graph()
+    questions: list[str] = []
+    seen: set[str] = set()
+    nodes = list(g.nodes())
+
+    for node in nodes:
+        in_degree = g.in_degree(node)
+        out_degree = g.out_degree(node)
+        if in_degree + out_degree >= 3:
+            q = f"What factors influence {node}?"
+            if q not in seen and _passes_retrieve(q, retrieve_fn, min_facts):
+                seen.add(q)
+                questions.append(q)
+            if len(questions) >= num_questions:
+                return questions[:num_questions]
+
+    edges = list(g.edges(data=True))
+    for u, v, _ in edges:
+        for _, w, _ in g.out_edges(v, data=True):
+            if u != w and w in nodes:
+                q = f"How does {u} relate to {w}?"
+                if q not in seen and _passes_retrieve(q, retrieve_fn, min_facts):
+                    seen.add(q)
+                    questions.append(q)
+                if len(questions) >= num_questions:
+                    return questions[:num_questions]
+
+    for node in nodes:
+        if g.out_degree(node) >= 2:
+            q = f"What does {node} affect?"
+            if q not in seen and _passes_retrieve(q, retrieve_fn, min_facts):
+                seen.add(q)
+                questions.append(q)
+            if len(questions) >= num_questions:
+                break
 
     return questions[:num_questions]
 
