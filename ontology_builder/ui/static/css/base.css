@@ -1,0 +1,79 @@
+/* ── Google Fonts ─────────────────────────────────────────────────────────── */
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:ital,wght@0,300;0,400;1,300&display=swap');
+
+/* ── Reset ────────────────────────────────────────────────────────────────── */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+/* ── Body ─────────────────────────────────────────────────────────────────── */
+body {
+  font-family: 'Syne', sans-serif;
+  background: var(--bg-body);
+  color: var(--text-primary);
+  min-height: 100vh;
+  background-image:
+    radial-gradient(ellipse 80% 50% at 10% 0%, rgba(184,19,101,0.08) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 40% at 90% 100%, rgba(177,221,241,0.05) 0%, transparent 60%);
+}
+
+/* ── Custom scrollbar ─────────────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--bg-sidebar); }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 999px; }
+::-webkit-scrollbar-thumb:hover { background: var(--accent-dim); }
+
+/* ── Typography scale ─────────────────────────────────────────────────────── */
+/* Section labels (DM Mono, uppercase, accent-colored rule) */
+.section-label {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--accent);
+  font-family: 'DM Mono', monospace;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.section-label::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+/* Page title (used in theme-preview; keep for /app/theme route) */
+.page-title {
+  font-size: 42px;
+  font-weight: 800;
+  color: var(--text-pink);
+  line-height: 1;
+  letter-spacing: -0.02em;
+}
+.page-title span { color: var(--accent-secondary); }
+.page-sub {
+  font-size: 13px;
+  color: var(--text-muted-2);
+  font-family: 'DM Mono', monospace;
+  letter-spacing: 0.04em;
+}
+
+/* Inline typography utilities */
+.t1 { font-size: 32px; font-weight: 800; color: var(--text-pink); letter-spacing: -0.02em; line-height: 1; }
+.t2 { font-size: 20px; font-weight: 700; color: var(--text-primary); letter-spacing: -0.01em; }
+.t3 { font-size: 14px; font-weight: 600; color: var(--text-pink); letter-spacing: 0.01em; }
+.t4 { font-size: 13px; font-weight: 400; color: var(--text-primary); line-height: 1.6; }
+.t5 { font-size: 12px; font-family: 'DM Mono', monospace; color: var(--text-muted); letter-spacing: 0.04em; }
+.t6 { font-size: 11px; font-family: 'DM Mono', monospace; color: var(--text-muted-2); letter-spacing: 0.08em; text-transform: uppercase; }
+
+/* Glow text utilities */
+.glow-magenta { text-shadow: 0 0 20px rgba(184,19,101,0.6); }
+.glow-gold    { text-shadow: 0 0 16px rgba(248,198,48,0.5); }
+.glow-ice     { text-shadow: 0 0 16px rgba(177,221,241,0.4); }
+
+/* Font utility class */
+.font-mono { font-family: 'DM Mono', monospace; }

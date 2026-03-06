@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Theme Preview</title>
+  <!-- :root injected by /app/theme route -->
+  <link rel="stylesheet" href="/static/css/base.css">
+  <link rel="stylesheet" href="/static/css/components.css">
+  <style>
+    body { padding: 48px 40px; }
+    .section { margin-bottom: 52px; }
+    .swatches { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; }
+    .swatch { border-radius: 10px; padding: 14px; border: 1px solid var(--border); display: flex; flex-direction: column; gap: 8px; }
+    .swatch-dot { width: 36px; height: 36px; border-radius: 50%; flex-shrink: 0; box-shadow: 0 2px 12px rgba(0,0,0,0.4); }
+    .swatch-name { font-size: 12px; font-weight: 700; color: var(--text-primary); letter-spacing: 0.03em; }
+    .swatch-hex { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--text-muted-2); letter-spacing: 0.06em; }
+    .swatch-role { font-size: 10px; color: var(--text-muted); line-height: 1.4; font-style: italic; }
+    .reasoning { background: rgba(184,19,101,0.06); border: 1px solid rgba(184,19,101,0.18); border-radius: 12px; padding: 20px 24px; margin-bottom: 52px; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; }
+    .reason-item { display: flex; flex-direction: column; gap: 6px; }
+    .reason-title { font-size: 11px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; font-family: 'DM Mono', monospace; }
+    .reason-body { font-size: 12px; color: var(--text-muted); line-height: 1.6; }
+    .reason-old { text-decoration: line-through; color: var(--text-muted-2); }
+    .components-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+    .btn-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+    .type-scale { display: flex; flex-direction: column; gap: 8px; }
+    .tag-row { display: flex; gap: 8px; flex-wrap: wrap; }
+    .input-demo { background: var(--bg-input); border: 1px solid var(--border); border-radius: 8px; padding: 10px 14px; color: var(--text-primary); font-family: 'DM Mono', monospace; font-size: 13px; width: 100%; outline: none; margin-bottom: 10px; }
+    .input-demo:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(184,19,101,0.15); }
+    .input-demo::placeholder { color: var(--text-muted-2); }
+  </style>
+</head>
+<body>
+
+<h1 style="font-size:13px;font-weight:600;letter-spacing:0.18em;text-transform:uppercase;color:var(--text-muted);margin-bottom:6px;font-family:'DM Mono',monospace">Futuristic UI System</h1>
+<div class="page-title">THEME<span>.</span>PY</div>
+<div class="page-sub" style="margin-bottom:56px">// dark void · magenta · ghost white · gold · ice blue</div>
+
+<div class="reasoning">
+  <div class="reason-item">
+    <div class="reason-title" style="color:var(--success)">Success → Ice Blue</div>
+    <div class="reason-body">Calm, high-clarity signal. Replaces <span class="reason-old">green</span>.</div>
+  </div>
+  <div class="reason-item">
+    <div class="reason-title" style="color:var(--info)">Info → Gold</div>
+    <div class="reason-body">Illuminates, draws attention. Replaces <span class="reason-old">blue</span>.</div>
+  </div>
+  <div class="reason-item">
+    <div class="reason-title" style="color:var(--warning)">Warning → Magenta</div>
+    <div class="reason-body">Vivid, impossible to ignore. Replaces <span class="reason-old">yellow</span>.</div>
+  </div>
+  <div class="reason-item">
+    <div class="reason-title" style="color:var(--error-bright)">Error → Deep Fuchsia</div>
+    <div class="reason-body">Critical / destructive. Replaces <span class="reason-old">red</span>.</div>
+  </div>
+  <div class="reason-item">
+    <div class="reason-title" style="color:var(--pending)">Pending → Slate</div>
+    <div class="reason-body">Desaturated ice blue. Neutral in-progress.</div>
+  </div>
+  <div class="reason-item">
+    <div class="reason-title" style="color:var(--disabled)">Disabled → Void Mute</div>
+    <div class="reason-body">Dark, low-contrast. Unavailable.</div>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-label">Base Palette</div>
+  <div class="swatches">
+    <div class="swatch">
+      <div class="swatch-dot" style="background:#1a0f12; border:1px solid #3a2530;"></div>
+      <div class="swatch-name">Void</div>
+      <div class="swatch-hex">#1a0f12</div>
+      <div class="swatch-role">bg-body</div>
+    </div>
+    <div class="swatch">
+      <div class="swatch-dot" style="background:#b81365; box-shadow:0 0 16px rgba(184,19,101,0.5);"></div>
+      <div class="swatch-name">Magenta</div>
+      <div class="swatch-hex">#b81365</div>
+      <div class="swatch-role">accent · warning</div>
+    </div>
+    <div class="swatch">
+      <div class="swatch-dot" style="background:#f8c630;"></div>
+      <div class="swatch-name">Gold</div>
+      <div class="swatch-hex">#f8c630</div>
+      <div class="swatch-role">accent secondary · info</div>
+    </div>
+    <div class="swatch">
+      <div class="swatch-dot" style="background:#f7f7f9;"></div>
+      <div class="swatch-name">Ghost</div>
+      <div class="swatch-hex">#f7f7f9</div>
+      <div class="swatch-role">text-primary</div>
+    </div>
+    <div class="swatch">
+      <div class="swatch-dot" style="background:#b1ddf1;"></div>
+      <div class="swatch-name">Ice</div>
+      <div class="swatch-hex">#b1ddf1</div>
+      <div class="swatch-role">success</div>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-label">Status System</div>
+  <div class="status-grid">
+    <div class="status-card s-success">
+      <div class="status-badge"><span class="dot"></span>SUCCESS</div>
+      <div class="status-title">Operation Complete</div>
+      <div class="status-desc">All health checks passed.</div>
+    </div>
+    <div class="status-card s-info">
+      <div class="status-badge"><span class="dot"></span>INFO</div>
+      <div class="status-title">New Release Available</div>
+      <div class="status-desc">Version 2.4.1 is ready.</div>
+    </div>
+    <div class="status-card s-warning">
+      <div class="status-badge"><span class="dot"></span>WARNING</div>
+      <div class="status-title">Rate Limit Approaching</div>
+      <div class="status-desc">87% of quota consumed.</div>
+    </div>
+    <div class="status-card s-error">
+      <div class="status-badge"><span class="dot"></span>ERROR</div>
+      <div class="status-title">Connection Failed</div>
+      <div class="status-desc">Check network configuration.</div>
+    </div>
+    <div class="status-card s-pending">
+      <div class="status-badge"><span class="dot"></span>PENDING</div>
+      <div class="status-title">Processing Request</div>
+      <div class="status-desc">ETA 12 seconds.</div>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-label">UI Components</div>
+  <div class="components-grid">
+    <div class="component-card">
+      <div class="component-label">// buttons</div>
+      <div class="btn-row">
+        <button class="btn btn-primary">Execute</button>
+        <button class="btn btn-gold">Highlight</button>
+        <button class="btn btn-ghost">Inspect</button>
+        <button class="btn btn-ice">Monitor</button>
+      </div>
+    </div>
+    <div class="component-card">
+      <div class="component-label">// typography</div>
+      <div class="type-scale">
+        <div class="t1 glow-magenta">Display / H1</div>
+        <div class="t2">Heading / H2</div>
+        <div class="t4">Body text, comfortable reading size.</div>
+      </div>
+    </div>
+    <div class="component-card">
+      <div class="component-label">// inputs</div>
+      <input class="input-demo" placeholder="Search endpoints...">
+    </div>
+    <div class="component-card" style="grid-column:1/-1;">
+      <div class="component-label">// tags</div>
+      <div class="tag-row">
+        <span class="tag tag-success">● live</span>
+        <span class="tag tag-info">★ featured</span>
+        <span class="tag tag-warning">⚡ action needed</span>
+        <span class="tag tag-error">✕ failed</span>
+        <span class="tag tag-pending">◌ syncing</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

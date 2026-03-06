@@ -1,0 +1,955 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Ontology Graph Viewer</title>
+  <script src="https://unpkg.com/vis-network@9.1.9/standalone/umd/vis-network.min.js" onerror="window.__viewerScriptError=true"></script>
+  <script src="https://unpkg.com/elkjs@0.9.1/lib/elk.bundled.js" onerror="window.__elkScriptError=true"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+{{ css_root | safe }}
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { height: 100%; }
+    body { font-family: 'Space Grotesk', system-ui, -apple-system, sans-serif; background: var(--bg-body); color: var(--text-primary); min-height: 100vh; -webkit-font-smoothing: antialiased; }
+    button, select, input { font: inherit; font-family: inherit; }
+    button { -webkit-appearance: none; -moz-appearance: none; appearance: none; background: none; border: none; cursor: pointer; }
+    select { -webkit-appearance: none; -moz-appearance: none; appearance: none; background: var(--bg-card); border: 1px solid var(--border); border-radius: 6px; padding: 6px 10px; cursor: pointer; color: var(--text-primary); transition: border-color 0.2s ease, background 0.2s ease; }
+    select:hover { border-color: var(--border-glow); background: var(--accent-06); }
+    select:focus { outline: none; border-color: var(--accent-tertiary-2); background: var(--accent-tertiary-08); }
+    .font-mono { font-family: 'JetBrains Mono', monospace; }
+    #app { min-height: 100vh; height: 100%; display: flex; flex-direction: column; }
+    #header { padding: 14px 22px; background: var(--bg-sidebar); border-bottom: 1px solid var(--border-subtle); display: flex; justify-content: space-between; align-items: center; gap: 18px; }
+    #header h1 { font-size: 18px; font-weight: 600; color: var(--text-primary); }
+    #stats { font-size: 12px; color: var(--text-muted); margin-top: 3px; }
+    #controls { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .ctrl-item { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--text-muted); background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; padding: 8px 12px; transition: border-color 0.2s ease, color 0.2s ease, background 0.2s ease, box-shadow 0.15s ease; }
+    .ctrl-item:hover { border-color: var(--border-glow); color: var(--text-primary); background: var(--accent-06); }
+    .ctrl-item:active { border-color: var(--accent-35); background: var(--accent-1); }
+    .ctrl-btn { cursor: pointer; padding: 8px 12px; border-radius: 8px; background: var(--bg-card); border: 1px solid var(--border); color: var(--text-muted); transition: all 0.2s ease; }
+    .ctrl-btn:hover { border-color: var(--border-glow); color: var(--text-primary); background: var(--accent-06); }
+    .ctrl-btn:active { border-color: var(--accent-35); background: var(--accent-1); color: var(--text-pink); }
+    .ctrl-btn.active { border-color: var(--accent-tertiary-2); color: var(--accent-tertiary); background: var(--accent-tertiary-08); }
+    .ctrl-sep { width: 1px; height: 20px; background: var(--border); margin: 0 2px; flex-shrink: 0; }
+    .legend-dot { width: 11px; height: 11px; border-radius: 2px; flex-shrink: 0; }
+    #graph-wrap { flex: 1; min-height: 0; padding: 12px; position: relative; display: flex; flex-direction: column; }
+    #graph {
+      flex: 1;
+      min-height: 300px;
+      width: 100%;
+      height: calc(100vh - 84px);
+      border: 1px solid var(--border-subtle);
+      border-radius: 12px;
+      background: var(--bg-body);
+      position: relative;
+      z-index: 1;
+      opacity: 0;
+      transform: translateY(6px);
+      transition: opacity 0.38s ease, transform 0.38s ease, background 0.35s ease;
+    }
+    #graph.ready { opacity: 1; transform: translateY(0); }
+    #stabilization-progress { position: absolute; top: 0; left: 0; right: 0; height: 3px; background: var(--bg-card); z-index: 5; }
+    #stabilization-progress .bar { height: 100%; background: var(--accent); transition: width 0.1s ease; width: 0%; }
+    #spotlight-bg {
+      position: absolute;
+      top: 12px; left: 12px; right: 12px; bottom: 12px;
+      border-radius: 12px;
+      z-index: 0;
+      opacity: 0;
+      pointer-events: none;
+      background-size: 100% 100%;
+      background-repeat: no-repeat;
+      background-position: center;
+      filter: blur(4px) brightness(0.18);
+      transition: opacity 0.4s ease;
+    }
+    #spotlight-bg.active { opacity: 1; }
+    #node-tooltip {
+      position: absolute;
+      z-index: 20;
+      pointer-events: none;
+      min-width: 180px;
+      max-width: 300px;
+      padding: 8px 10px;
+      border-radius: 8px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      color: var(--text-primary);
+      box-shadow: 0 8px 22px rgba(0, 0, 0, 0.45);
+      font-size: 12px;
+      line-height: 1.45;
+      opacity: 0;
+      transform: translateY(4px);
+      transition: opacity 0.16s ease, transform 0.16s ease;
+    }
+    #node-tooltip.visible { opacity: 1; transform: translateY(0); }
+    #node-tooltip .kind { font-size: 11px; color: var(--text-muted); margin-bottom: 3px; text-transform: uppercase; letter-spacing: 0.04em; }
+    #node-tooltip .name { font-weight: 600; margin-bottom: 4px; }
+    #node-tooltip .stats { margin: 6px 0; display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 6px; }
+    #node-tooltip .stat { background: var(--bg-sidebar); border: 1px solid var(--border); border-radius: 6px; padding: 4px 6px; text-align: center; }
+    #node-tooltip .stat .v { display: block; font-size: 11px; font-weight: 600; color: var(--text-primary); }
+    #node-tooltip .stat .k { display: block; margin-top: 1px; font-size: 10px; color: var(--text-muted); }
+    #node-tooltip .rels { margin-top: 6px; display: flex; flex-wrap: wrap; gap: 4px; }
+    #node-tooltip .rel-pill { font-size: 10px; font-family: 'JetBrains Mono', monospace; color: var(--text-pink); background: var(--accent-15); border: 1px solid var(--accent-3); border-radius: 999px; padding: 2px 6px; }
+    #node-tooltip .desc { color: var(--text-muted-2); }
+    #viewer-init-error {
+      position: absolute;
+      z-index: 25;
+      top: 24px;
+      left: 24px;
+      right: 24px;
+      padding: 12px 14px;
+      border-radius: 10px;
+      border: 1px solid var(--accent-35);
+      background: var(--bg-overlay-95);
+      color: var(--text-pink);
+      font-size: 12px;
+      line-height: 1.45;
+      display: none;
+    }
+    #viewer-init-error.visible { display: block; }
+    #detail-panel {
+      position: fixed;
+      top: 60px;
+      right: 0;
+      width: 320px;
+      max-width: 100%;
+      height: calc(100vh - 60px);
+      background: var(--bg-sidebar);
+      border-left: 1px solid var(--border-subtle);
+      z-index: 30;
+      overflow-y: auto;
+      padding: 14px;
+      font-size: 12px;
+      transform: translateX(100%);
+      transition: transform 0.2s ease;
+    }
+    #detail-panel.visible { transform: translateX(0); }
+    #detail-panel .detail-title { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); margin-bottom: 8px; }
+    #detail-panel .detail-row { margin-bottom: 10px; }
+    #detail-panel .detail-label { color: var(--text-muted); font-size: 10px; }
+    #detail-panel .detail-value { font-family: 'JetBrains Mono', monospace; color: var(--text-primary); }
+    #detail-panel .origin-pill { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 10px; margin-top: 4px; background: var(--accent-tertiary-15); border: 1px solid var(--accent-tertiary-2); color: var(--accent-tertiary); }
+    #detail-panel .score-bar { height: 6px; border-radius: 3px; background: var(--bg-card); overflow: hidden; margin-top: 4px; }
+    #detail-panel .score-fill { height: 100%; border-radius: 3px; }
+    #detail-panel .repair-tag { background: var(--accent-secondary-2); border: 1px solid var(--accent-secondary-4); color: var(--accent-secondary-dim); padding: 2px 6px; border-radius: 4px; font-size: 10px; }
+    #minimap { position: absolute; bottom: 16px; right: 16px; width: 160px; height: 120px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg-card); z-index: 10; pointer-events: none; display: none; }
+    #minimap.visible { display: block; }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <div id="header">
+      <div>
+        <h1>Ontology Graph Viewer</h1>
+        <div id="stats" class="font-mono">{{ stats_html }}</div>
+      </div>
+      <div id="controls">
+        <input id="node-search" type="search" placeholder="Jump to node… (⌘K)" class="ctrl-item font-mono" style="width:180px">
+        <div class="ctrl-item"><div class="legend-dot" style="background:var(--accent)"></div> Class</div>
+        <div class="ctrl-item"><div class="legend-dot" style="background:var(--accent-tertiary)"></div> Instance</div>
+        <div class="ctrl-sep"></div>
+        <label class="ctrl-item" style="display: flex; align-items: center; gap: 4px;">
+          <span style="color: var(--text-muted); font-size: 10px;">Layout:</span>
+          <select id="layout-select" class="text-xs font-mono">
+            <option value="force" selected>Force</option>
+            <option value="hierarchical">Hierarchy</option>
+            <option value="elk">ELK Layered</option>
+          </select>
+        </label>
+        <div class="ctrl-sep"></div>
+        <label class="ctrl-item" style="display: flex; align-items: center; gap: 4px;">
+          <span style="color: var(--text-muted); font-size: 10px;">View:</span>
+          <select id="view-mode-select" class="text-xs font-mono">
+            <option value="full" selected>Full</option>
+            <option value="classes">Classes only</option>
+            <option value="instances">Instances</option>
+          </select>
+        </label>
+        <div class="ctrl-sep"></div>
+        <label class="ctrl-item" style="display: flex; align-items: center; gap: 4px;">
+          <span style="color: var(--text-muted); font-size: 10px;">Edges:</span>
+          <select id="edge-filter" class="text-xs font-mono" style="min-width: 100px;">
+            <option value="all">All</option>
+            <option value="subClassOf">subClassOf only</option>
+            <option value="type">type only</option>
+            <option value="other">Other relations</option>
+          </select>
+        </label>
+        <div class="ctrl-sep"></div>
+        <label class="ctrl-item" style="display: flex; align-items: center; gap: 4px;">
+          <span style="color: var(--text-muted); font-size: 10px;">N-hop:</span>
+          <select id="depth-select" class="text-xs font-mono">
+            <option value="1">1</option>
+            <option value="2">2</option>
+            <option value="3">3</option>
+            <option value="4">4</option>
+            <option value="999">All</option>
+          </select>
+        </label>
+        <div class="ctrl-sep"></div>
+        <button id="fit-btn" class="ctrl-item ctrl-btn" type="button">Fit</button>
+        <button id="reset-focus-btn" class="ctrl-item ctrl-btn" type="button">Reset</button>
+        <div class="ctrl-sep"></div>
+        <button id="edge-label-toggle" class="ctrl-item ctrl-btn" type="button">Labels: ON</button>
+      </div>
+    </div>
+    <div id="graph-wrap">
+      <div id="stabilization-progress"><div class="bar" id="stabilization-progress-bar"></div></div>
+      <div id="spotlight-bg"></div>
+      <div id="graph"></div>
+      <div id="node-tooltip"></div>
+      <div id="viewer-init-error"></div>
+      <div id="minimap"></div>
+    </div>
+    <div id="detail-panel">
+      <div class="detail-title">Selection</div>
+      <div id="detail-content"><p style="color:var(--text-muted);">Click a node or edge to see provenance and quality.</p></div>
+      <button id="detail-panel-close" type="button" class="ctrl-btn" style="margin-top:12px; display:none;">Close</button>
+    </div>
+  </div>
+  <script>
+    var initError = document.getElementById("viewer-init-error");
+    var graphContainer = document.getElementById("graph");
+    function showInitError(message) {
+      if (initError) {
+        initError.textContent = message;
+        initError.classList.add("visible");
+      }
+      if (graphContainer) {
+        graphContainer.style.opacity = "1";
+        graphContainer.style.transform = "none";
+      }
+    }
+    if (typeof vis === "undefined" || !vis.DataSet || !vis.Network) {
+      showInitError("Graph viewer assets failed to load. Check network access to unpkg.com and refresh the page.");
+      throw new Error("vis-network library unavailable");
+    }
+
+    var nodes = new vis.DataSet({{ nodes_json | safe }});
+    var edges = new vis.DataSet({{ edges_json | safe }});
+
+    var container = document.getElementById("graph");
+    var tooltip = document.getElementById("node-tooltip");
+    var edgeLabelToggle = document.getElementById("edge-label-toggle");
+    var fitBtn = document.getElementById("fit-btn");
+    var spotlightBg = document.getElementById("spotlight-bg");
+    var data = { nodes: nodes, edges: edges };
+    var nodeCount = nodes.get().length;
+    var showEdgeLabels = nodeCount < 400;
+    var defaultLayoutMode = nodeCount > 1500 ? "hierarchical" : "force";
+
+    var C = (function() {
+      var s = getComputedStyle(document.documentElement);
+      var v = function(name) { return s.getPropertyValue("--" + name).trim(); };
+      return {
+        bgBody: v("bg-body"),
+        bgSidebar: v("bg-sidebar"),
+        bgCard: v("bg-card"),
+        bgCardHover: v("bg-card-hover"),
+        border: v("border"),
+        textPrimary: v("text-primary"),
+        textMuted: v("text-muted"),
+        accent: v("accent"),
+        accentBright: v("accent-bright"),
+        accentTertiary: v("accent-tertiary"),
+        accentSecondary: v("accent-secondary"),
+        pending: v("pending"),
+        success: v("success"),
+        info: v("info"),
+        errorBright: v("error-bright")
+      };
+    })();
+
+    var savedContainerBackground = "";
+
+    function escHtml(text) {
+      return String(text || "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    function withAlpha(hex, alpha) {
+      var clean = String(hex || "").replace("#", "");
+      if (clean.length !== 6) return hex;
+      var r = parseInt(clean.slice(0, 2), 16);
+      var g = parseInt(clean.slice(2, 4), 16);
+      var b = parseInt(clean.slice(4, 6), 16);
+      return "rgba(" + r + "," + g + "," + b + "," + alpha + ")";
+    }
+
+    function easeInOutCubic(t) {
+      return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+    }
+
+    var nodeDefaults = {};
+    var edgeDefaults = {};
+    nodes.forEach(function(n) {
+      nodeDefaults[n.id] = {
+        accent: n.accent || C.accent,
+        kind: n.kind || "class",
+        description: n.description || "",
+      };
+    });
+    edges.forEach(function(e) {
+      edgeDefaults[e.id] = {
+        color: (e.color && e.color.color) ? e.color.color : C.pending,
+        dashes: e.dashes || false,
+      };
+    });
+
+    var DEBUG = {{ debug_json | safe }};
+    var edgeAttrs = {{ edge_attrs_json | safe }};
+    var nodeAttrs = {{ node_attrs_json | safe }};
+    var allRelations = {{ relations_json | safe }};
+    var hierarchyLevels = {{ hierarchy_json | safe }};
+    var clusters = {{ clusters_json | safe }};
+    var isolated = {{ isolated_json | safe }};
+    var hasCycles = {{ has_cycles_json | safe }};
+    var preSelectNode = {{ pre_select_node_json | safe }};
+    var initialDepth = {{ depth_json | safe }};
+
+    var edgeFilter = "all";
+    var selectedDepth = initialDepth;
+    var layoutMode = defaultLayoutMode;
+    var simulationFrozen = false;
+    var nhopCache = new Map();
+
+    function getConnectedNodesNHop(nodeId, hops) {
+      var key = nodeId + ":" + hops;
+      if (nhopCache.has(key)) return nhopCache.get(key);
+      var result = new Set([nodeId]);
+      var frontier = new Set([nodeId]);
+      for (var h = 0; h < hops; h++) {
+        var next = new Set();
+        frontier.forEach(function(nid) {
+          var conn = network.getConnectedNodes(nid) || [];
+          conn.forEach(function(c) { next.add(c); result.add(c); });
+        });
+        frontier = next;
+      }
+      nhopCache.set(key, result);
+      return result;
+    }
+
+    function getConnectedEdgesForNodes(nodeSet) {
+      var edgeSet = new Set();
+      nodeSet.forEach(function(nid) {
+        (network.getConnectedEdges(nid) || []).forEach(function(eid) { edgeSet.add(eid); });
+      });
+      return edgeSet;
+    }
+
+    function debugLog() {
+      if (DEBUG && console && console.log) {
+        var args = Array.prototype.slice.call(arguments);
+        console.log.apply(console, ["[GraphViewer]"].concat(args));
+      }
+    }
+
+    function getRelationLabel(edge) {
+      var rel = edge && (edge.relation || edge.label) ? (edge.relation || edge.label) : "related_to";
+      return showEdgeLabels ? rel : "";
+    }
+
+    var selectedNodeId = null;
+    var focusedNodeId = null;
+    var hoveredNodeId = null;
+    var viewMode = "full";
+
+    function computeNodeStyle(n, state) {
+      var meta = nodeDefaults[n.id] || {};
+      var accent = meta.accent || C.accent;
+      if (n.hidden) return { id: n.id };
+      var relatedNodes = null, relatedEdges = null;
+      if (state.selectedNodeId) {
+        var depth = state.selectedDepth >= 999 ? 10 : state.selectedDepth;
+        relatedNodes = getConnectedNodesNHop(state.selectedNodeId, depth);
+        relatedEdges = getConnectedEdgesForNodes(relatedNodes);
+      }
+      var isSpot = state.focusedNodeId !== null;
+      if (isSpot) {
+        var depth = state.selectedDepth >= 999 ? 10 : state.selectedDepth;
+        relatedNodes = getConnectedNodesNHop(state.focusedNodeId, depth);
+        relatedEdges = getConnectedEdgesForNodes(relatedNodes);
+      }
+      var isRelated = !state.selectedNodeId && !state.focusedNodeId || (relatedNodes && relatedNodes.has(n.id));
+      var isSelected = state.selectedNodeId === n.id;
+      var isFocus = state.focusedNodeId === n.id;
+
+      if (isSpot) {
+        if (!relatedNodes || !relatedNodes.has(n.id)) {
+          return {
+            id: n.id,
+            borderWidth: 0,
+            color: { background: "rgba(0,0,0,0)", border: "rgba(0,0,0,0)", highlight: { background: "rgba(0,0,0,0)", border: "rgba(0,0,0,0)" }, hover: { background: "rgba(0,0,0,0)", border: "rgba(0,0,0,0)" } },
+            font: { color: "rgba(0,0,0,0)", size: 13, face: "Space Grotesk" },
+            shadow: false,
+          };
+        }
+        return {
+          id: n.id,
+          borderWidth: isFocus ? 2.8 : 2.0,
+          color: { background: isFocus ? C.bgCardHover : C.bgCard, border: accent, highlight: { background: C.bgCardHover, border: accent }, hover: { background: C.bgCardHover, border: accent } },
+          font: { color: C.textPrimary, size: isFocus ? 14 : 13, face: "Space Grotesk" },
+          shadow: isFocus ? { enabled: true, color: withAlpha(accent, 0.8), size: 22, x: 0, y: 0 } : { enabled: true, color: withAlpha(accent, 0.35), size: 10, x: 0, y: 0 },
+        };
+      }
+
+      var isHover = state.hoveredNodeId === n.id;
+      return {
+        id: n.id,
+        borderWidth: (state.selectedNodeId && isRelated) || isHover ? 2.4 : 1.2,
+        color: {
+          background: state.selectedNodeId ? (isRelated ? C.bgCard : "rgba(0,0,0,0.15)") : (isHover ? C.bgCardHover : C.bgCard),
+          border: state.selectedNodeId ? (isRelated ? accent : C.border) : (isHover ? accent : C.border),
+          highlight: { background: C.bgCardHover, border: accent },
+          hover: { background: C.bgCardHover, border: accent }
+        },
+        font: { color: state.selectedNodeId ? (isRelated ? C.textPrimary : C.textMuted) : C.textPrimary, size: state.selectedNodeId && !isRelated ? 11 : 13, face: "Space Grotesk" },
+        shadow: isSelected ? { enabled: true, color: withAlpha(accent, 0.65), size: 12, x: 0, y: 0 } : false,
+      };
+    }
+
+    function computeEdgeStyle(e, state) {
+      var def = edgeDefaults[e.id] || {};
+      var base = def.color || C.pending;
+      var baseDashes = def.dashes || false;
+      if (e.hidden) return { id: e.id };
+      var relatedNodes = null, relatedEdges = null;
+      if (state.selectedNodeId) {
+        var depth = state.selectedDepth >= 999 ? 10 : state.selectedDepth;
+        relatedNodes = getConnectedNodesNHop(state.selectedNodeId, depth);
+        relatedEdges = getConnectedEdgesForNodes(relatedNodes);
+      }
+      if (state.focusedNodeId) {
+        var depth = state.selectedDepth >= 999 ? 10 : state.selectedDepth;
+        relatedNodes = getConnectedNodesNHop(state.focusedNodeId, depth);
+        relatedEdges = getConnectedEdgesForNodes(relatedNodes);
+      }
+      var active = !state.selectedNodeId && !state.focusedNodeId || (relatedEdges && relatedEdges.has(e.id));
+      return {
+        id: e.id,
+        label: getRelationLabel(e),
+        color: { color: state.selectedNodeId || state.focusedNodeId ? (active ? base : withAlpha(base, 0.06)) : base, opacity: state.selectedNodeId || state.focusedNodeId ? (active ? 1.0 : 0.06) : 0.88 },
+        width: state.selectedNodeId || state.focusedNodeId ? (active ? 2.6 : 0.4) : 1.8,
+        dashes: state.selectedNodeId || state.focusedNodeId ? (active ? baseDashes : [3, 6]) : baseDashes,
+        font: { color: state.selectedNodeId || state.focusedNodeId ? (active ? C.textPrimary : C.border) : C.textMuted, background: state.selectedNodeId || state.focusedNodeId ? (active ? C.bgCard : C.bgBody) : C.bgSidebar, face: "JetBrains Mono", size: 10, strokeWidth: 0 },
+        isDimmed: state.selectedNodeId || state.focusedNodeId ? !active : false,
+      };
+    }
+
+    function getState() {
+      return { selectedNodeId: selectedNodeId, focusedNodeId: focusedNodeId, hoveredNodeId: hoveredNodeId, selectedDepth: selectedDepth, edgeFilter: edgeFilter, viewMode: viewMode };
+    }
+
+    function applyStyles() {
+      var state = getState();
+      var allNodes = nodes.get();
+      var allEdges = edges.get();
+      var nodeUpdates = [];
+      var edgeUpdates = [];
+      for (var i = 0; i < allNodes.length; i++) {
+        var u = computeNodeStyle(allNodes[i], state);
+        if (Object.keys(u).length > 1) nodeUpdates.push(u);
+      }
+      for (var j = 0; j < allEdges.length; j++) {
+        var ev = computeEdgeStyle(allEdges[j], state);
+        if (Object.keys(ev).length > 1) edgeUpdates.push(ev);
+      }
+      if (nodeUpdates.length) nodes.update(nodeUpdates);
+      if (edgeUpdates.length) edges.update(edgeUpdates);
+    }
+
+    function applyEdgeLabelMode() {
+      var allEdges = edges.get();
+      var updates = [];
+      for (var i = 0; i < allEdges.length; i++) {
+        var e = allEdges[i];
+        updates.push({ id: e.id, label: getRelationLabel(e) });
+      }
+      if (updates.length) edges.update(updates);
+      if (edgeLabelToggle) edgeLabelToggle.textContent = "Labels: " + (showEdgeLabels ? "ON" : "OFF");
+    }
+
+    var physicsIters = nodeCount < 100 ? 300 : nodeCount < 500 ? 200 : nodeCount < 1000 ? 120 : 80;
+    var options = {
+      autoResize: true,
+      layout: { improvedLayout: true },
+      physics: {
+        enabled: true,
+        barnesHut: {
+          gravitationalConstant: -2800,
+          centralGravity: 0.35,
+          springLength: 140,
+          springConstant: 0.06,
+          damping: 0.12,
+          avoidOverlap: 0.25,
+        },
+        stabilization: {
+          enabled: true,
+          iterations: physicsIters,
+          updateInterval: 50,
+          fit: true,
+        },
+      },
+      interaction: { hover: true, tooltipDelay: 999999, navigationButtons: false, keyboard: true, dragNodes: true, zoomView: true, dragView: true },
+      nodes: {
+        shape: "box",
+        shapeProperties: { borderRadius: 8 },
+        margin: { top: 10, right: 12, bottom: 10, left: 12 },
+        widthConstraint: { minimum: 140, maximum: 280 },
+        font: { color: C.textPrimary, size: 13, face: "Space Grotesk" },
+        borderWidth: 1.2,
+        borderWidthSelected: 2.2,
+        color: { background: C.bgCard, border: C.border, highlight: { background: C.bgCardHover, border: C.accent }, hover: { background: C.bgCardHover, border: C.accent } }
+      },
+      edges: {
+        smooth: { type: "continuous" },
+        width: 1.8,
+        hoverWidth: 2.4,
+        selectionWidth: 2.2,
+        arrows: { to: { enabled: true, scaleFactor: 0.5 } },
+        labelHighlightBold: true,
+        color: { inherit: false },
+      },
+      configure: false
+    };
+
+    var network = new vis.Network(container, data, options);
+
+    if (defaultLayoutMode === "hierarchical") {
+      network.setOptions({
+        layout: { hierarchical: { enabled: true, direction: "UD", sortMethod: "directed", levelSeparation: 180, nodeSpacing: 140, treeSpacing: 200 } },
+        physics: { enabled: true, hierarchicalRepulsion: { centralGravity: 0.0, springLength: 150, springConstant: 0.01, nodeDistance: 180, damping: 0.09 }, stabilization: { enabled: true, iterations: physicsIters, updateInterval: 50, fit: true } },
+      });
+    }
+
+    var progressBar = document.getElementById("stabilization-progress-bar");
+    var progressWrap = document.getElementById("stabilization-progress");
+    network.on("stabilizationProgress", function(params) {
+      if (progressBar && progressWrap) {
+        var pct = params.total ? (params.iterations / params.total) * 100 : 0;
+        progressBar.style.width = pct + "%";
+      }
+    });
+
+    if (fitBtn) {
+      fitBtn.addEventListener("click", function() {
+        network.fit({ animation: { duration: 350, easingFunction: "easeInOutCubic" } });
+      });
+    }
+
+    var resetFocusBtn = document.getElementById("reset-focus-btn");
+    if (resetFocusBtn) {
+      resetFocusBtn.addEventListener("click", function() {
+        exitSpotlight();
+        selectedNodeId = null;
+        nhopCache.clear();
+        applyStyles();
+        network.fit({ animation: { duration: 280, easingFunction: "easeInOutCubic" } });
+      });
+    }
+
+    var depthSelect = document.getElementById("depth-select");
+    if (depthSelect) {
+      depthSelect.value = String(initialDepth);
+      depthSelect.addEventListener("change", function() {
+        selectedDepth = parseInt(depthSelect.value, 10) || 1;
+        nhopCache.clear();
+        applyStyles();
+      });
+    }
+
+    var edgeFilterSelect = document.getElementById("edge-filter");
+    if (edgeFilterSelect) {
+      edgeFilterSelect.addEventListener("change", function() {
+        edgeFilter = edgeFilterSelect.value || "all";
+        var allEdges = edges.get();
+        var updates = [];
+        for (var i = 0; i < allEdges.length; i++) {
+          var e = allEdges[i];
+          var rel = e.relation || "";
+          var hide = false;
+          if (edgeFilter === "subClassOf") hide = rel !== "subClassOf";
+          else if (edgeFilter === "type") hide = rel !== "type" && rel !== "instanceOf";
+          else if (edgeFilter === "other") hide = rel === "subClassOf" || rel === "type" || rel === "instanceOf";
+          updates.push({ id: e.id, hidden: hide });
+        }
+        if (updates.length) edges.update(updates);
+        nhopCache.clear();
+        applyStyles();
+      });
+    }
+
+    if (edgeLabelToggle) {
+      edgeLabelToggle.addEventListener("click", function() {
+        showEdgeLabels = !showEdgeLabels;
+        applyEdgeLabelMode();
+      });
+    }
+
+    var detailPanel = document.getElementById("detail-panel");
+    var detailContent = document.getElementById("detail-content");
+    var detailPanelClose = document.getElementById("detail-panel-close");
+
+    function buildNodeRelationSummary(nodeId) {
+      var edgeIds = network.getConnectedEdges(nodeId) || [];
+      var inCount = 0, outCount = 0;
+      var relCounts = {};
+      edgeIds.forEach(function(edgeId) {
+        var edge = edges.get(edgeId);
+        if (!edge) return;
+        if (edge.to === nodeId) inCount += 1;
+        if (edge.from === nodeId) outCount += 1;
+        var rel = edge.relation || edge.label || "related_to";
+        relCounts[rel] = (relCounts[rel] || 0) + 1;
+      });
+      var relItems = Object.entries(relCounts).sort(function(a, b) { return b[1] - a[1]; }).slice(0, 4);
+      return { total: edgeIds.length, incoming: inCount, outgoing: outCount, relItems: relItems };
+    }
+
+    function showNodeDetail(nodeId) {
+      var meta = nodeDefaults[nodeId] || {};
+      var attrs = nodeAttrs[nodeId] || {};
+      var stats = buildNodeRelationSummary(nodeId);
+      var docs = attrs.source_documents;
+      var docStr = Array.isArray(docs) && docs.length ? docs.slice(0, 2).join(", ") : "—";
+      var kind = (attrs.kind || meta.kind || "class").toUpperCase();
+      var edgeIds = network.getConnectedEdges(nodeId) || [];
+      var edgeList = edgeIds.slice(0, 5).map(function(eid) {
+        var e = edges.get(eid);
+        if (!e) return "";
+        var ea = edgeAttrs[e.id] || {};
+        var sc = ea.correctness_score != null ? (ea.correctness_score * 100).toFixed(0) + "%" : "—";
+        var rel = e.relation || e.label || "related_to";
+        var other = (e.from === nodeId ? e.to : e.from);
+        return "<div class=\"detail-row\"><span class=\"detail-value\">" + escHtml(rel) + "</span> → " + escHtml(other) + " <span class=\"detail-label\">(" + sc + ")</span></div>";
+      }).join("");
+      var repairTag = docStr.indexOf("repair") !== -1 ? "<span class=\"repair-tag\">⚙ Repair</span>" : "";
+      detailContent.innerHTML = "<div class=\"detail-title\">Node</div>"
+        + "<div class=\"detail-row\"><span class=\"detail-label\">Kind</span><br><span class=\"detail-value\">" + escHtml(kind) + "</span> " + repairTag + "</div>"
+        + "<div class=\"detail-row\"><span class=\"detail-label\">Degree</span><br><span class=\"detail-value\">" + stats.incoming + " in, " + stats.outgoing + " out</span></div>"
+        + (docStr !== "—" ? "<div class=\"detail-row\"><span class=\"detail-label\">Source</span><br><span class=\"detail-value\">" + escHtml(docStr) + "</span></div>" : "")
+        + (edgeList ? "<div class=\"detail-row\"><span class=\"detail-label\">Edges (sample)</span>" + edgeList + "</div>" : "");
+      detailPanel.classList.add("visible");
+      if (detailPanelClose) detailPanelClose.style.display = "block";
+    }
+
+    function showEdgeDetail(edgeId) {
+      var e = edges.get(edgeId);
+      if (!e) return;
+      var ea = edgeAttrs[edgeId] || {};
+      var sc = ea.correctness_score != null ? ea.correctness_score : 0;
+      var votes = ea.cross_chunk_votes != null ? ea.cross_chunk_votes : 1;
+      var pathLen = ea.derivation_path_length != null ? ea.derivation_path_length : 1;
+      var pathText = pathLen === 1 ? "direct" : "inferred ×" + pathLen;
+      var origin = ea.provenance_origin || "extraction";
+      var rule = ea.provenance_rule || "";
+      var originLabel = origin + (rule ? " (" + rule + ")" : "");
+      var barColor = sc >= 0.6 ? C.success : (sc >= 0.3 ? C.info : C.errorBright);
+      detailContent.innerHTML = "<div class=\"detail-title\">Edge</div>"
+        + "<div class=\"detail-row\"><span class=\"detail-label\">Relation</span><br><span class=\"detail-value\">" + escHtml(e.relation || e.label || "related_to") + "</span></div>"
+        + "<div class=\"detail-row\"><span class=\"detail-label\">Correctness</span><br><div class=\"score-bar\"><div class=\"score-fill\" style=\"width:" + (sc * 100) + "%; background:" + barColor + ";\"></div></div> " + (sc.toFixed(2)) + "</div>"
+        + "<div class=\"detail-row\"><span class=\"detail-label\">Votes</span><br><span class=\"detail-value\">" + votes + "×</span></div>"
+        + "<div class=\"detail-row\"><span class=\"detail-label\">Path</span><br><span class=\"detail-value\">" + pathText + "</span></div>"
+        + "<div class=\"detail-row\"><span class=\"detail-label\">Origin</span><br><span class=\"origin-pill\">" + escHtml(originLabel) + "</span></div>"
+        + "<div class=\"detail-row\"><span class=\"detail-label\">From</span> " + escHtml(e.from) + " <span class=\"detail-label\">To</span> " + escHtml(e.to) + "</div>"
+        + "<button type=\"button\" class=\"ctrl-btn\" style=\"margin-top:8px;\" title=\"Mark for review\">Flag as incorrect</button>";
+      detailPanel.classList.add("visible");
+      if (detailPanelClose) detailPanelClose.style.display = "block";
+    }
+
+    if (detailPanelClose) detailPanelClose.addEventListener("click", function() { detailPanel.classList.remove("visible"); detailPanelClose.style.display = "none"; });
+
+    network.on("click", function(params) {
+      if (params.edges && params.edges.length > 0) {
+        showEdgeDetail(params.edges[0]);
+        return;
+      }
+      if (!params.nodes || params.nodes.length === 0) {
+        if (focusedNodeId) {
+          exitSpotlight();
+        } else {
+          selectedNodeId = null;
+          applyStyles();
+          detailPanel.classList.remove("visible");
+          if (detailPanelClose) detailPanelClose.style.display = "none";
+        }
+        return;
+      }
+      var nodeId = params.nodes[0];
+      if (focusedNodeId && nodeId !== focusedNodeId) {
+        exitSpotlight();
+      }
+      selectedNodeId = nodeId;
+      applyStyles();
+      showNodeDetail(nodeId);
+    });
+
+    network.on("hoverNode", function(params) {
+      var id = params.node;
+      hoveredNodeId = id;
+      var meta = nodeDefaults[id] || {};
+      var stats = buildNodeRelationSummary(id);
+      var desc = meta.description ? '<div class="desc">' + escHtml(meta.description).slice(0, 220) + '</div>' : "";
+      var relPills = stats.relItems.length ? '<div class="rels">' + stats.relItems.map(function(item) { return '<span class="rel-pill">' + escHtml(item[0]) + ' ×' + item[1] + '</span>'; }).join('') + '</div>' : "";
+      tooltip.innerHTML = '<div class="kind">' + escHtml(meta.kind || "node") + '</div>' + '<div class="name">' + escHtml(id) + '</div>' + '<div class="stats">' + '<div class="stat"><span class="v">' + stats.total + '</span><span class="k">links</span></div>' + '<div class="stat"><span class="v">' + stats.incoming + '</span><span class="k">in</span></div>' + '<div class="stat"><span class="v">' + stats.outgoing + '</span><span class="k">out</span></div>' + '</div>' + relPills + desc;
+
+      requestAnimationFrame(function() {
+        var domPoint = params.event && params.event.pointer && params.event.pointer.DOM ? params.event.pointer.DOM : network.canvasToDOM(network.getPositions([id])[id]);
+        var cw = container.clientWidth || 400;
+        var ch = container.clientHeight || 300;
+        var left = Math.min(domPoint.x + 16, cw - 320);
+        var top = Math.min(domPoint.y + 16, ch - 200);
+        tooltip.style.left = Math.round(Math.max(8, left)) + "px";
+        tooltip.style.top = Math.round(Math.max(8, top)) + "px";
+        if (cw === 0 || ch === 0) { tooltip.style.left = "50%"; tooltip.style.top = "50%"; tooltip.style.transform = "translate(-50%, -50%)"; }
+        tooltip.classList.add("visible");
+      });
+
+      applyStyles();
+    });
+
+    network.on("blurNode", function() {
+      tooltip.classList.remove("visible");
+      hoveredNodeId = null;
+      applyStyles();
+    });
+
+    network.on("hoverEdge", function(params) {
+      if (focusedNodeId) return;
+      var edge = edges.get(params.edge);
+      if (!edge) return;
+      var hoverDashes = edge.isDimmed ? [2, 4] : [7, 5];
+      var hoverWidth = edge.isDimmed ? 0.8 : Math.max(2.8, edge.width || 2.6);
+      edges.update([{ id: edge.id, dashes: hoverDashes, width: hoverWidth }]);
+    });
+
+    network.on("blurEdge", function(params) {
+      if (focusedNodeId) return;
+      applyStyles();
+    });
+
+    function enterSpotlight(nodeId) {
+      if (!focusedNodeId) {
+        savedContainerBackground = container.style.background || "";
+        var visCanvas = container.querySelector("canvas");
+        if (visCanvas) {
+          (function() {
+            try {
+              var url = visCanvas.toDataURL();
+              if (url) spotlightBg.style.backgroundImage = "url(" + url + ")";
+            } catch (err) { if (DEBUG) debugLog("Spotlight bg snapshot skipped", err); }
+          })();
+        }
+        spotlightBg.classList.add("active");
+        container.style.background = "transparent";
+      }
+      focusedNodeId = nodeId;
+      selectedNodeId = nodeId;
+      applyStyles();
+      network.focus(nodeId, { scale: 1.15, animation: { duration: 420, easingFunction: "easeInOutCubic" } });
+    }
+
+    function exitSpotlight() {
+      if (!focusedNodeId) return;
+      focusedNodeId = null;
+      selectedNodeId = null;
+      spotlightBg.classList.remove("active");
+      container.style.background = savedContainerBackground;
+      applyStyles();
+      network.fit({ animation: { duration: 380, easingFunction: "easeInOutCubic" } });
+    }
+
+    network.on("doubleClick", function(params) {
+      if (!params.nodes || params.nodes.length === 0) {
+        exitSpotlight();
+        return;
+      }
+      enterSpotlight(params.nodes[0]);
+    });
+
+    applyEdgeLabelMode();
+    applyStyles();
+
+    function setLayout(mode) {
+      layoutMode = mode;
+      var layoutSelect = document.getElementById("layout-select");
+      if (layoutSelect) layoutSelect.value = mode;
+    }
+
+    var layoutSelect = document.getElementById("layout-select");
+    if (layoutSelect) {
+      layoutSelect.value = defaultLayoutMode;
+      layoutMode = defaultLayoutMode;
+      layoutSelect.addEventListener("change", function() {
+        var newMode = layoutSelect.value || "force";
+        if (simulationFrozen && layoutMode === newMode) return;
+        if (newMode === "elk") {
+          if (typeof ELK === "undefined") {
+            if (DEBUG) debugLog("ELK not loaded, falling back to hierarchy");
+            setLayout("hierarchical");
+            newMode = "hierarchical";
+          } else {
+            runElkLayout();
+            return;
+          }
+        }
+        var useHierarchy = newMode === "hierarchical";
+        network.setOptions({
+          layout: { hierarchical: { enabled: useHierarchy, direction: "UD", sortMethod: "directed", levelSeparation: 180, nodeSpacing: 140, treeSpacing: 200 } },
+          physics: {
+            enabled: true,
+            hierarchicalRepulsion: useHierarchy ? { centralGravity: 0.0, springLength: 150, springConstant: 0.01, nodeDistance: 180, damping: 0.09 } : undefined,
+            barnesHut: useHierarchy ? undefined : { gravitationalConstant: -2800, centralGravity: 0.35, springLength: 140, springConstant: 0.06, damping: 0.12, avoidOverlap: 0.25 },
+            stabilization: { enabled: true, iterations: physicsIters, updateInterval: 50, fit: true },
+          },
+        });
+        simulationFrozen = false;
+        layoutMode = newMode;
+        network.once("stabilizationIterationsDone", function() {
+          network.setOptions({ physics: { enabled: false } });
+          simulationFrozen = true;
+          network.fit({ animation: { duration: 300, easingFunction: "easeInOutCubic" } });
+        });
+      });
+    }
+
+    function runElkLayout() {
+      if (typeof ELK === "undefined") return;
+      if (hasCycles) {
+        if (DEBUG) debugLog("Graph has cycles, falling back to force layout");
+        setLayout("force");
+        network.setOptions({ physics: { enabled: true }, layout: { hierarchical: { enabled: false } } });
+        network.setOptions({ physics: { barnesHut: { gravitationalConstant: -2800, centralGravity: 0.35, springLength: 140, springConstant: 0.06, damping: 0.12, avoidOverlap: 0.25 }, stabilization: { enabled: true, iterations: physicsIters, updateInterval: 50, fit: true } } });
+        simulationFrozen = false;
+        network.once("stabilizationIterationsDone", function() {
+          network.setOptions({ physics: { enabled: false } });
+          simulationFrozen = true;
+          network.fit({ animation: { duration: 300, easingFunction: "easeInOutCubic" } });
+        });
+        return;
+      }
+      var elk = new ELK();
+      var visibleNodes = nodes.get().filter(function(n) { return !n.hidden; });
+      var visibleEdges = edges.get().filter(function(e) { return !e.hidden; });
+      var nodeIds = new Set(visibleNodes.map(function(n) { return n.id; }));
+      var normalizedEdges = visibleEdges.filter(function(e) { return nodeIds.has(e.from) && nodeIds.has(e.to) && e.from !== e.to; }).map(function(e) { return { id: String(e.id), sources: [String(e.from)], targets: [String(e.to)] }; });
+      var nodeWidth = 140, nodeHeight = 40;
+      var elkGraph = { id: "root", layoutOptions: { "elk.algorithm": "layered", "elk.direction": "DOWN", "elk.spacing.nodeNode": "50", "elk.layered.spacing.nodeNodeBetweenLayers": "100", "elk.edgeRouting": "ORTHOGONAL", "elk.layered.allowNonTreeEdges": "true" }, children: visibleNodes.map(function(n) { var w = (n.width != null && n.width > 0) ? n.width : nodeWidth; var h = (n.height != null && n.height > 0) ? n.height : nodeHeight; return { id: String(n.id), width: w, height: h }; }), edges: normalizedEdges };
+      elk.layout(elkGraph).then(function(layout) {
+        if (!layout || !layout.children || layout.children.length === 0) { if (DEBUG) debugLog("ELK returned empty layout, fallback to force"); fallbackToForceLayout(); return; }
+        var pos = {};
+        var allSame = true, firstX = null, firstY = null;
+        layout.children.forEach(function(c) { var x = (c.x != null) ? c.x : 0; var y = (c.y != null) ? c.y : 0; pos[c.id] = { x: x, y: y }; if (firstX == null) { firstX = x; firstY = y; } else if (x !== firstX || y !== firstY) allSame = false; });
+        if (Object.keys(pos).length === 0) { if (DEBUG) debugLog("ELK produced no positions, fallback to force"); fallbackToForceLayout(); return; }
+        if (allSame && Object.keys(pos).length > 1) { if (DEBUG) debugLog("ELK returned identical coordinates, fallback to force"); fallbackToForceLayout(); return; }
+        network.setPositions(pos);
+        network.setOptions({ physics: { enabled: false } });
+        simulationFrozen = true;
+        setLayout("elk");
+        network.fit({ animation: { duration: 300, easingFunction: "easeInOutCubic" } });
+      }).catch(function(err) { if (DEBUG) debugLog("ELK layout failed:", err); fallbackToForceLayout(); });
+    }
+
+    function fallbackToForceLayout() {
+      setLayout("force");
+      network.setOptions({ layout: { hierarchical: { enabled: false } }, physics: { enabled: true, barnesHut: { gravitationalConstant: -2800, centralGravity: 0.35, springLength: 140, springConstant: 0.06, damping: 0.12, avoidOverlap: 0.25 }, stabilization: { enabled: true, iterations: physicsIters, updateInterval: 50, fit: true } } });
+      simulationFrozen = false;
+      network.once("stabilizationIterationsDone", function() {
+        network.setOptions({ physics: { enabled: false } });
+        simulationFrozen = true;
+        network.fit({ animation: { duration: 300, easingFunction: "easeInOutCubic" } });
+      });
+    }
+
+    var viewModeSelect = document.getElementById("view-mode-select");
+    if (viewModeSelect) {
+      viewModeSelect.addEventListener("change", function() {
+        viewMode = viewModeSelect.value;
+        var allNodes = nodes.get();
+        var nodeUpdates = [];
+        for (var i = 0; i < allNodes.length; i++) {
+          var n = allNodes[i];
+          var hide = false;
+          if (viewMode === "classes") hide = n.kind === "instance";
+          else if (viewMode === "instances") hide = n.kind !== "instance";
+          nodeUpdates.push({ id: n.id, hidden: hide });
+        }
+        if (nodeUpdates.length) nodes.update(nodeUpdates);
+        var allEdges = edges.get();
+        var edgeUpdates = [];
+        for (var j = 0; j < allEdges.length; j++) {
+          var edge = allEdges[j];
+          var fromNode = nodes.get(edge.from);
+          var toNode = nodes.get(edge.to);
+          var rel = edge.relation || "";
+          var hide = false;
+          if (viewMode === "classes") hide = rel !== "subClassOf";
+          else if (viewMode === "instances") hide = rel !== "type" && rel !== "instanceOf";
+          if (fromNode && fromNode.hidden) hide = true;
+          if (toNode && toNode.hidden) hide = true;
+          edgeUpdates.push({ id: edge.id, hidden: hide });
+        }
+        if (edgeUpdates.length) edges.update(edgeUpdates);
+        applyStyles();
+        network.fit({ animation: { duration: 280, easingFunction: "easeInOutCubic" } });
+      });
+    }
+
+    network.on("stabilizationIterationsDone", function() {
+      network.setOptions({ physics: { enabled: false } });
+      simulationFrozen = true;
+      if (progressBar) progressBar.style.width = "100%";
+      if (progressWrap) progressWrap.style.display = "none";
+      if (DEBUG) {
+        var pos = network.getPositions();
+        var ids = Object.keys(pos);
+        var nanCount = 0;
+        ids.forEach(function(id) { var p = pos[id]; if (p && (isNaN(p.x) || isNaN(p.y))) nanCount++; });
+        debugLog("Layout done. Positions: NaN=" + nanCount);
+      }
+      network.fit({ animation: { duration: 350, easingFunction: "easeInOutCubic" } });
+      requestAnimationFrame(function() { container.classList.add("ready"); });
+    });
+
+    setTimeout(function() { container.classList.add("ready"); }, 3000);
+
+    if (preSelectNode && nodeCount > 0) {
+      var found = nodes.get().some(function(n) { return n.id === preSelectNode; });
+      if (found) {
+        setTimeout(function() {
+          enterSpotlight(preSelectNode);
+          network.focus(preSelectNode, { scale: 1.2, animation: { duration: 400, easingFunction: "easeInOutCubic" } });
+        }, 500);
+      }
+    }
+
+    var nodeSearch = document.getElementById("node-search");
+    if (nodeSearch) {
+      nodeSearch.addEventListener("keydown", function(ev) {
+        if (ev.key === "k" && (ev.metaKey || ev.ctrlKey)) { ev.preventDefault(); nodeSearch.focus(); }
+      });
+      nodeSearch.addEventListener("keydown", function(ev) {
+        if (ev.key !== "Enter") return;
+        var q = (nodeSearch.value || "").trim().toLowerCase();
+        if (!q) return;
+        var all = nodes.get();
+        for (var i = 0; i < all.length; i++) {
+          if (all[i].label && String(all[i].label).toLowerCase().indexOf(q) !== -1) {
+            enterSpotlight(all[i].id);
+            network.focus(all[i].id, { scale: 1.2, animation: { duration: 300 } });
+            break;
+          }
+        }
+      });
+    }
+  </script>
+</body>
+</html>
