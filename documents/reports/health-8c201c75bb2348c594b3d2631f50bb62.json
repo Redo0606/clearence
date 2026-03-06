@@ -1,0 +1,30 @@
+{
+  "structural": {
+    "node_count": 1170,
+    "edge_count": 2436,
+    "edge_to_node_ratio": 2.082,
+    "density": 0.0036,
+    "connected_components": 42,
+    "largest_component_coverage": 0.916,
+    "avg_degree": 4.16,
+    "max_degree": 183,
+    "degree_std": 10.2,
+    "orphan_nodes": 0
+  },
+  "semantic": {
+    "unlabeled_nodes_pct": 0.0,
+    "unique_relation_types": 411,
+    "relation_type_entropy": 4.693,
+    "avg_property_count": 2.08,
+    "class_instance_ratio": 0.74
+  },
+  "retrieval": {
+    "index_record_count": 3606,
+    "hyperedge_count": 1170,
+    "facts_per_node": 3.08,
+    "hyperedge_coverage": 1.0
+  },
+  "overall_score": 75.0,
+  "badge": "Needs Attention",
+  "kb_id": "8c201c75bb2348c594b3d2631f50bb62"
+}

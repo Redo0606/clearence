@@ -141,8 +141,8 @@ If a model does not support structured outputs (common for smaller models), the 
 | GET    | `/health`                                      | Health check                                            |
 | POST   | `/api/v1/ontology/from-pdf`                    | PDF -> OWL/Turtle/JSON-LD                               |
 | POST   | `/api/v1/build_ontology`                       | Document -> theory-grounded ontology graph              |
-| POST   | `/api/v1/build_ontology_stream`                | Same as build_ontology, streams progress via SSE        |
-| POST   | `/api/v1/knowledge-bases/{id}/extend_stream`   | Extend KB with new document (streaming)                 |
+| POST   | `/api/v1/build_ontology_stream`                | Same as build_ontology, streams progress via SSE, multi-file supported |
+| POST   | `/api/v1/knowledge-bases/{id}/extend_stream`   | Extend KB with document(s) — single or multiple files (streaming) |
 | POST   | `/api/v1/cancel_job/{job_id}`                   | Cancel an active pipeline job                           |
 | GET    | `/api/v1/knowledge-bases`                      | List persisted knowledge bases                          |
 | POST   | `/api/v1/knowledge-bases/{id}/activate`        | Load and activate a knowledge base                      |
@@ -158,7 +158,7 @@ If a model does not support structured outputs (common for smaller models), the 
 
 Runs the full theory-grounded pipeline: sequential extraction, taxonomy building, graph merge, OWL 2 RL reasoning.
 
-- **Body:** `multipart/form-data` with `file` (PDF, DOCX, TXT, MD)
+- **Body:** `multipart/form-data` with `file` (single) or `files` (multiple) — PDF, DOCX, TXT, MD. Multiple files are processed sequentially and merged into one ontology.
 - **Query params:**
   - `run_inference` (bool, default `true`) — LLM relation inference
   - `sequential` (bool, default `true`) — 3-stage Bakker Approach B extraction
@@ -167,8 +167,13 @@ Runs the full theory-grounded pipeline: sequential extraction, taxonomy building
 - **Response:** `BuildOntologyResponse` with graph export + full `PipelineReport`
 
 ```bash
+# Single file
 curl -X POST "http://localhost:8000/api/v1/build_ontology" \
   -F "file=@document.pdf"
+
+# Multiple files
+curl -X POST "http://localhost:8000/api/v1/build_ontology" \
+  -F "files=@doc1.pdf" -F "files=@doc2.docx" -F "title=My Ontology"
 ```
 
 ### POST /api/v1/qa/ask

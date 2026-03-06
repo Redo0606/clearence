@@ -1,0 +1,2230 @@
+[
+  {
+    "id": "80caf51b-1dbd-4bd8-9eaa-475b053e0501",
+    "kb_id": "8c201c75bb2348c594b3d2631f50bb62",
+    "kb_name": "Salesforce",
+    "timestamp": "2026-03-06T13:10:36.561860+00:00",
+    "scores": {
+      "context_recall": 0.6,
+      "entity_recall": 1.0,
+      "answer_correctness": 0.46775945545682385,
+      "faithfulness": 0.8,
+      "answer_relevancy": 0.9,
+      "retrieval_coverage": 1.0,
+      "retrieval_failure_rate": 0.0,
+      "fact_recall": 0.2866666666666667,
+      "entity_coverage": 1.0,
+      "faithfulness_claim_level": 0.6666666666666667,
+      "context_precision": 0.84,
+      "per_question": [
+        {
+          "question": "What is an identity verification tool?",
+          "answer": "An identity verification tool is a tool used to secure and protect data from unauthorized access.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.53125,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 14,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What is a CRM feature?",
+          "answer": "A CRM feature is a basic functionality that helps manage customer relationships within Salesforce.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.7894736842105263,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 9,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What is Salesforce?",
+          "answer": "Salesforce is a customer relationship management (CRM) platform that helps manage customer relationships and interactions.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.29545454545454547,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 3,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What factors influence Salesforce?",
+          "answer": "User interactions, configurations by SalesforceAdmins, and the various editions and applications available influence Salesforce.",
+          "context_recall": 0.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.3392857142857143,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 3,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What factors influence an identity verification tool?",
+          "answer": "The effectiveness of an identity verification tool may depend on the verification methods it employs, such as TemporaryVerificationCode, SalesforceAuthenticator, and ThirdPartyAuthenticator.",
+          "context_recall": 0.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.3833333333333333,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 14,
+          "total_ref_facts": 30
+        }
+      ]
+    },
+    "health": {
+      "structural": {
+        "node_count": 1170,
+        "edge_count": 2436,
+        "edge_to_node_ratio": 2.082,
+        "density": 0.0036,
+        "connected_components": 42,
+        "largest_component_coverage": 0.916,
+        "avg_degree": 4.16,
+        "max_degree": 183,
+        "degree_std": 10.2,
+        "orphan_nodes": 0
+      },
+      "semantic": {
+        "unlabeled_nodes_pct": 0.0,
+        "unique_relation_types": 411,
+        "relation_type_entropy": 4.693,
+        "avg_property_count": 2.08,
+        "class_instance_ratio": 0.74
+      },
+      "retrieval": {
+        "index_record_count": 3606,
+        "hyperedge_count": 1170,
+        "facts_per_node": 3.08,
+        "hyperedge_coverage": 1.0
+      },
+      "overall_score": 75.0,
+      "badge": "Needs Attention",
+      "kb_id": "8c201c75bb2348c594b3d2631f50bb62"
+    },
+    "report_url": "",
+    "num_questions": 5,
+    "score_deltas": {
+      "answer_correctness": -0.0755,
+      "faithfulness": -0.065,
+      "retrieval_coverage": 0.0,
+      "fact_recall": -0.0195
+    },
+    "regressions": [
+      "answer_correctness: 0.54 \u2192 0.47 (\u0394-0.08)",
+      "faithfulness: 0.86 \u2192 0.80 (\u0394-0.06)"
+    ]
+  },
+  {
+    "id": "674f28db-8cba-4029-9336-d3dfff378ec1",
+    "kb_id": "8c201c75bb2348c594b3d2631f50bb62",
+    "kb_name": "Salesforce",
+    "timestamp": "2026-03-06T10:51:57.201047+00:00",
+    "scores": {
+      "context_recall": 0.67,
+      "entity_recall": 0.9675,
+      "answer_correctness": 0.5432816040734025,
+      "faithfulness": 0.865,
+      "answer_relevancy": 0.82,
+      "retrieval_coverage": 1.0,
+      "retrieval_failure_rate": 0.0,
+      "fact_recall": 0.30616509926854757,
+      "entity_coverage": 0.9675,
+      "faithfulness_claim_level": 0.7631666666666668,
+      "context_precision": 0.84,
+      "per_question": [
+        {
+          "question": "What is a CRM feature?",
+          "answer": "A CRM feature is a basic functionality that helps manage customer relationships within Salesforce.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.4264705882352941,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 10,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What is a feature?",
+          "answer": "A feature is a specific functionality or capability provided by Salesforce applications.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.7121212121212122,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 11,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What factors influence a user license?",
+          "answer": "The factors that influence a user license include the permissions defined by the UserLicense and the profile assigned to the user, such as Standard User.",
+          "context_recall": 0.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.3928571428571429,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 13,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What factors influence Sandbox Org?",
+          "answer": "The factors influencing Sandbox Org include its role as a testing environment for updates and changes in Salesforce and its capability to be refreshed with production data.",
+          "context_recall": 0.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.45,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 14,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What is an edition?",
+          "answer": "An edition is a version of Salesforce that includes specific features and functionalities.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.7580645161290323,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 7,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What factors influence Salesforce applications?",
+          "answer": "Business requirements and user needs influence Salesforce applications.",
+          "context_recall": 0.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.3269230769230769,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 7,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What is an add-on license?",
+          "answer": "An add-on license extends functionality at the organization level.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.5,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 12,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What is a controlled setting edition?",
+          "answer": "A Controlled Setting Edition is a version of Salesforce applications that restricts the use of features requiring external connections.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.8142857142857143,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 5,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What factors influence a Chatter Free user?",
+          "answer": "A Chatter Free user is influenced by their user license type, which lacks the View All Forecasts permission, and their assigned profile that defines their capabilities.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.49444444444444446,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 10,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What factors influence an organization?",
+          "answer": "Factors influencing an organization include its association with interested parties, reserved organization data, users, events, and its deployment in systems like Salesforce.",
+          "context_recall": 0.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.3611111111111111,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 12,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What factors influence a profile?",
+          "answer": "User permissions, access settings, and personal information.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.3611111111111111,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 6,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What factors influence the Developer Edition?",
+          "answer": "The Developer Edition is influenced by its classification as a Salesforce Edition and its provision of development tools and features for building applications.",
+          "context_recall": 0.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.7682926829268293,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 5,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What are notes and attachments?",
+          "answer": "Notes & Attachments is a related list in Salesforce that includes notes and file attachments associated with a record.",
+          "context_recall": 0.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.7564102564102564,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 10,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What is a release?",
+          "answer": "A release is a new product or feature update from Salesforce identified by season and calendar year.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.8703703703703703,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 8,
+          "total_ref_facts": 8
+        },
+        {
+          "question": "What is Experience Cloud?",
+          "answer": "Experience Cloud is a Salesforce platform for creating sites and applications.",
+          "context_recall": 0.0,
+          "entity_recall": 0.0,
+          "answer_correctness": 0.35344827586206895,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 7,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What is Einstein AI?",
+          "answer": "Einstein AI is a suite of AI features within Salesforce, some of which are currently unavailable.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.8103448275862069,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 21,
+          "total_ref_facts": 24
+        },
+        {
+          "question": "What is Salesforce?",
+          "answer": "Salesforce is a customer relationship management platform that helps manage customer relationships and interactions.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.39893617021276595,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 7,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What factors influence a license?",
+          "answer": "Factors influencing a license include the permissions it grants (UserLicense), the access rights categories (UserLicenseType), and the functionality extensions at the organization level (AddOnLicense)...",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.3653846153846154,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 16,
+          "total_ref_facts": 28
+        },
+        {
+          "question": "What is a Salesforce admin?",
+          "answer": "A Salesforce admin is a user with administrative privileges in Salesforce who manages settings and configurations.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.7647058823529411,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 7,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What factors influence release?",
+          "answer": "Salesforce Applications and the features introduced by Salesforce and Salesforce Applications.",
+          "context_recall": 0.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.38636363636363635,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 8,
+          "total_ref_facts": 8
+        },
+        {
+          "question": "What is a Chatter Free User?",
+          "answer": "A Chatter Free User is a profile assigned to users with the Chatter Free user license.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.41666666666666663,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 10,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What are adoption apps?",
+          "answer": "Applications designed to assist with the adoption of Salesforce features, some of which may be unavailable.",
+          "context_recall": 0.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.7258064516129032,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 9,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What are controlled setting products?",
+          "answer": "Salesforce products that provide enhanced control of data flows and restrict features requiring external connections.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.8055555555555556,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 7,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What is an app?",
+          "answer": "An app is a collection of tabs and functionalities within Salesforce.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.42142857142857143,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 10,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What is a user?",
+          "answer": "An individual who can access and interact with the Interested Party records in Enterprise CRM.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.7903225806451613,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 12,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What factors influence a system administrator?",
+          "answer": "Factors influencing a system administrator include the Salesforce user license and the specific profile assigned to them.",
+          "context_recall": 0.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.35909090909090907,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 5,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What is a category group?",
+          "answer": "A category group refers to a structured grouping system in Salesforce, allowing a maximum of 5 category groups with 3 active at any time.",
+          "context_recall": 0.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.6944444444444444,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 8,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What is an admin?",
+          "answer": "An admin is a user with elevated permissions who can manage settings and permissions within Salesforce.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.7250000000000001,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 13,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What is a permission set?",
+          "answer": "A permission set is a collection of settings and permissions that can be assigned to users in Salesforce.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.7666666666666666,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 7,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What factors influence a standard user?",
+          "answer": "The factors influencing a standard user include the permissions defined by their user license and their profile assignment as a standard user with the Salesforce user license.",
+          "context_recall": 0.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.40555555555555556,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 12,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What is a profile?",
+          "answer": "A profile is a user's personal page that displays their followed items and activities.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.513157894736842,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 6,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What is enterprise edition?",
+          "answer": "Enterprise Edition is a Salesforce Edition that includes comprehensive features and support for larger organizations.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.7666666666666666,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 7,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What is Lightning Experience?",
+          "answer": "Lightning Experience is a modern user interface for Salesforce that enhances usability and provides advanced features.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.803030303030303,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 8,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What factors influence the Salesforce community?",
+          "answer": "The factors influencing the Salesforce community include the availability of training, support, consulting services, events, best practices, and discussion forums for users.",
+          "context_recall": 0.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.3201754385964912,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 6,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What is a Salesforce application?",
+          "answer": "A Salesforce application is a prebuilt application for customer relationship management (CRM) that addresses specific business needs.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.875,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 7,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What factors influence production organization?",
+          "answer": "The factors influencing production organization include its operation within Salesforce and the defined set of licensed users, data, and applications.",
+          "context_recall": 0.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.42500000000000004,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 10,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What is an identity verification tool?",
+          "answer": "An identity verification tool is a tool used to secure and protect data from unauthorized access.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.1282051282051282,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 14,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What are custom fields?",
+          "answer": "Custom fields are user-defined fields that allow for additional data storage on an object in Salesforce.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.6621621621621622,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 2,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What factors influence a record?",
+          "answer": "Factors that influence a record include its type, description, and associations with related records.",
+          "context_recall": 0.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.3480392156862745,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 10,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What factors influence permission?",
+          "answer": "The factors influencing permission include its type as an authorization, its subclass relationship to Salesforce, and the specific functionalities it grants access to.",
+          "context_recall": 0.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.3611111111111111,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 16,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What is the Salesforce.com Community?",
+          "answer": "The Salesforce.com Community is a platform providing training, support, consulting, events, best practices, and discussion boards for Salesforce users.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.42073170731707316,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 3,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What is the personal edition?",
+          "answer": "The Personal Edition is a type of Salesforce Edition.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.3382352941176471,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 5,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What are custom objects?",
+          "answer": "Custom objects are user-defined objects in Salesforce that allow for the storage of data specific to a business.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.46621621621621623,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 2,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What is document generation?",
+          "answer": "Document generation is the process involving features related to generating documents that are currently unavailable.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.78125,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 20,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What factors influence an app?",
+          "answer": "The ontology does not specify factors that influence an app.",
+          "context_recall": 0.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.07272727272727272,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 10,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What is group edition?",
+          "answer": "Group Edition is a type of Salesforce Edition that includes allocations for specific organizational needs.",
+          "context_recall": 0.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.4318181818181818,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 6,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What factors influence sandbox organizations?",
+          "answer": "Sandbox organizations are influenced by their role as testing environments in Salesforce, their classification as Organizations, and their reliance on SandboxOrg for functionality.",
+          "context_recall": 0.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.4318181818181818,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 17,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What factors influence a user?",
+          "answer": "A user's permissions and capabilities are influenced by their user license and profile, as well as limits on user creation, tagging, and username uniqueness.",
+          "context_recall": 0.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.3483606557377049,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 12,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What are external connections?",
+          "answer": "External connections are classified as an entity.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.05555555555555555,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 5,
+          "total_ref_facts": 9
+        },
+        {
+          "question": "What is a chatter moderator user?",
+          "answer": "A Chatter Moderator User is a profile assigned to users with the Chatter Free user license.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.3581081081081081,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 10,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What is a custom object?",
+          "answer": "A custom object is a user-defined object in Salesforce that allows for the storage of data specific to a business.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.7424242424242424,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 2,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What factors influence the identity verification tool?",
+          "answer": "Factors influencing the identity verification tool include the use of Multi-Factor Authentication, identity verification methods like Temporary Verification Codes, and Third-Party Authenticators.",
+          "context_recall": 0.0,
+          "entity_recall": 0.75,
+          "answer_correctness": 0.4318181818181818,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 9,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What are Salesforce applications?",
+          "answer": "Salesforce applications are prebuilt applications for CRM that address specific business needs.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.41666666666666663,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 7,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What are controlled setting products?",
+          "answer": "Controlled setting products are Salesforce products that provide enhanced control of data flows and restrict features requiring external connections.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.858974358974359,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 7,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What factors influence the Lightning Platform?",
+          "answer": "The factors influencing the Lightning Platform include the development needs of users and the integration of various applications and tools.",
+          "context_recall": 0.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.3520408163265306,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 7,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What is attachment?",
+          "answer": "An attachment is any private file or note added to a contact through a business unit.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.3181818181818182,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 16,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What is a production organization?",
+          "answer": "A production organization is the live environment where an organization operates, specifically within Salesforce.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.6875,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 10,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What is an organization?",
+          "answer": "An organization is a record that can be associated with an Interested Party Assignment.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.4342105263157895,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 12,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What is the Lightning Platform?",
+          "answer": "The Lightning Platform is a platform provided by Salesforce that enables the development and integration of applications and tools.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.45,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 7,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What is AppExchange?",
+          "answer": "AppExchange is a marketplace for Salesforce applications and solutions.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.7,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 16,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What is a record?",
+          "answer": "A record is an individual entry of data stored within Salesforce, such as accounts or opportunities.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.7702702702702703,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 10,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What is the Controlled Setting Edition?",
+          "answer": "The Controlled Setting Edition is a version of Salesforce applications that restricts the use of features requiring external connections.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.8714285714285714,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 3,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What is a data cloud?",
+          "answer": "A data cloud is a cloud service that is unavailable and includes features like data assessment and company recommendations.",
+          "context_recall": 0.0,
+          "entity_recall": 0.5,
+          "answer_correctness": 0.09523809523809523,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 3,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What factors influence a Salesforce application?",
+          "answer": "Business requirements and user needs influence a Salesforce application.",
+          "context_recall": 0.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.325,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 7,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What is Salesforce Classic?",
+          "answer": "Salesforce Classic is the original user interface for Salesforce, which may lack some features available in Lightning Experience, and it is an edition where topics can be added to records.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.5576923076923077,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 7,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What is content?",
+          "answer": "Content is an entity with a maximum file size of 50 GB, categorized as Salesforce content.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.42500000000000004,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 15,
+          "total_ref_facts": 17
+        },
+        {
+          "question": "What is a data cloud?",
+          "answer": "A data cloud is an unavailable cloud service that includes features like data assessment and company recommendations.",
+          "context_recall": 0.0,
+          "entity_recall": 0.5,
+          "answer_correctness": 0.125,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 3,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What factors influence a chatter moderator user?",
+          "answer": "A Chatter Moderator User is influenced by their assignment to the Chatter Free user license, which lacks the View All Forecasts permission, and their classification within the user profile hierarchy.",
+          "context_recall": 0.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.42391304347826086,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 10,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What are geocodes?",
+          "answer": "Geocodes are geolocation features that are currently unavailable.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.7857142857142858,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 3,
+          "total_ref_facts": 6
+        },
+        {
+          "question": "What is the Developer Edition?",
+          "answer": "A specific type of Salesforce Edition that provides access to development tools and features for building applications.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.8870967741935484,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 5,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What factors influence the AppExchange?",
+          "answer": "The factors influencing the AppExchange include the diversity of applications created by users and partners, and its role as a marketplace for Salesforce applications and components.",
+          "context_recall": 0.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.40384615384615385,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 5,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What is Salesforce Classic?",
+          "answer": "Salesforce Classic is the original user interface for Salesforce, which may lack some features available in Lightning Experience, and it allows topics to be added to records.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.5743243243243243,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 7,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What are sandbox orgs?",
+          "answer": "Sandbox Orgs are a testing environment in Salesforce where updates and changes can be made without affecting the live system.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.8055555555555556,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 9,
+          "total_ref_facts": 28
+        },
+        {
+          "question": "What factors influence Salesforce edition?",
+          "answer": "The factors influencing Salesforce edition include the specific features and functionalities of each edition, such as those in Enterprise Edition and Developer Edition, as well as the differences in u...",
+          "context_recall": 0.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.42857142857142855,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 8,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What factors influence Salesforce?",
+          "answer": "User interactions, administrative configurations, and the choice of Salesforce editions and applications influence Salesforce.",
+          "context_recall": 0.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.3214285714285714,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 7,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What is the Contact Manager Edition?",
+          "answer": "The Contact Manager Edition is a Salesforce Edition designed for managing contacts.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.7333333333333334,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 4,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What is the Lightning Experience?",
+          "answer": "The Lightning Experience is a version of Salesforce that offers a modern user interface and enhanced features.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.513157894736842,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 8,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What is document generation?",
+          "answer": "Document generation is the process involving features related to generating documents that are currently unavailable.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.78125,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 20,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What is allocation?",
+          "answer": "Allocation is the maximum limits or quantities associated with a specific feature in Salesforce.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.7424242424242424,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 10,
+          "total_ref_facts": 15
+        },
+        {
+          "question": "What is a developer edition?",
+          "answer": "A Developer Edition is a specific type of Salesforce Edition that provides access to development tools and features for building applications.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.8823529411764706,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 7,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What factors influence a Salesforce admin?",
+          "answer": "Special permissions and the specific Salesforce edition being used.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.29444444444444445,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 7,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What factors influence a permission set?",
+          "answer": "A permission set is influenced by its collection of settings and permissions, and the maximum number of permission sets that can be created, which is 1000.",
+          "context_recall": 0.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.3928571428571429,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 7,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What is a user license?",
+          "answer": "A user license defines the permissions or maximum capabilities that a user can have.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.7121212121212122,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 13,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What is Sandbox Org?",
+          "answer": "A Sandbox Org is a testing environment in Salesforce where updates and changes can be made without affecting the live system.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.8125,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 14,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What is a lightning platform?",
+          "answer": "A lightning platform is the LightningPlatform, a Salesforce class that facilitates application development and integration.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.4166666666666667,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 7,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What is enterprise edition?",
+          "answer": "A Salesforce Edition that includes comprehensive features and support for larger organizations.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.7258064516129032,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 7,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What is a license?",
+          "answer": "A license is permissions granted to users that define their access and capabilities within Salesforce.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.78125,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 16,
+          "total_ref_facts": 28
+        },
+        {
+          "question": "What is a Salesforce community?",
+          "answer": "A Salesforce community is a platform providing training, support, consulting, events, best practices, and discussion boards for Salesforce users.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.36363636363636365,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 6,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What is permission?",
+          "answer": "Permission is an authorization that determines what actions a user can perform within the system.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.8225806451612903,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 16,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What is an object?",
+          "answer": "An object is a data structure that represents a specific entity in the system, such as a Campaign or Opportunity.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.7894736842105263,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 6,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What factors influence an object?",
+          "answer": "The ontology does not specify factors that influence an object.",
+          "context_recall": 0.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.044444444444444446,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 6,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What is a system administrator?",
+          "answer": "A system administrator is a profile assigned to users with the Salesforce user license.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.3879310344827586,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 5,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What is Chatter Free?",
+          "answer": "Chatter Free is a user license type that does not offer the View All Forecasts permission.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.8235294117647058,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 14,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What is a Salesforce edition?",
+          "answer": "A Salesforce edition is a version of Salesforce that includes specific features and functionalities.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.7580645161290323,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 8,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What is Experience Cloud?",
+          "answer": "Experience Cloud is a Salesforce platform for creating sites and applications.",
+          "context_recall": 0.0,
+          "entity_recall": 0.0,
+          "answer_correctness": 0.35344827586206895,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 7,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What factors influence enterprise edition?",
+          "answer": "The factors influencing Enterprise Edition include the comprehensive features it offers and the support it provides for larger organizations.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.42073170731707316,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 7,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What is a standard user?",
+          "answer": "A standard user is a profile assigned to users with the Salesforce user license.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.8043478260869565,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 12,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What are unavailable features?",
+          "answer": "Features that are not available due to restrictions or dependencies on external resources.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.6951219512195121,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 3,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What is a custom field?",
+          "answer": "A custom field is a user-defined field that allows for additional data storage on an object in Salesforce.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.6785714285714286,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 2,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What factors influence the Lightning Platform?",
+          "answer": "The factors influencing the Lightning Platform include user needs and application requirements for development and integration.",
+          "context_recall": 0.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.31666666666666665,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 7,
+          "total_ref_facts": 30
+        }
+      ]
+    },
+    "health": {
+      "structural": {
+        "node_count": 1170,
+        "edge_count": 2426,
+        "edge_to_node_ratio": 2.074,
+        "density": 0.0035,
+        "connected_components": 47,
+        "largest_component_coverage": 0.893,
+        "avg_degree": 4.15,
+        "max_degree": 183,
+        "degree_std": 10.19,
+        "orphan_nodes": 0
+      },
+      "semantic": {
+        "unlabeled_nodes_pct": 0.0,
+        "unique_relation_types": 411,
+        "relation_type_entropy": 4.683,
+        "avg_property_count": 2.08,
+        "class_instance_ratio": 0.74
+      },
+      "retrieval": {
+        "index_record_count": 3596,
+        "hyperedge_count": 1170,
+        "facts_per_node": 3.07,
+        "hyperedge_coverage": 1.0
+      },
+      "overall_score": 75.0,
+      "badge": "Needs Attention",
+      "kb_id": "8c201c75bb2348c594b3d2631f50bb62"
+    },
+    "report_url": "",
+    "num_questions": 100,
+    "score_deltas": {
+      "answer_correctness": -0.0094,
+      "faithfulness": 0.075,
+      "retrieval_coverage": 0.0,
+      "fact_recall": -0.0285
+    },
+    "regressions": []
+  },
+  {
+    "id": "c3b60158-d192-4766-83dd-4a6872ca4f94",
+    "kb_id": "8c201c75bb2348c594b3d2631f50bb62",
+    "kb_name": "Salesforce",
+    "timestamp": "2026-03-06T10:04:27.975687+00:00",
+    "scores": {
+      "context_recall": 0.68,
+      "entity_recall": 0.9441666666666666,
+      "answer_correctness": 0.5526902277701163,
+      "faithfulness": 0.79,
+      "answer_relevancy": 0.76,
+      "retrieval_coverage": 1.0,
+      "retrieval_failure_rate": 0.0,
+      "fact_recall": 0.33463726884779516,
+      "entity_coverage": 0.9441666666666666,
+      "faithfulness_claim_level": 0.7266666666666667,
+      "context_precision": 0.84,
+      "per_question": [
+        {
+          "question": "What is a Salesforce admin?",
+          "answer": "A Salesforce admin is a user with administrative privileges in Salesforce responsible for managing settings and configurations.",
+          "context_recall": 0.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.7333333333333333,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 1,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What factors influence an organization?",
+          "answer": "An organization is influenced by its licensed users, data, and applications within the Salesforce deployment.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.5202702702702703,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 11,
+          "total_ref_facts": 12
+        },
+        {
+          "question": "What is an edition?",
+          "answer": "An edition is a version of Salesforce that includes specific features and functionalities.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.7222222222222222,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 19,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What factors influence the identity verification tool?",
+          "answer": "The factors influencing the identity verification tool include its purpose of securing data, its use for multi-factor authentication, and its classification as a tool for identity verification.",
+          "context_recall": 0.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.45,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 5,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What is a permission set?",
+          "answer": "A permission set is a collection of settings and permissions that can be assigned to users in Salesforce.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.7692307692307692,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 3,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What is a category group?",
+          "answer": "A category group is a grouping mechanism in Salesforce that allows for a maximum of 5 category groups, with 3 active at any time.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.7727272727272727,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 13,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What is content?",
+          "answer": "Content is an entity with a maximum file size of 50 GB.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.41216216216216217,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 15,
+          "total_ref_facts": 17
+        },
+        {
+          "question": "What are sandbox organizations?",
+          "answer": "Sandbox organizations are testing environments in Salesforce that enable updates and changes without impacting the live system.",
+          "context_recall": 0.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.8333333333333334,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 7,
+          "total_ref_facts": 28
+        },
+        {
+          "question": "What is permission?",
+          "answer": "Permission is an authorization that determines what actions a user can perform within the system.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.7564102564102564,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 13,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What is allocation?",
+          "answer": "Allocation is the maximum limits or quantities associated with a specific feature in Salesforce.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.7580645161290323,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 8,
+          "total_ref_facts": 10
+        },
+        {
+          "question": "What factors influence a record?",
+          "answer": "The factors that influence a record include its type, associated fields, and RecordTypePreferences.",
+          "context_recall": 0.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.41666666666666663,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 12,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What are notes and attachments?",
+          "answer": "Notes & Attachments is a specific type of related list in Salesforce that contains notes and file attachments associated with a record.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.8333333333333333,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 5,
+          "total_ref_facts": 22
+        },
+        {
+          "question": "What is the Contact Manager Edition?",
+          "answer": "There is no specific 'Contact Manager Edition' defined in the provided facts.",
+          "context_recall": 0.0,
+          "entity_recall": 0.75,
+          "answer_correctness": 0.14285714285714285,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 1,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What is a lightning platform?",
+          "answer": "The Lightning Platform is a platform provided by Salesforce for developing and integrating applications and tools.",
+          "context_recall": 0.0,
+          "entity_recall": 0.5,
+          "answer_correctness": 0.3928571428571429,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 1,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What is the Lightning Experience?",
+          "answer": "The Lightning Experience is a modern user interface for Salesforce that provides enhanced features and usability.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.5357142857142858,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 3,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What is Experience Cloud?",
+          "answer": "Experience Cloud is a Salesforce platform for creating sites and applications with varying support for right-to-left languages.",
+          "context_recall": 1.0,
+          "entity_recall": 0.0,
+          "answer_correctness": 0.7727272727272727,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 13,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What is Experience Cloud?",
+          "answer": "Experience Cloud is a Salesforce platform that allows for the creation of sites and applications with varying support for right-to-left languages.",
+          "context_recall": 1.0,
+          "entity_recall": 0.0,
+          "answer_correctness": 0.8055555555555556,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 13,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What is a controlled setting edition?",
+          "answer": "A Controlled Setting Edition is a version of Salesforce applications that restricts the use of features requiring external connections.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.875,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 7,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What is a release?",
+          "answer": "A release is a new product or feature update from Salesforce identified by season and calendar year.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.8571428571428572,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 8,
+          "total_ref_facts": 8
+        },
+        {
+          "question": "What factors influence permission?",
+          "answer": "The factors influencing permission include the type of permission, user roles, and the organization of permissions into permission sets and permission set groups.",
+          "context_recall": 0.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.37244897959183676,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 13,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What factors influence release?",
+          "answer": "Factors influencing a Release include its association with Salesforce Applications, the features it introduces, and its identification by season and calendar year.",
+          "context_recall": 0.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.84375,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 8,
+          "total_ref_facts": 8
+        },
+        {
+          "question": "What is enterprise edition?",
+          "answer": "Enterprise Edition is a Salesforce Edition that includes comprehensive features and support for larger organizations.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.8448275862068966,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 10,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What is Salesforce Classic?",
+          "answer": "Salesforce Classic is one of the versions of Salesforce software.",
+          "context_recall": 0.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.32407407407407407,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 1,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What is a user?",
+          "answer": "A user is an individual who interacts with the system and has specific permissions.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.7592592592592593,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 11,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What is Chatter Free?",
+          "answer": "Chatter Free is a user license type that does not offer the View All Forecasts permission.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.8333333333333334,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 12,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What is an admin?",
+          "answer": "A user with elevated permissions who can define default items in an app's navigation bar.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.803030303030303,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 18,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What is an identity verification tool?",
+          "answer": "An identity verification tool is a tool used to secure and protect data from unauthorized access.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.53125,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 7,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What factors influence a Salesforce application?",
+          "answer": "Integrations with platforms and utilization of features like CaseFeed, Chat, and Visualforce influence a Salesforce application.",
+          "context_recall": 0.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.3284313725490196,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 1,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What are custom objects?",
+          "answer": "Custom objects are user-defined objects in Salesforce that can store data specific to the organization's needs.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.8125,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 6,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What is a custom field?",
+          "answer": "A custom field is a user-defined field that allows for additional data storage on an object in Salesforce.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.7258064516129032,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 3,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What are unavailable features?",
+          "answer": "Features that are not available due to restrictions or dependencies on external resources.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.7105263157894737,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 5,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What is a license?",
+          "answer": "A license is permissions granted to users that define their access and capabilities within Salesforce.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.763157894736842,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 14,
+          "total_ref_facts": 28
+        },
+        {
+          "question": "What factors influence sandbox organizations?",
+          "answer": "Sandbox organizations are influenced by their role as testing environments in Salesforce, their classification as a type of Organization, and their specific use for testing.",
+          "context_recall": 0.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.7325581395348837,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 20,
+          "total_ref_facts": 28
+        },
+        {
+          "question": "What factors influence a user license?",
+          "answer": "The factors influencing a user license include the specific permissions granted and the capabilities defined for users, as well as the user profile assigned.",
+          "context_recall": 0.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.4127906976744186,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 13,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What is AppExchange?",
+          "answer": "AppExchange is a marketplace for Salesforce applications and solutions.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.6923076923076923,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 16,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What factors influence Salesforce applications?",
+          "answer": "Integrations with tools and utilization of features.",
+          "context_recall": 0.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.2777777777777778,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 1,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What is an object?",
+          "answer": "An object is a data structure that represents a specific entity in the system.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.7352941176470589,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 14,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What is the Salesforce.com Community?",
+          "answer": "The Salesforce.com Community is a platform providing training, support, consulting, events, best practices, and discussion boards for Salesforce users.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.8333333333333333,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 6,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What factors influence a system administrator?",
+          "answer": "A system administrator is influenced by the permissions and responsibilities associated with the Salesforce user license profile.",
+          "context_recall": 0.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.43181818181818177,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 18,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What factors influence a standard user?",
+          "answer": "A standard user is influenced by their Salesforce user license and user profile, which define their permissions and access to records.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.75,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 10,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What is document generation?",
+          "answer": "Document generation is defined as features related to generating documents that are currently unavailable.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.7580645161290323,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 21,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What are Salesforce applications?",
+          "answer": "Salesforce applications are prebuilt applications for CRM that address specific business needs.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.375,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 8,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What is a custom object?",
+          "answer": "A custom object is a user-defined object in Salesforce that allows for the storage of data specific to a business.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.6935483870967741,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 6,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What factors influence a Chatter Free user?",
+          "answer": "The factors that influence a Chatter Free user include their Chatter Free user license type and the associated profile that defines their permissions.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.42021276595744683,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 12,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What factors influence Sandbox Org?",
+          "answer": "There are no specific factors influencing Sandbox Org mentioned in the ontology.",
+          "context_recall": 0.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.024390243902439025,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 10,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What factors influence the Developer Edition?",
+          "answer": "The Developer Edition is influenced by the access to development tools and features for building applications.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.49324324324324326,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 5,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What is Salesforce?",
+          "answer": "Salesforce is a customer relationship management (CRM) platform that provides services like Customer Service, Sales Management, and Marketing.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.45754716981132076,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 1,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What factors influence production organization?",
+          "answer": "The factors influencing a production organization include its deployment of Salesforce, the defined set of licensed users, and the data and applications it encompasses.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.41279069767441856,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 13,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What is document generation?",
+          "answer": "Document generation is a set of features related to generating documents that are currently unavailable.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.7857142857142857,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 21,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What is a Chatter Free User?",
+          "answer": "A Chatter Free User is a profile assigned to users with the Chatter Free user license.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.78,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 12,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What factors influence Salesforce?",
+          "answer": "Salesforce is influenced by its integrations with tools like Gmail and Microsoft Office 365, as well as its utilization of features such as Case Feed, Chat, and Lightning Data.",
+          "context_recall": 0.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.33771929824561403,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 1,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What is a developer edition?",
+          "answer": "A Developer Edition is a Salesforce Edition that offers tools and features for application development.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.7333333333333333,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 18,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What is a Salesforce edition?",
+          "answer": "A Salesforce edition is a version of Salesforce that includes specific features and functionalities.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.4558823529411765,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 12,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What factors influence the AppExchange?",
+          "answer": "There are no specific factors influencing the AppExchange provided in the retrieved facts.",
+          "context_recall": 0.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.05714285714285715,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 5,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What is a user license?",
+          "answer": "A user license defines the permissions or maximum capabilities that a user can have.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.5,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 13,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What are controlled setting products?",
+          "answer": "Salesforce products that provide enhanced control of data flows and restrict features requiring external connections.",
+          "context_recall": 1.0,
+          "entity_recall": 0.5,
+          "answer_correctness": 0.7749999999999999,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 5,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What is the Controlled Setting Edition?",
+          "answer": "The Controlled Setting Edition is a version of Salesforce applications that restricts the use of features requiring external connections.",
+          "context_recall": 0.0,
+          "entity_recall": 0.6666666666666666,
+          "answer_correctness": 0.90625,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 0,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What is attachment?",
+          "answer": "An attachment is files or notes in Salesforce Classic that are transferred.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.42142857142857143,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 20,
+          "total_ref_facts": 22
+        },
+        {
+          "question": "What are adoption apps?",
+          "answer": "Adoption apps are applications designed to assist with the adoption of Salesforce features, some of which may be unavailable.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.78125,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 8,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What is enterprise edition?",
+          "answer": "Enterprise Edition is a Salesforce Edition that includes comprehensive features and support for larger organizations.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.803030303030303,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 10,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What is Lightning Experience?",
+          "answer": "Lightning Experience is a modern user interface for Salesforce that provides enhanced features and usability.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.5357142857142858,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 15,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What factors influence the Salesforce community?",
+          "answer": "The factors that influence the Salesforce community include training, support, consulting, events, best practices, and discussion boards for users.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.3520408163265306,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 7,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What factors influence a chatter moderator user?",
+          "answer": "A Chatter Moderator User is influenced by the Chatter Free user license type and the associated permissions that do not include the View All Forecasts permission.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.37,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 13,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What factors influence the Lightning Platform?",
+          "answer": "The retrieved facts do not specify factors influencing the Lightning Platform.",
+          "context_recall": 0.0,
+          "entity_recall": 0.5,
+          "answer_correctness": 0.08108108108108109,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 1,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What is an organization?",
+          "answer": "An organization is a deployment of Salesforce that has a defined set of licensed users, including all data and applications.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.7894736842105263,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 11,
+          "total_ref_facts": 12
+        },
+        {
+          "question": "What is group edition?",
+          "answer": "Group Edition is a type of SalesforceEdition, which refers to different versions of Salesforce software.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.4224137931034483,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 13,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What is a chatter moderator user?",
+          "answer": "A Chatter Moderator User is a profile assigned to users with the Chatter Free user license.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.3833333333333333,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 13,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What factors influence a user?",
+          "answer": "The factors that influence a user include their type, which defines their permissions, and the user license they hold, which determines their capabilities.",
+          "context_recall": 0.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.4722222222222222,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 11,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What is an add-on license?",
+          "answer": "An AddOnLicense extends functionality at the organization level.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.3833333333333333,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 16,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What is an app?",
+          "answer": "An app is a collection of tabs and functionalities within Salesforce.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.046511627906976744,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 14,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What is Sandbox Org?",
+          "answer": "A Sandbox Org is a testing environment in Salesforce that allows for updates and changes without impacting the live system.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.8125,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 10,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What is a profile?",
+          "answer": "A profile is a user's personal page that displays their followed items and activities.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.45408163265306123,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 16,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What is a CRM feature?",
+          "answer": "A CRM feature is a basic functionality that helps manage customer relationships within Salesforce.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.7162162162162162,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 9,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What is a production organization?",
+          "answer": "A production organization is the live environment where the organization operates.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.74,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 14,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What is the Developer Edition?",
+          "answer": "The Developer Edition is a Salesforce Edition that offers tools and features for application development.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.75,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 5,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What factors influence Salesforce edition?",
+          "answer": "Salesforce edition is influenced by the specific features and functionalities it includes, such as those found in Enterprise Edition, Developer Edition, and the user interfaces like Lightning Experien...",
+          "context_recall": 0.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.45833333333333337,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 12,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What is a Salesforce application?",
+          "answer": "A Salesforce application is a prebuilt CRM application designed to meet specific business needs.",
+          "context_recall": 0.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.375,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 1,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What factors influence a Salesforce admin?",
+          "answer": "Integrations with platforms like Gmail and Microsoft Office 365, features like CaseFeed and Chat, and management of Salesforce accounts influence a Salesforce admin.",
+          "context_recall": 0.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.31521739130434784,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 1,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What is the personal edition?",
+          "answer": "The personal edition is not defined in the provided facts.",
+          "context_recall": 0.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.125,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 1,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What is a data cloud?",
+          "answer": "A data cloud is a cloud service that is unavailable and includes features like data assessment and company recommendations.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.1111111111111111,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 11,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What factors influence enterprise edition?",
+          "answer": "The factors influencing Enterprise Edition include its classification as a Salesforce Edition and the comprehensive features and support it provides for larger organizations.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.8076923076923077,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 10,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What is Einstein AI?",
+          "answer": "EinsteinAI is a suite of AI features within Salesforce, some of which are currently unavailable.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.7758620689655172,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 20,
+          "total_ref_facts": 24
+        },
+        {
+          "question": "What is a data cloud?",
+          "answer": "A data cloud is a cloud service that is unavailable and includes features like data assessment and company recommendations.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.1111111111111111,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 11,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What is the Lightning Platform?",
+          "answer": "The Lightning Platform is a platform provided by Salesforce for developing and integrating applications and tools.",
+          "context_recall": 0.0,
+          "entity_recall": 0.5,
+          "answer_correctness": 0.4318181818181818,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 1,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What is a system administrator?",
+          "answer": "A system administrator is a profile assigned to users with the Salesforce user license.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.4852941176470588,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 18,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What factors influence the Lightning Platform?",
+          "answer": "The retrieved facts do not specify factors that influence the Lightning Platform.",
+          "context_recall": 0.0,
+          "entity_recall": 0.5,
+          "answer_correctness": 0.08333333333333333,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 1,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What are geocodes?",
+          "answer": "Geocodes are geolocation features that are currently unavailable.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.7727272727272727,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 6,
+          "total_ref_facts": 6
+        },
+        {
+          "question": "What factors influence a profile?",
+          "answer": "A profile is influenced by user license types, permissions, and the specific user types it is assigned to.",
+          "context_recall": 0.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.4294871794871795,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 16,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What are custom fields?",
+          "answer": "Custom fields are user-defined fields that allow for additional data storage on an object in Salesforce.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.47580645161290325,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 5,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What are controlled setting products?",
+          "answer": "Salesforce products that provide enhanced control of data flows and restrict features requiring external connections.",
+          "context_recall": 1.0,
+          "entity_recall": 0.5,
+          "answer_correctness": 0.8333333333333334,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 5,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What is a feature?",
+          "answer": "A feature is a specific functionality or capability provided by Salesforce applications.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.675,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 12,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What factors influence a license?",
+          "answer": "The factors influencing a license include the permissions it grants, the UserLicense and UserLicenseType defining user access rights, and the functionality provided by AddOnLicenses.",
+          "context_recall": 0.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.39583333333333337,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 16,
+          "total_ref_facts": 28
+        },
+        {
+          "question": "What is a Salesforce community?",
+          "answer": "A Salesforce community is a platform for training, support, consulting, events, best practices, and discussions among Salesforce users.",
+          "context_recall": 0.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.8225806451612903,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 1,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What is Salesforce Classic?",
+          "answer": "Salesforce Classic is one of the different versions of Salesforce software.",
+          "context_recall": 0.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.33695652173913043,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 1,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What factors influence an object?",
+          "answer": "An object's structure and functionality are influenced by its fields and specific attributes like MasterDetailRelationship and custom elements.",
+          "context_recall": 0.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.31521739130434784,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 14,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What is a standard user?",
+          "answer": "A standard user is a profile assigned to users with the Salesforce user license.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.3790322580645161,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 10,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What is a record?",
+          "answer": "A record is an individual entry of data stored within Salesforce, such as accounts or opportunities.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.7380952380952381,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 12,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What factors influence an app?",
+          "answer": "The factors influencing an app include its type, such as whether it is a SalesforceApplication, AdoptionApp, or Custom App, which reflects its intended purpose and user needs.",
+          "context_recall": 0.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.41666666666666663,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 14,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What are external connections?",
+          "answer": "External connections are classified as an entity.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.0625,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 5,
+          "total_ref_facts": 9
+        },
+        {
+          "question": "What factors influence a permission set?",
+          "answer": "A permission set is influenced by the collection of settings and permissions assigned to users in Salesforce.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.3776595744680851,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 3,
+          "total_ref_facts": 30
+        }
+      ]
+    },
+    "health": {
+      "structural": {
+        "node_count": 1006,
+        "edge_count": 1934,
+        "edge_to_node_ratio": 1.922,
+        "density": 0.0038,
+        "connected_components": 46,
+        "largest_component_coverage": 0.83,
+        "avg_degree": 3.84,
+        "max_degree": 181,
+        "degree_std": 10.07,
+        "orphan_nodes": 0
+      },
+      "semantic": {
+        "unlabeled_nodes_pct": 0.0,
+        "unique_relation_types": 296,
+        "relation_type_entropy": 4.189,
+        "avg_property_count": 2.05,
+        "class_instance_ratio": 0.73
+      },
+      "retrieval": {
+        "index_record_count": 2940,
+        "hyperedge_count": 1006,
+        "facts_per_node": 2.92,
+        "hyperedge_coverage": 1.0
+      },
+      "overall_score": 74.2,
+      "badge": "Needs Attention",
+      "kb_id": "8c201c75bb2348c594b3d2631f50bb62"
+    },
+    "report_url": "",
+    "num_questions": 100,
+    "score_deltas": {},
+    "regressions": []
+  }
+]

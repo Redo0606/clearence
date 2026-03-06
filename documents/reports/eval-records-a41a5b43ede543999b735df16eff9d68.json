@@ -1,0 +1,1057 @@
+[
+  {
+    "id": "a900420b-4fdc-4f27-a808-1cf800add67b",
+    "kb_id": "a41a5b43ede543999b735df16eff9d68",
+    "kb_name": "Erilia",
+    "timestamp": "2026-03-06T14:42:58.578012+00:00",
+    "scores": {
+      "context_recall": 0.66,
+      "entity_recall": 1.0,
+      "answer_correctness": 0.6518912597282417,
+      "faithfulness": 0.985,
+      "answer_relevancy": 0.67,
+      "retrieval_coverage": 1.0,
+      "retrieval_failure_rate": 0.0,
+      "fact_recall": 0.7678571428571429,
+      "entity_coverage": 1.0,
+      "faithfulness_claim_level": 0.7733333333333331,
+      "context_precision": 0.84,
+      "per_question": [
+        {
+          "question": "How is the administrator related to the top bar?",
+          "answer": "The administrator has access to the top bar and can modify it if they are a level 3 administrator.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.7692307692307692,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 13,
+          "total_ref_facts": 16
+        },
+        {
+          "question": "What is Excel?",
+          "answer": "Excel is an export file format available for product sheets.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.7608695652173912,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 6,
+          "total_ref_facts": 6
+        },
+        {
+          "question": "What factors influence Excel?",
+          "answer": "Excel is influenced by its role as an export file format for product sheets, its ability to be imported by products, and its use in PDP.",
+          "context_recall": 0.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.8125,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 6,
+          "total_ref_facts": 6
+        },
+        {
+          "question": "What are languages?",
+          "answer": "Languages are specific languages included when exporting a page.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.5108695652173914,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 9,
+          "total_ref_facts": 10
+        },
+        {
+          "question": "What is an administrator?",
+          "answer": "An administrator is a user with elevated permissions to modify system settings and content.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.8076923076923077,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 10,
+          "total_ref_facts": 10
+        },
+        {
+          "question": "How is attribute related to header?",
+          "answer": "Attributes are displayed in headers and are part of product sheets.",
+          "context_recall": 0.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.3333333333333333,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 13,
+          "total_ref_facts": 15
+        },
+        {
+          "question": "What is a keyword?",
+          "answer": "A keyword is a term used to describe or categorize content for better searchability.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.7758620689655172,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 4,
+          "total_ref_facts": 5
+        },
+        {
+          "question": "What factors influence Zoom?",
+          "answer": "Zoom is influenced by its adjustment of the top bar, enhancement of the user, and its effect on attributes.",
+          "context_recall": 0.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.6944444444444444,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 7,
+          "total_ref_facts": 7
+        },
+        {
+          "question": "What factors influence an attribute?",
+          "answer": "No specific factors influencing an attribute are provided in the ontology.",
+          "context_recall": 0.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.07407407407407408,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 5,
+          "total_ref_facts": 7
+        },
+        {
+          "question": "What is a benefit sheet?",
+          "answer": "A benefit sheet is a document that provides instructions or information on a specific topic.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.7962962962962963,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 14,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What is a campaign?",
+          "answer": "A campaign is a planned series of actions or activities aimed at promoting products, which can include catalogs.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.5394736842105263,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 10,
+          "total_ref_facts": 12
+        },
+        {
+          "question": "What factors influence a user?",
+          "answer": "User type and Profile attributes.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.2833333333333333,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 2,
+          "total_ref_facts": 5
+        },
+        {
+          "question": "What are products?",
+          "answer": "Products are entities managed in a Product Information Management system, represented in product sheets.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.35,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 2,
+          "total_ref_facts": 3
+        },
+        {
+          "question": "How is PIM related to itself?",
+          "answer": "PIM is a Product Information Management system that manages product data and modifies product sheets.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.8478260869565217,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 5,
+          "total_ref_facts": 5
+        },
+        {
+          "question": "What factors influence a campaign?",
+          "answer": "A campaign is influenced by its planned actions, marketing initiatives like launch campaigns, and resources such as benefit sheets and documents.",
+          "context_recall": 0.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.4375,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 9,
+          "total_ref_facts": 12
+        },
+        {
+          "question": "How is Zoom related to itself?",
+          "answer": "Zoom is related to itself as it is defined as both a function and a feature that allows users to change the scale of the user interface for better visibility.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.8243243243243243,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 7,
+          "total_ref_facts": 7
+        },
+        {
+          "question": "What factors influence an administrator?",
+          "answer": "An administrator is influenced by their elevated permissions, access to the top bar, and specific roles such as managing the '99 Administration' tab.",
+          "context_recall": 0.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.7727272727272727,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 10,
+          "total_ref_facts": 10
+        },
+        {
+          "question": "What is the service client for other brands?",
+          "answer": "Service Client of other brands is an entity that can modify product sheets.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.8333333333333334,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 10,
+          "total_ref_facts": 11
+        },
+        {
+          "question": "What factors influence visual?",
+          "answer": "The ontology does not specify factors that influence visual.",
+          "context_recall": 0.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.06451612903225806,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 9,
+          "total_ref_facts": 9
+        },
+        {
+          "question": "What is the SIS service client?",
+          "answer": "The SIS Service Client is an Entity that can modify the product sheet.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.8809523809523809,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 4,
+          "total_ref_facts": 4
+        },
+        {
+          "question": "How is attribute related to attribute?",
+          "answer": "The attribute is related to itself as it is defined as a type of attribute that must appear in the header for each product sheet.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.5357142857142858,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 5,
+          "total_ref_facts": 7
+        },
+        {
+          "question": "What is a document?",
+          "answer": "A document is a written or printed resource that can be attached to a PDP.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.48333333333333334,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 8,
+          "total_ref_facts": 9
+        },
+        {
+          "question": "What is search?",
+          "answer": "Search is the process of locating an existing product sheet using filters and navigation tools.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.7857142857142858,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 8,
+          "total_ref_facts": 9
+        },
+        {
+          "question": "How is Zoom related to features?",
+          "answer": "Zoom is a type of Feature that enhances user visibility by allowing scale adjustments of the user interface.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.7285714285714286,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 9,
+          "total_ref_facts": 11
+        },
+        {
+          "question": "What is a draft?",
+          "answer": "A draft is a product sheet whose content is still in progress, not validated, and not published.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.8703703703703703,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 4,
+          "total_ref_facts": 5
+        },
+        {
+          "question": "What is status?",
+          "answer": "Status is the state of a product sheet, indicating whether it is in draft or validated form.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.8333333333333333,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 2,
+          "total_ref_facts": 4
+        },
+        {
+          "question": "What factors influence PDP?",
+          "answer": "The factors influencing PDP include the ability to attach multiple assets, the capacity for bulk enrichment, and the types of assets it can contain.",
+          "context_recall": 0.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.4318181818181818,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 15,
+          "total_ref_facts": 22
+        },
+        {
+          "question": "How is PIM related to the product sheet?",
+          "answer": "PIM is related to the product sheet as it manages the product data that is displayed and organized in the product sheet, which is a type of Catalog.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.75,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 6,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "How is an administrator related to a user?",
+          "answer": "An Administrator is a subclass of User, indicating that all Administrators are Users with elevated permissions.",
+          "context_recall": 0.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.7,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 13,
+          "total_ref_facts": 14
+        },
+        {
+          "question": "What is IT support?",
+          "answer": "IT support refers to the IT/Support team that can view and modify product sheets, assisting users and supporting business units.",
+          "context_recall": 0.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.7307692307692307,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 8,
+          "total_ref_facts": 8
+        },
+        {
+          "question": "What factors influence a header?",
+          "answer": "The factors influencing a header include its type (Keyword or introductory section) and the required attributes that must be displayed.",
+          "context_recall": 0.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.4318181818181819,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 9,
+          "total_ref_facts": 9
+        },
+        {
+          "question": "What is an asset?",
+          "answer": "An asset is a resource that can be attached to a PDP.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.4423076923076923,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 20,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What is the top bar?",
+          "answer": "The top bar is a part of the user interface where buttons are located, which may overlap access to languages.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.7857142857142858,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 4,
+          "total_ref_facts": 8
+        },
+        {
+          "question": "What is a feature?",
+          "answer": "A feature is a distinct functionality or capability within a software application.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.7333333333333334,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 2,
+          "total_ref_facts": 5
+        },
+        {
+          "question": "What factors influence a page?",
+          "answer": "The type of the page and the presence of elements like buttons and tabs influence a page.",
+          "context_recall": 0.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.3475609756097561,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 5,
+          "total_ref_facts": 8
+        },
+        {
+          "question": "What is the Quick Actions menu?",
+          "answer": "The Quick Actions menu is a menu option to create a new launch campaign.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.7857142857142858,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 6,
+          "total_ref_facts": 6
+        },
+        {
+          "question": "What is a locale?",
+          "answer": "A locale is a specific language or regional setting used for content display and export.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.8913043478260869,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 2,
+          "total_ref_facts": 2
+        },
+        {
+          "question": "What factors influence the search thing domain?",
+          "answer": "The factors influencing the Search Thing Domain include its function to allow product sheet searches, its classification as a search page, its relationship with Business Units, and support from IT/Sup...",
+          "context_recall": 0.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.6379310344827587,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 12,
+          "total_ref_facts": 12
+        },
+        {
+          "question": "What is mandatory information?",
+          "answer": "Mandatory information is a type of Entity that is required for the product sheet.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.8999999999999999,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 7,
+          "total_ref_facts": 7
+        },
+        {
+          "question": "How is a button related to a feature?",
+          "answer": "A button is part of a feature in a software application.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.6851851851851851,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 18,
+          "total_ref_facts": 20
+        },
+        {
+          "question": "What are catalog modifications?",
+          "answer": "Catalog modifications are changes made to a product or catalog that can affect its display or attributes.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.803030303030303,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 6,
+          "total_ref_facts": 7
+        },
+        {
+          "question": "What is PIM?",
+          "answer": "PIM is a Product Information Management system used to manage product data.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.8478260869565217,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 5,
+          "total_ref_facts": 5
+        },
+        {
+          "question": "How is an attribute related to a product sheet?",
+          "answer": "An attribute is related to a product sheet as a necessary characteristic that must be included in its header.",
+          "context_recall": 0.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.7333333333333334,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 8,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What factors influence the top bar?",
+          "answer": "The factors influencing the top bar include its definition, its function as a part of the user interface, and its composition of buttons.",
+          "context_recall": 0.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.42073170731707316,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 4,
+          "total_ref_facts": 8
+        },
+        {
+          "question": "What is a file?",
+          "answer": "A file is a digital document that can be used for importing or exporting data.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.8076923076923077,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 6,
+          "total_ref_facts": 6
+        },
+        {
+          "question": "What is a PDF?",
+          "answer": "A PDF is an export file format available for product sheets.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.8181818181818181,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 5,
+          "total_ref_facts": 5
+        },
+        {
+          "question": "What is 99 administration?",
+          "answer": "99 Administration is a feature that allows a level 3 administrator to modify the '99 Administration' tab.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.47580645161290325,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 12,
+          "total_ref_facts": 13
+        },
+        {
+          "question": "What is validated?",
+          "answer": "Validated means that texts and media have been reviewed and approved, making the sheet ready for publication or translation.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.8666666666666667,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 4,
+          "total_ref_facts": 6
+        },
+        {
+          "question": "What is a video?",
+          "answer": "A video is a recording that can be attached to a PDP.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.43181818181818177,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 6,
+          "total_ref_facts": 6
+        },
+        {
+          "question": "What is export?",
+          "answer": "Export is an entity type associated with file formats like Excel and PDF for product sheets.",
+          "context_recall": 0.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.375,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 1,
+          "total_ref_facts": 2
+        },
+        {
+          "question": "What is a market?",
+          "answer": "A market is an area that can view all product sheets but is only authorized to modify those within its market scope.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.8888888888888888,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 8,
+          "total_ref_facts": 14
+        },
+        {
+          "question": "What is data?",
+          "answer": "Data is an Entity.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.3611111111111111,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 7,
+          "total_ref_facts": 7
+        },
+        {
+          "question": "What factors influence video?",
+          "answer": "Video is influenced by its ability to be attached to a PDP and included in a campaign.",
+          "context_recall": 0.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.5543478260869565,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 5,
+          "total_ref_facts": 6
+        },
+        {
+          "question": "What factors influence an image?",
+          "answer": "The type of the image (Asset and Image) and its associations with product sheets and PDPs influence it.",
+          "context_recall": 0.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.6351351351351351,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 10,
+          "total_ref_facts": 10
+        },
+        {
+          "question": "What is visual?",
+          "answer": "Visual is a type of asset that includes images or graphics.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.8333333333333333,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 9,
+          "total_ref_facts": 9
+        },
+        {
+          "question": "How is Zoom related to the top bar?",
+          "answer": "Zoom adjusts the top bar.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.39285714285714285,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 12,
+          "total_ref_facts": 14
+        },
+        {
+          "question": "What is Zoom?",
+          "answer": "Zoom is a function that allows users to change the scale of the user interface for better visibility.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.8225806451612903,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 7,
+          "total_ref_facts": 7
+        },
+        {
+          "question": "What is a search thing domain?",
+          "answer": "A Search Thing Domain is a page that allows users to find an existing product sheet using filters and navigation tools.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.7608695652173914,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 10,
+          "total_ref_facts": 12
+        },
+        {
+          "question": "What is a business unit (BU)?",
+          "answer": "A Business Unit (BU) is a unit that can view all product sheets but can only modify those belonging to its own BU.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.8421052631578947,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 8,
+          "total_ref_facts": 8
+        },
+        {
+          "question": "What factors influence PIM?",
+          "answer": "PIM is influenced by its modification of the product sheet and its management of the market.",
+          "context_recall": 0.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.74,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 5,
+          "total_ref_facts": 5
+        },
+        {
+          "question": "What is a button?",
+          "answer": "A button is a clickable element in the user interface that may not work for all users due to permission restrictions.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.5743243243243243,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 15,
+          "total_ref_facts": 16
+        },
+        {
+          "question": "What factors influence status?",
+          "answer": "The factors influencing status include whether the product sheet is in draft or validated form and the permissions of users, particularly level 3 administrators.",
+          "context_recall": 0.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.3970588235294118,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 2,
+          "total_ref_facts": 4
+        },
+        {
+          "question": "What is a thing?",
+          "answer": "A Thing is a root concept classified as a Class, related to product sheets.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.7068965517241379,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 8,
+          "total_ref_facts": 10
+        },
+        {
+          "question": "What is a launch campaign?",
+          "answer": "A launch campaign is a marketing initiative that can be copied and referenced in another campaign.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.4391891891891892,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 11,
+          "total_ref_facts": 12
+        },
+        {
+          "question": "What factors influence the draft?",
+          "answer": "The factors influencing the draft include its current status of being in progress and the ability to transition to a validated state.",
+          "context_recall": 0.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.6944444444444444,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 4,
+          "total_ref_facts": 5
+        },
+        {
+          "question": "How is Zoom related to a user?",
+          "answer": "Zoom enhances the user by allowing them to change the scale of the user interface for better visibility.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.8125,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 10,
+          "total_ref_facts": 11
+        },
+        {
+          "question": "What is the refresh button?",
+          "answer": "The refresh button is a button on the page that allows users to refresh the content displayed, specifically to see catalog modifications.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.5833333333333333,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 14,
+          "total_ref_facts": 16
+        },
+        {
+          "question": "What is a user?",
+          "answer": "An individual who utilizes a system or service.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.6851851851851851,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 2,
+          "total_ref_facts": 5
+        },
+        {
+          "question": "How is a button related to another button?",
+          "answer": "A button is related to another button as the Refresh button is a specific type of Button.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.6111111111111112,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 15,
+          "total_ref_facts": 16
+        },
+        {
+          "question": "What factors influence a level 3 administrator?",
+          "answer": "A level 3 administrator is influenced by their permissions to manage the '99 Administration' tab, their ability to modify the top bar, and their permissions related to buttons.",
+          "context_recall": 0.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.7926829268292683,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 10,
+          "total_ref_facts": 10
+        },
+        {
+          "question": "How is a button related to a user?",
+          "answer": "A button is used by a user, but may have permission restrictions affecting its functionality.",
+          "context_recall": 0.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.6,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 18,
+          "total_ref_facts": 20
+        },
+        {
+          "question": "What factors influence 99 administration?",
+          "answer": "The factors influencing 99 Administration are its type as a feature, the requirement for a level 3 administrator to edit it, and its accessibility through the top bar.",
+          "context_recall": 0.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.7619047619047619,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 12,
+          "total_ref_facts": 13
+        },
+        {
+          "question": "How is Zoom related to attribute?",
+          "answer": "Zoom affects Attribute.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.6111111111111112,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 12,
+          "total_ref_facts": 13
+        },
+        {
+          "question": "What is the relationships tab?",
+          "answer": "The Relationships tab is a section in the campaign where users can add products to the catalog.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.8478260869565217,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 16,
+          "total_ref_facts": 17
+        },
+        {
+          "question": "What factors influence a document?",
+          "answer": "The factors influencing a document include its type (Document, Asset, File), its attachment capability to a PDP, inclusion in a Campaign, and its status as a draft.",
+          "context_recall": 0.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.4444444444444444,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 7,
+          "total_ref_facts": 9
+        },
+        {
+          "question": "What factors influence validation?",
+          "answer": "The factors influencing validation include the review and approval of texts and media, and the transition of the product sheet's status from draft to validated.",
+          "context_recall": 0.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.35,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 0,
+          "total_ref_facts": 0
+        },
+        {
+          "question": "How is a button related to a level 3 administrator?",
+          "answer": "A button is accessible to a level 3 administrator due to their elevated permissions.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.375,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 20,
+          "total_ref_facts": 25
+        },
+        {
+          "question": "What is a header?",
+          "answer": "A header is an introductory section of a document or webpage.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.6666666666666667,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 9,
+          "total_ref_facts": 9
+        },
+        {
+          "question": "What factors influence an asset?",
+          "answer": "An asset is influenced by its type, description, and its association with a PDP or product sheet.",
+          "context_recall": 0.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.4342105263157895,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 20,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What is a profile?",
+          "answer": "A profile is a user-specific configuration that determines the attributes displayed in the system.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.8478260869565217,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 3,
+          "total_ref_facts": 6
+        },
+        {
+          "question": "What is a catalog?",
+          "answer": "A catalog is a collection of products organized for display or sale.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.7222222222222222,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 3,
+          "total_ref_facts": 5
+        },
+        {
+          "question": "What is the assets tab?",
+          "answer": "The Assets tab is a section in a benefit sheet for adding various assets, modifying the product sheet, and is part of the PDP.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.7424242424242424,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 15,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What is localization?",
+          "answer": "Localization is the process of adapting content to meet the language, cultural, and other requirements of a specific target market.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.8636363636363636,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 2,
+          "total_ref_facts": 2
+        },
+        {
+          "question": "What is a product sheet?",
+          "answer": "A product sheet is a collection where products are displayed and managed.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.6153846153846154,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 7,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What is a PDP?",
+          "answer": "A PDP is a platform or document where assets can be attached, used for content production and can be enriched in bulk.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.6951219512195121,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 15,
+          "total_ref_facts": 22
+        },
+        {
+          "question": "What factors influence a button?",
+          "answer": "The factors that influence a button include its type, permission levels required for access, and its functional description.",
+          "context_recall": 0.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.6590909090909091,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 15,
+          "total_ref_facts": 16
+        },
+        {
+          "question": "What is an attribute?",
+          "answer": "An attribute is a characteristic that must appear in the header for each product sheet.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.9210526315789473,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 5,
+          "total_ref_facts": 7
+        },
+        {
+          "question": "What factors influence a feature?",
+          "answer": "Factors that influence a feature include its type, associated attributes, and the user-specific profile that determines displayed attributes.",
+          "context_recall": 0.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.35,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 3,
+          "total_ref_facts": 5
+        },
+        {
+          "question": "What factors influence a keyword?",
+          "answer": "Factors that influence a keyword include its type as a Class, its association with elements like Visual, Header, and Asset, and its role in enhancing searchability.",
+          "context_recall": 0.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.7307692307692308,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 4,
+          "total_ref_facts": 5
+        },
+        {
+          "question": "What is a level 3 administrator?",
+          "answer": "A level 3 administrator is a user with elevated permissions to manage and modify the '99 Administration' tab.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.78125,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 10,
+          "total_ref_facts": 10
+        },
+        {
+          "question": "What is a guide?",
+          "answer": "A guide is a document that provides instructions or information on a specific topic.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.8181818181818181,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 1,
+          "total_ref_facts": 2
+        },
+        {
+          "question": "What factors influence a business unit (BU)?",
+          "answer": "A business unit (BU) is influenced by its ability to modify product sheets, its utilization of the Search Thing Domain, and its requirement for IT/Support.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.5290697674418605,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 8,
+          "total_ref_facts": 8
+        },
+        {
+          "question": "What is modification?",
+          "answer": "Modification is defined as changes made to a product or catalog that can affect its display or attributes.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.8333333333333333,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 4,
+          "total_ref_facts": 4
+        },
+        {
+          "question": "How is a profile related to 99 administration?",
+          "answer": "A profile determines the attributes displayed in the system, which includes the 99 Administration feature.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.8448275862068966,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 15,
+          "total_ref_facts": 18
+        },
+        {
+          "question": "What is an image?",
+          "answer": "An image is a visual representation that can be associated with a product sheet.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.7592592592592593,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 10,
+          "total_ref_facts": 10
+        },
+        {
+          "question": "What factors influence languages?",
+          "answer": "Languages are influenced by their type as Locale, their inclusion in export processes, their relation to product sheets, and their usage in draft and validated content.",
+          "context_recall": 0.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.7195121951219512,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 9,
+          "total_ref_facts": 10
+        },
+        {
+          "question": "What factors influence the market?",
+          "answer": "The factors influencing the market include its viewing and modification rights over product sheets and its capability to display images.",
+          "context_recall": 0.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.3214285714285714,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 9,
+          "total_ref_facts": 14
+        },
+        {
+          "question": "What factors influence IT support?",
+          "answer": "The factors influencing IT support include the ability to view and modify product sheets, assistance to the Search Thing Domain, and support for the Business Unit (BU).",
+          "context_recall": 0.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.7916666666666666,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 8,
+          "total_ref_facts": 8
+        },
+        {
+          "question": "What factors influence a file?",
+          "answer": "A file is influenced by its type, which determines its use for importing or exporting data.",
+          "context_recall": 0.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.5,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 5,
+          "total_ref_facts": 6
+        },
+        {
+          "question": "What is a page?",
+          "answer": "A page is a digital document or interface that can display content and features.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.6842105263157895,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 5,
+          "total_ref_facts": 8
+        }
+      ]
+    },
+    "health": {
+      "structural": {
+        "node_count": 53,
+        "edge_count": 131,
+        "edge_to_node_ratio": 2.472,
+        "density": 0.0951,
+        "connected_components": 1,
+        "largest_component_coverage": 1.0,
+        "avg_degree": 4.94,
+        "max_degree": 26,
+        "degree_std": 4.21,
+        "orphan_nodes": 0
+      },
+      "semantic": {
+        "unlabeled_nodes_pct": 0.0,
+        "unique_relation_types": 66,
+        "relation_type_entropy": 5.246,
+        "avg_property_count": 2.08,
+        "class_instance_ratio": 0.77
+      },
+      "retrieval": {
+        "index_record_count": 184,
+        "hyperedge_count": 53,
+        "facts_per_node": 3.47,
+        "hyperedge_coverage": 1.0
+      },
+      "overall_score": 100.0,
+      "badge": "Healthy",
+      "kb_id": "a41a5b43ede543999b735df16eff9d68"
+    },
+    "report_url": "",
+    "num_questions": 100,
+    "score_deltas": {},
+    "regressions": []
+  }
+]
