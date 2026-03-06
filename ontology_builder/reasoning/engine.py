@@ -63,7 +63,7 @@ def _apply_transitive_subsumption(graph: OntologyGraph, trace: list[InferenceSte
     added = 0
     for u, v in new_edges:
         if not graph.has_edge(u, v, "subClassOf"):
-            graph.add_relation(u, "subClassOf", v)
+            graph.add_relation(u, "subClassOf", v, provenance={"origin": "inference_owl", "rule": "transitive_subsumption"})
             step = InferenceStep(
                 rule=RuleType.TRANSITIVE_SUBSUMPTION,
                 description=f"{u} subClassOf {v} (via transitive subsumption chain)",
@@ -91,7 +91,7 @@ def _apply_inheritance(graph: OntologyGraph, trace: list[InferenceStep]) -> int:
     for instance, cls in type_edges:
         for super_cls in subclass_map.get(cls, []):
             if not graph.has_edge(instance, super_cls, "type"):
-                graph.add_relation(instance, "type", super_cls)
+                graph.add_relation(instance, "type", super_cls, provenance={"origin": "inference_owl", "rule": "inheritance"})
                 step = InferenceStep(
                     rule=RuleType.INHERITANCE,
                     description=f"{instance} type {super_cls} (inherited via {cls} subClassOf {super_cls})",
@@ -115,7 +115,7 @@ def _apply_domain_range_propagation(graph: OntologyGraph, trace: list[InferenceS
             for u, v, d in list(g.edges(data=True)):
                 if d.get("relation") == prop_name:
                     if not graph.has_edge(u, domain_cls, "type"):
-                        graph.add_relation(u, "type", domain_cls)
+                        graph.add_relation(u, "type", domain_cls, provenance={"origin": "inference_owl", "rule": "domain_propagation"})
                         trace.append(InferenceStep(
                             rule=RuleType.DOMAIN_PROPAGATION,
                             description=f"{u} type {domain_cls} (domain of {prop_name})",
@@ -128,7 +128,7 @@ def _apply_domain_range_propagation(graph: OntologyGraph, trace: list[InferenceS
             for u, v, d in list(g.edges(data=True)):
                 if d.get("relation") == prop_name:
                     if not graph.has_edge(v, range_cls, "type"):
-                        graph.add_relation(v, "type", range_cls)
+                        graph.add_relation(v, "type", range_cls, provenance={"origin": "inference_owl", "rule": "range_propagation"})
                         trace.append(InferenceStep(
                             rule=RuleType.RANGE_PROPAGATION,
                             description=f"{v} type {range_cls} (range of {prop_name})",
@@ -182,7 +182,7 @@ def _apply_transitive_closure(graph: OntologyGraph, relation_names: set[str], tr
         new_edges = set(closure.edges()) - set(temp.edges())
         for u, v in new_edges:
             if not g.has_edge(u, v):
-                graph.add_relation(u, r, v)
+                graph.add_relation(u, r, v, provenance={"origin": "inference_owl", "rule": "transitive_closure"})
                 trace.append(InferenceStep(
                     rule=RuleType.TRANSITIVE_CLOSURE,
                     description=f"{u} {r} {v} (transitive closure)",
@@ -201,13 +201,58 @@ def _apply_symmetric_closure(graph: OntologyGraph, relation_names: set[str], tra
         if r in relation_names and not g.has_edge(v, u):
             to_add.append((v, u, r))
     for a, b, r in to_add:
-        graph.add_relation(a, r, b)
+        graph.add_relation(a, r, b, provenance={"origin": "inference_owl", "rule": "symmetric_closure"})
         trace.append(InferenceStep(
             rule=RuleType.SYMMETRIC_CLOSURE,
             description=f"{a} {r} {b} (symmetric of {b} {r} {a})",
             source=a, relation=r, target=b,
         ))
     return len(to_add)
+
+
+def _apply_inverse_propagation(
+    graph: OntologyGraph,
+    inverse_pairs: list[tuple[str, str]],
+    trace: list[InferenceStep],
+) -> int:
+    """For each (rel1, rel2) inverse pair, add (B, rel2, A) for every (A, rel1, B)."""
+    g = graph.get_graph()
+    added = 0
+    inverse_map: dict[str, str] = {}
+    for r1, r2 in inverse_pairs:
+        inverse_map[r1] = r2
+        inverse_map[r2] = r1
+    for u, v, d in list(g.edges(data=True)):
+        r = d.get("relation")
+        inv = inverse_map.get(r)
+        if not inv:
+            continue
+        if not graph.has_edge(v, u, inv):
+            graph.add_relation(v, inv, u, provenance={"origin": "inference_owl", "rule": "inverse_propagation"})
+            trace.append(InferenceStep(
+                rule=RuleType.INVERSE_PROPAGATION,
+                description=f"{v} {inv} {u} (inverse of {u} {r} {v})",
+                source=v, relation=inv, target=u,
+            ))
+            added += 1
+    return added
+
+
+def _axiom_relation_sets(graph: OntologyGraph) -> tuple[set[str], set[str], list[tuple[str, str]]]:
+    """Scan graph._axioms for transitivity, symmetry, inverse. Return (transitive, symmetric, inverse_pairs)."""
+    transitive: set[str] = set()
+    symmetric: set[str] = set()
+    inverse_pairs: list[tuple[str, str]] = []
+    for axiom in graph.axioms:
+        atype = axiom.get("axiom_type") or ""
+        entities = axiom.get("entities") or []
+        if atype == "transitivity" and len(entities) >= 1:
+            transitive.add(entities[0])
+        elif atype == "symmetry" and len(entities) >= 1:
+            symmetric.add(entities[0])
+        elif atype == "inverse" and len(entities) >= 2:
+            inverse_pairs.append((entities[0], entities[1]))
+    return transitive, symmetric, inverse_pairs
 
 
 # ---------------------------------------------------------------------------
@@ -217,12 +262,19 @@ def _apply_symmetric_closure(graph: OntologyGraph, relation_names: set[str], tra
 def run_inference(graph: OntologyGraph, subject: str | None = None) -> ReasoningResult:
     """Apply all OWL 2 RL rules until fixpoint (no new inferences).
 
+    Auto-detects transitive/symmetric relations from graph axioms; adds inverse propagation.
     Returns a ``ReasoningResult`` with counts, violations, and full trace.
     """
     result = ReasoningResult()
 
     transitive = set(TRANSITIVE_RELATIONS)
     symmetric = set(SYMMETRIC_RELATIONS)
+    inverse_pairs: list[tuple[str, str]] = []
+    # Scan axioms for transitivity, symmetry, inverse (do not mutate module-level constants)
+    ax_trans, ax_sym, inverse_pairs = _axiom_relation_sets(graph)
+    transitive.update(ax_trans)
+    symmetric.update(ax_sym)
+
     if subject:
         subject_lower = subject.lower().strip()
         for key, rules in DOMAIN_RULES.items():
@@ -241,16 +293,35 @@ def run_inference(graph: OntologyGraph, subject: str | None = None) -> Reasoning
 
     for iteration in range(1, MAX_REASONING_ITERATIONS + 1):
         added_this_round = 0
-        added_this_round += _apply_transitive_subsumption(graph, trace)
-        added_this_round += _apply_inheritance(graph, trace)
-        added_this_round += _apply_domain_range_propagation(graph, trace)
-        added_this_round += _apply_transitive_closure(graph, transitive, trace)
-        added_this_round += _apply_symmetric_closure(graph, symmetric, trace)
+        n = _apply_transitive_subsumption(graph, trace)
+        added_this_round += n
+        if n:
+            logger.debug("[Reasoning] Iteration %d — transitive_subsumption: %d", iteration, n)
+        n = _apply_inheritance(graph, trace)
+        added_this_round += n
+        if n:
+            logger.debug("[Reasoning] Iteration %d — inheritance: %d", iteration, n)
+        n = _apply_domain_range_propagation(graph, trace)
+        added_this_round += n
+        if n:
+            logger.debug("[Reasoning] Iteration %d — domain_range: %d", iteration, n)
+        n = _apply_transitive_closure(graph, transitive, trace)
+        added_this_round += n
+        if n:
+            logger.debug("[Reasoning] Iteration %d — transitive_closure: %d", iteration, n)
+        n = _apply_symmetric_closure(graph, symmetric, trace)
+        added_this_round += n
+        if n:
+            logger.debug("[Reasoning] Iteration %d — symmetric_closure: %d", iteration, n)
+        n = _apply_inverse_propagation(graph, inverse_pairs, trace)
+        added_this_round += n
+        if n:
+            logger.debug("[Reasoning] Iteration %d — inverse_propagation: %d", iteration, n)
 
         result.inferred_edges += added_this_round
         result.iterations = iteration
 
-        logger.debug("[Reasoning] Iteration %d — %d new edges", iteration, added_this_round)
+        logger.debug("[Reasoning] Iteration %d — %d new edges total", iteration, added_this_round)
 
         if added_this_round == 0:
             break

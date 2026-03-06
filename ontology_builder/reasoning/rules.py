@@ -61,6 +61,7 @@ class RuleType(str, Enum):
     DISJOINTNESS_CHECK = "disjointness_check"
     SYMMETRIC_CLOSURE = "symmetric_closure"
     TRANSITIVE_CLOSURE = "transitive_closure"
+    INVERSE_PROPAGATION = "inverse_propagation"
 
 
 @dataclass(frozen=True)
