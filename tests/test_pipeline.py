@@ -12,7 +12,7 @@ from ontology_builder.storage.graphdb import OntologyGraph
 
 def test_chunker_returns_expected_number_of_chunks():
     text = "a" * 3000
-    chunks = chunk_text(text, size=1200, overlap=200)
+    chunks = chunk_text(text, size=1200, overlap=200, mode="fixed")
     assert len(chunks) >= 2
     assert all(len(c) <= 1200 for c in chunks)
     # With size=1200, overlap=200, first chunk 0-1200, second starts at 1000
@@ -27,7 +27,7 @@ def test_chunker_empty_returns_empty():
 
 def test_chunker_single_chunk():
     text = "short"
-    chunks = chunk_text(text, size=100, overlap=20)
+    chunks = chunk_text(text, size=100, overlap=20, mode="fixed")
     assert len(chunks) == 1
     assert chunks[0] == "short"
 
