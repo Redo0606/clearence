@@ -71,7 +71,7 @@ The system comprises two main flows:
 
 \begin{enumerate}
     \item \textbf{PDF-to-OWL flow} (\texttt{app/}): Lightweight path for PDF $\rightarrow$ OWL/Turtle/JSON-LD via rdflib. Single-shot LLM extraction, no pipeline.
-    \item \textbf{Theory-grounded pipeline} (\texttt{ontology\_builder/}): Full 6-step pipeline with sequential extraction, taxonomy building, graph merge, OWL~2~RL reasoning, and ontology-grounded RAG.
+    \item \textbf{Theory-grounded pipeline} (\texttt{ontology\_builder/}): Full 7-step pipeline with sequential extraction, taxonomy building, graph merge, relation inference, OWL~2~RL reasoning, repair, and ontology-grounded RAG.
 \end{enumerate}
 
 \subsection{Layered Design}
@@ -106,7 +106,7 @@ app/                          # PDF -> OWL flow
 
 ontology_builder/             # Theory-grounded pipeline
 ├── pipeline/                 # Load, chunk, extract, taxonomy, merge, infer
-├── ontology/                 # Schema, canonicalizer, rules
+├── ontology/                 # Schema, canonicalizer, candidate, rules
 ├── llm/                      # Unified client, LM Studio, JSON repair
 ├── storage/                  # OntologyGraph, HyperGraph, graph_store
 ├── reasoning/                # OWL 2 RL engine
@@ -128,11 +128,12 @@ ontology_builder/             # Theory-grounded pipeline
 \textbf{Decision:} Adopt a sequential 6-step pipeline:
 \begin{enumerate}
     \item \textbf{Load} --- \texttt{load\_document()} for PDF, DOCX, TXT, MD
-    \item \textbf{Chunk} --- \texttt{chunk\_text()} with configurable overlap
+    \item \textbf{Chunk} --- \texttt{chunk\_text()} sentence-boundary (semantic) or fixed-window; optional section detection (Markdown headings, DOCX)
     \item \textbf{Extract} --- 3-stage sequential: classes $\rightarrow$ instances $\rightarrow$ relations + axioms (or legacy single-shot)
-    \item \textbf{Merge} --- \texttt{update\_graph()} with canonicalization
-    \item \textbf{Inference} --- LLM relation inference (optional)
-    \item \textbf{Reasoning} --- OWL~2~RL fixpoint (optional)
+    \item \textbf{Merge} --- \texttt{update\_graph()} with hybrid canonicalization (exact $\rightarrow$ token overlap $\rightarrow$ embedding) and relation taxonomy normalization
+    \item \textbf{Inference} --- LLM relation inference with EntityCandidate profiles and co-occurrence prioritization (optional)
+    \item \textbf{Reasoning} --- OWL~2~RL fixpoint with auto-detected transitive/symmetric relations (optional)
+    \item \textbf{Repair} --- Root concept, semantic orphan linking, multi-hop component bridging (optional)
 \end{enumerate}
 
 \textbf{Consequences:}
@@ -234,8 +235,8 @@ Axioms (AxiomType: disjointness, symmetry, transitivity, etc.) capture meaning p
 \textbf{Decision:}
 \begin{itemize}
     \item \textbf{graph\_store}: Module-level globals (\texttt{\_current\_graph}, \texttt{\_current\_export})
-    \item \textbf{Persistence}: JSON in \texttt{documents/ontology\_graphs/} with \texttt{.meta.json} sidecar (name, description, documents, stats)
-    \item \textbf{Activation}: Load JSON into graph\_store; rebuild QA index
+    \item \textbf{Persistence}: Compact JSON (embeddings stripped) in \texttt{documents/ontology\_graphs/}; \texttt{.meta.json} sidecar; \texttt{\_index.npz} for QA embeddings
+    \item \textbf{Activation}: Load JSON; load QA index from \texttt{\_index.npz} when present (near-instant); else rebuild
 \end{itemize}
 
 \textbf{Consequences:}
@@ -252,9 +253,11 @@ Axioms (AxiomType: disjointness, symmetry, transitivity, etc.) capture meaning p
 
 \textbf{Decision:} Implement OWL~2~RL rules (Smith \& Proietti) with fixpoint iteration:
 \begin{itemize}
+    \item \textbf{Pre-reasoning}: \texttt{detect\_relation\_properties(graph)} auto-detects transitive/symmetric relations from graph structure
     \item Transitive subsumption
     \item Inheritance (instance $\rightarrow$ class $\rightarrow$ parent)
     \item Domain/range propagation
+    \item Transitive/symmetric closure (from axioms + auto-detected)
     \item Disjointness consistency check
 \end{itemize}
 
@@ -284,16 +287,17 @@ Full inference trace returned for explainability. Re-runnable via \texttt{POST /
 \begin{verbatim}
 Document (PDF/DOCX/TXT/MD)
   -> loader.load_document()
-  -> chunker.chunk_text()
+  -> chunker.chunk_text() [sentence-boundary, section-aware]
   -> extractor.extract_ontology_sequential() [per chunk]
   -> taxonomy_builder.build_taxonomy()
-  -> ontology_builder.update_graph() [canonicalize, merge]
-  -> relation_inferer.infer_relations() [optional]
-  -> reasoning.engine.run_inference() [optional]
+  -> ontology_builder.update_graph() [hybrid canonicalize, normalize relations]
+  -> relation_inferer.infer_relations() [EntityCandidate, co-occurrence]
+  -> reasoning.engine.run_inference() [detect_relation_properties]
+  -> repair.repair_graph() [semantic orphans, multi-hop bridges]
   -> OntologyGraph
   -> graph_store.set_graph()
-  -> qa.graph_index.build_index()
-  -> save_to_path_with_metadata()
+  -> qa.graph_index.build_index() [persists to _index.npz]
+  -> save_to_path_with_metadata() [compact JSON, embeddings in _index.npz]
 \end{verbatim}
 
 \subsection{QA Flow}
@@ -355,7 +359,7 @@ Configuration is loaded from \texttt{.env} and environment variables via Pydanti
 \texttt{UPLOAD\_MAX\_SIZE\_MB} & 20 & Max upload size \\
 \texttt{LLM\_TIMEOUT\_SECONDS} & 120 & LLM timeout \\
 \texttt{LLM\_PARALLEL\_WORKERS} & auto (2 local, 30 cloud) & Parallel extraction \\
-\texttt{CHUNK\_SIZE} / \texttt{CHUNK\_OVERLAP} & 1200 / 200 & Chunking \\
+\texttt{CHUNK\_SIZE} / \texttt{CHUNK\_OVERLAP} & 2000 / 300 & Chunking (semantic default) \\
 \texttt{LLM\_FORCE\_TEXT\_MODE} & \texttt{true} & Text fallback when no structured output \\
 \bottomrule
 \end{tabular}

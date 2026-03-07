@@ -27,9 +27,9 @@ The pipeline turns a single document (PDF, DOCX, TXT, or MD) into a **formal ont
 
 The system follows **Guarino-style** ontology structure **O = {C, R, I, P}** plus axioms (see `ontology_builder.ontology.schema`):
 
-- **C (Classes):** Concepts/universals. Model: `OntologyClass(name, parent, description, synonyms)`.
-- **I (Instances):** Individuals/particulars typed by a class. Model: `OntologyInstance(name, class_name, description)`.
-- **R (Object properties):** Binary relations. Model: `ObjectProperty(source, relation, target, domain, range, symmetric, transitive, confidence)`.
+- **C (Classes):** Concepts/universals. Model: `OntologyClass(name, parent, description, synonyms, salience, domain_tags)`.
+- **I (Instances):** Individuals/particulars typed by a class. Model: `OntologyInstance(name, class_name, description, attributes)` — `attributes` become DataProperties.
+- **R (Object properties):** Binary relations. Model: `ObjectProperty(source, relation, target, ..., evidence, relation_type, bidirectional)`. Relation names normalized via `RELATION_TAXONOMY` / `CANONICAL_RELATION_NAMES`.
 - **P (Data properties):** Attribute–value pairs on entities. Model: `DataProperty(entity, attribute, value, datatype)`.
 - **Axioms:** Meaning postulates. Model: `Axiom(axiom_type, entities, description)`. Types: `disjointness`, `symmetry`, `transitivity`, `asymmetry`, `inverse`, `functional`, `subclass`.
 
@@ -48,10 +48,12 @@ All extracted elements carry **provenance** (source_document, source_chunk, extr
 
 ### 3.2 Chunk (`ontology_builder.pipeline.chunker`)
 
-- **Function:** `chunk_text(text, size=settings.chunk_size, overlap=settings.chunk_overlap)`.
-- **Algorithm:** Sliding window: start at 0, take `size` chars, then advance by `size - overlap`. Overlap is capped so `overlap < size`.
-- **Defaults:** `chunk_size=1200`, `chunk_overlap=200` (from `core.config.Settings`). For gpt-4o-mini, config can override to 10000/2000.
-- **Rationale:** Overlap reduces boundary effects (entities/relations split across chunks). Chunk size trades context quality vs. number of LLM calls.
+- **Function:** `chunk_text(text, size, overlap, mode="semantic", detect_sections=True)`.
+- **Algorithm (semantic mode, default):** Sentence-boundary chunking. Split on `.?!` followed by capital; accumulate sentences until `size` chars; overlap uses last N sentences (overlap char budget). Falls back to fixed window if fewer than 2 chunks.
+- **Section-aware:** When `detect_sections=True`, detects Markdown `#`, DOCX ALL-CAPS headings, lines ending with `:`, PDF-style short titles; finalizes chunk at section boundary and starts new chunk with header.
+- **Fixed mode:** Sliding window (legacy): start at 0, take `size` chars, advance by `size - overlap`.
+- **Defaults:** `chunk_size=2000`, `chunk_overlap=300` (from `core.config.Settings`). For gpt-4o-mini, config can override to 10000/2000.
+- **Rationale:** Sentence boundaries avoid cutting mid-sentence; section detection prevents context bleed across topics.
 
 ### 3.3 Extract (`ontology_builder.pipeline.extractor`)
 
@@ -72,11 +74,12 @@ Two modes:
 ### 3.4 Merge and canonicalization (`ontology_builder.pipeline.ontology_builder`, `ontology_builder.ontology.canonicalizer`)
 
 - **Merge:** `update_graph(graph, extraction)` adds classes, instances, relations, data properties, axioms into the shared `OntologyGraph`. For structured extraction it uses `add_class`, `add_instance`, `add_relation`, `add_data_property`, `add_axiom`; for legacy dict it uses `add_entity` and `add_relation`.
-- **Canonicalization:** Before adding, every entity name (class, instance, relation endpoint) is passed through `canonicalize(name)` in `ontology_builder.ontology.canonicalizer`:
-  - Embedding: `get_embedding_model()` (SentenceTransformer `all-MiniLM-L6-v2`) encodes the name.
-  - Cache: In-memory `entity_vectors: dict[str, np.ndarray]` stores one vector per canonical name.
-  - Rule: If cosine similarity between the new name’s vector and any cached vector ≥ `SIMILARITY_THRESHOLD` (0.9, in `core.constants`), the existing canonical name is returned; otherwise the new name is added to the cache and returned. Thread-safe via a module-level lock.
-- **Effect:** Reduces duplicate nodes for paraphrased or typo-variant names (e.g. "Vehicle" vs "Vehicles") at the cost of depending on embedding quality and threshold.
+- **Canonicalization:** Hybrid 3-stage pipeline in `ontology_builder.ontology.canonicalizer`:
+  - **Stage 1 — Exact:** Normalize (lowercase, strip punctuation); if identical to cached → match.
+  - **Stage 2 — Lexical:** Token overlap ratio ≥ 0.8 → match.
+  - **Stage 3 — Embedding:** Encode and compare to `SIMILARITY_THRESHOLD` (0.85, configurable); batched via `canonicalize_batch()`.
+  - `seed_from_entities()` batch-encodes when loading KB.
+- **Relation normalization:** `normalize_relation_name()` maps aliases to canonical names (subClassOf, hasPart, hasAbility, causes, relatedTo) via `CANONICAL_RELATION_NAMES` in `schema.py`.
 
 ### 3.5 Taxonomy (sequential mode only) (`ontology_builder.pipeline.taxonomy_builder`)
 
@@ -96,40 +99,36 @@ Two modes:
 
 ### 3.7 LLM relation inference (`ontology_builder.pipeline.relation_inferer`)
 
+**EntityCandidate system:** `build_entity_candidates(graph)` assembles full context per entity (description, known relations, data properties, co-occurring entities). Used in prompts instead of raw graph JSON.
+
+**Co-occurrence prioritization:** `build_cooccurrence_pairs(candidates, min_shared_chunks=2)` returns pairs sharing chunks, sorted by shared count; excludes pairs with existing relations. Inferred first before batch pass.
+
 Two passes:
 
 **Cross-component:** `infer_cross_component_relations(graph)`:
-- Compute connected components of the undirected version of the graph.
-- If there is more than one component: pick a representative (max degree) from the largest component and from up to `CROSS_COMPONENT_MAX_PAIRS` (30) other components; form pairs (rep_small, rep_largest).
-- One LLM call with `CROSS_COMPONENT_INFERENCE_PROMPT`: graph summary (truncated to `_get_effective_max_graph_chars`, larger for graphs with >500 nodes) + list of pairs. Asks for relations that could connect these pairs.
-- Parsed relations (source, relation, target, confidence) are added to the graph via `update_graph`.
+- Compute connected components; pick representative per non-largest; pair with largest.
+- One LLM call with graph summary + pairs. Relations normalized via `normalize_relation_name()`.
 
 **Batch relation inference:** `infer_relations(graph)`:
-- Entities = instances if any, else classes. Partition into batches (size chosen so that with `get_llm_parallel_workers()` workers we cover all entities). Batches are stratified by connected component so each batch mixes entities from different components.
-- For each batch, LLM call with `INFERENCE_PROMPT` + full graph text (truncated) + "Focus on inferring relations involving these entities: ...".
-- `complete_batch` runs these calls in parallel (workers: 2 for local LLM, 30 for cloud).
-- Responses parsed for `relations` array; only relations with `confidence >= CONFIDENCE_THRESHOLD` (0.5) and non-empty source/target are kept. Deduplicated by (source, relation, target) and merged into the graph.
+- Build candidates; prioritize co-occurring pairs; then batch inference with EntityCandidate profiles in prompt.
+- Relation names normalized before merge. Deduplicated by (source, relation, target); vote-count bonus for 3+ batches.
 
 ### 3.8 OWL 2 RL reasoning (`ontology_builder.reasoning.engine`, `ontology_builder.reasoning.rules`)
 
+- **Pre-reasoning:** `detect_relation_properties(graph)` auto-detects transitive/symmetric relations from graph structure (>3 open chains → transitive; >70% symmetric pairs → symmetric). Adds axioms; logs "Auto-detected transitivity/symmetry for relation: X".
 - **Entry:** `run_inference(graph)` → `ReasoningResult(inferred_edges, consistency_violations, inference_trace, iterations)`.
-- **Loop:** Up to `MAX_REASONING_ITERATIONS` (20). Each iteration applies in order:
-  1. **Transitive subsumption:** If A subClassOf B and B subClassOf C, add A subClassOf C (transitive closure on subClassOf edges).
-  2. **Inheritance:** If A subClassOf B and x type A, add x type B.
-  3. **Domain/range propagation:** From axioms (axiom_type domain/range), for each edge with that relation, add type edges for source (domain) or target (range).
-  4. **Transitive closure:** For relation names in `TRANSITIVE_RELATIONS` (e.g. part_of, depends_on, subClassOf, has_part), compute transitive closure and add missing edges.
-  5. **Symmetric closure:** For relation names in `SYMMETRIC_RELATIONS` (e.g. related_to, equivalent_to), add reverse edges where missing.
-- **Consistency:** After fixpoint, `_check_disjointness`: for each disjointness axiom (C1, C2), flag any instance typed as both C1 and C2; append to `consistency_violations` (no automatic removal).
-- **Trace:** Every added edge is recorded in `inference_trace` with rule type and description (explainability).
+- **Loop:** Up to `MAX_REASONING_ITERATIONS` (20). Each iteration applies: transitive subsumption, inheritance, domain/range propagation, transitive closure (from axioms + auto-detected), symmetric closure, inverse propagation.
+- **Consistency:** `_check_disjointness` flags instances typed as both disjoint classes.
+- **Trace:** Every added edge recorded in `inference_trace` (explainability).
 
 ### 3.9 Repair (`ontology_builder.repair.repairer`)
 
-- **Config:** `RepairConfig`: similarity_threshold (0.75), max_orphan_links (5), max_component_bridges (50), add_root_concept (True), run_reasoning_after (True), optional small_component_threshold and bridge_similarity_threshold.
+- **Config:** `RepairConfig`: similarity_threshold (0.75), max_orphan_links (5), max_component_bridges (50), add_root_concept (True), run_reasoning_after (True).
 - **Steps:**
-  1. **Root concept:** If node "Thing" is missing, add it as a class. Link every class that has degree 0 (and ≠ Thing) to Thing via subClassOf (confidence 0.85, source_document "inferred").
-  2. **Orphan linking:** Nodes with degree 0 (orphans). Encode orphan names+descriptions and connected nodes with SentenceTransformer; compute cosine similarity matrix. For each orphan, link to up to `max_orphan_links` most similar connected nodes with similarity ≥ threshold using relation "related_to".
-  3. **Component bridging:** Undirected connected components. For each non-largest component (or only those smaller than `small_component_threshold` if set), pick representative (max degree), encode rep and all nodes in largest component; link rep to best match in largest component if similarity ≥ threshold (or lower threshold when components > 20). Cap total bridges by `max_component_bridges`.
-  4. **Reasoning:** If `run_reasoning_after` and any edges were added, run `run_inference(graph)` again and add inferred edges to the report.
+  1. **Root concept:** Add "Thing" if missing; link orphan classes to Thing via subClassOf.
+  2. **Orphan linking (semantic):** Build combined text (description + data property values + relation targets). If non-empty, embed combined text; else fall back to name-only. Cosine ≥ 0.75 (semantic) or `similarity_threshold` (name-only). Link orphan to matched node's parent (subClassOf target) when available to preserve hierarchy.
+  3. **Component bridging (multi-hop):** For each rep–target pair, find intermediate node with `(sim(node,A) + sim(node,B))/2 >= 0.6`. If found: add rep → intermediate → target (relatedTo). Else: direct bridge. Logs "Multi-hop bridge: A → intermediate → B".
+  4. **Reasoning:** If `run_reasoning_after` and edges added, run `run_inference(graph)`.
 - **Reporting:** `RepairReport`: edges_added, orphans_linked, components_bridged, health_before, health_after, inferred_edges.
 
 ---
@@ -138,11 +137,11 @@ Two passes:
 
 | Symbol | Location | Value | Role |
 |--------|----------|--------|------|
-| SIMILARITY_THRESHOLD | core.constants | 0.9 | Canonicalizer: merge entity names above this cosine similarity. |
+| SIMILARITY_THRESHOLD | core.constants | 0.85 | Canonicalizer: merge entity names above this cosine similarity (configurable). |
 | CONFIDENCE_THRESHOLD | core.constants | 0.5 | Relation inferer: accept LLM-inferred relations only if confidence ≥ this. |
 | MAX_REASONING_ITERATIONS | core.constants | 20 | Cap on OWL 2 RL fixpoint iterations. |
 | CHARS_PER_TOKEN | core.constants | 4 | Approximate token count for budget checks. |
-| chunk_size / chunk_overlap | core.config | 1200 / 200 | Default chunking (overridable per model, e.g. 10000/2000 for gpt-4o-mini). |
+| chunk_size / chunk_overlap | core.config | 2000 / 300 | Default chunking (semantic mode; overridable per model). |
 | llm_max_chunk_chars | core.config | 600 | Hard truncation of chunk length for LLM (0 = no truncation). |
 | llm_max_prompt_tokens | core.config | 3000 | Soft token budget for system+user in extraction. |
 | llm_max_graph_chars | core.config | 3000 | Max graph JSON chars in inference prompts. |
@@ -173,13 +172,13 @@ Document (file path)
 
 ## 6. Design Decisions and Trade-offs (for improvement planning)
 
-- **Chunking:** Fixed character window; no semantic/sentence boundaries. Overlap mitigates split entities but does not guarantee alignment with sentences or paragraphs.
-- **Extraction:** Sequential 3-stage reduces confusion between classes and instances and gives explicit taxonomy input to relations stage; cost is 3× LLM calls per chunk. Legacy single-shot is faster but noisier.
-- **Canonicalization:** Embedding-based only; no string normalization (e.g. lowercasing, stemming) before embedding. Threshold 0.9 is strict; lower values increase merge risk.
-- **Taxonomy:** Single global LLM call over all classes; grounding check is heuristic (substring + token + SequenceMatcher). Truncation by char limit may drop classes from hierarchy.
-- **Inference:** Graph serialized to JSON and truncated; large graphs may lose structure. Cross-component pass is limited to 30 pairs; batch inference focuses on entities, not full structure.
-- **Reasoning:** Only declared relation names get transitive/symmetric closure; no automatic detection from axioms. Disjointness only reported, not repaired.
-- **Repair:** Same embedding model as canonicalizer; "related_to" is generic. Root "Thing" is fixed name; no customization. Orphan/bridge thresholds are global, not domain-adaptive.
+- **Chunking:** Sentence-boundary (default) with section detection; falls back to fixed window for very short docs. Overlap uses sentence budget.
+- **Extraction:** Sequential 3-stage; Stage 1 adds salience/domain_tags; Stage 2 adds attributes→DataProperties; Stage 3 adds evidence/relation_type. Relation names normalized to canonical vocabulary.
+- **Canonicalization:** Hybrid 3-stage (exact → token overlap 0.8 → embedding 0.9). Batched encoding. Obvious lexical matches (e.g. "Garen"/"garen") caught cheaply.
+- **Taxonomy:** Single global LLM call; grounding check heuristic. Truncation by char limit may drop classes.
+- **Inference:** EntityCandidate profiles provide full aggregated context; co-occurrence prioritizes pairs with textual evidence. Relation names normalized.
+- **Reasoning:** Auto-detects transitive/symmetric from graph structure; disjointness reported, not repaired.
+- **Repair:** Semantic orphan linking (description + props + relation targets); multi-hop component bridging when intermediate node exists. Orphan links to parent when match has subClassOf.
 
 ---
 
@@ -191,12 +190,12 @@ Document (file path)
 | Load | `ontology_builder.pipeline.loader` |
 | Chunk | `ontology_builder.pipeline.chunker` |
 | Extract (sequential + legacy) | `ontology_builder.pipeline.extractor` |
-| Merge + canonicalize | `ontology_builder.pipeline.ontology_builder`, `ontology_builder.ontology.canonicalizer` |
+| Merge + canonicalize | `ontology_builder.pipeline.ontology_builder`, `ontology_builder.ontology.canonicalizer`, `ontology_builder.ontology.schema` (normalize_relation_name) |
 | Taxonomy | `ontology_builder.pipeline.taxonomy_builder` |
 | Schema (C, I, R, P, axioms) | `ontology_builder.ontology.schema` |
 | Graph storage | `ontology_builder.storage.graphdb` |
 | LLM prompts | `ontology_builder.llm.prompts` |
-| Relation inference | `ontology_builder.pipeline.relation_inferer` |
+| Relation inference | `ontology_builder.pipeline.relation_inferer`, `ontology_builder.ontology.candidate` |
 | OWL 2 RL reasoning | `ontology_builder.reasoning.engine`, `ontology_builder.reasoning.rules` |
 | Repair | `ontology_builder.repair.repairer` |
 | Embeddings | `ontology_builder.embeddings` |
