@@ -96,7 +96,7 @@ See [Quick Start](#quick-start) above for the minimal clone-and-run flow. Detail
    ```
 4. Run:
    ```bash
-   uvicorn app.main:app --reload
+   uvicorn app.main:app --host 0.0.0.0 --port 8000   # add --reload for dev auto-restart
    ```
    Or: `make run`
 
@@ -249,9 +249,25 @@ ontology_builder/             # Theory-grounded pipeline
     └── graph_viewer.py       # Matplotlib PNG + vis.js HTML
 
 tests/                        # Test suite
+docs/                         # Project documentation
+├── architecture/             # ADR, design decisions
+├── technical/                # Pipeline specs, codebase transcript
+├── planning/                 # Plans, roadmaps
+└── presentations/            # PDF slides
 documents/raw/                # Temporary uploads
 documents/ontology_graphs/    # Persisted knowledge bases
 ```
+
+## Documentation
+
+Project documentation is consolidated under [`docs/`](docs/):
+
+| Folder | Contents |
+|--------|----------|
+| [`docs/architecture/`](docs/architecture/) | Architecture Decision Record (ADR-full.tex) |
+| [`docs/technical/`](docs/technical/) | Pipeline specs, load/store rundown, codebase transcript |
+| [`docs/planning/`](docs/planning/) | Plans and roadmaps |
+| [`docs/presentations/`](docs/presentations/) | Commercial and technical PDF slides |
 
 ## Development
 
@@ -260,7 +276,7 @@ make install    # Install with dev dependencies
 make test       # Run pytest
 make lint       # Run ruff check
 make format     # Run ruff format
-make run        # Run with uvicorn --reload
+make run        # Run uvicorn server
 ```
 
 ## Contributing
