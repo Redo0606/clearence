@@ -290,6 +290,7 @@ def process_document(
             "instances": len(graph.get_instances()),
             "relations": edge_count,
             "axioms": len(graph.axioms),
+            "data_properties": len(graph.data_properties),
         })
         _check_cancel()
 
@@ -496,16 +497,22 @@ def _extract_sequential(
         idx, chunk = chunk_data
         if cancel_check:
             cancel_check()
+        remaining = total - (idx + 1)
         if (idx + 1) % 5 == 0 or idx == 0:
-            logger.info("[Pipeline] Step 3/6: Extracting | chunk %d/%d", idx + 1, total)
+            logger.info("[Pipeline] Step 3/6: Extracting | chunk %d/%d | %d remaining | %.80s...", idx + 1, total, remaining, (chunk or "").strip())
         extraction = extract_ontology_sequential(
             chunk, source_document=doc_path, ontology_language=ontology_language
         )
+        chunk_preview = (chunk or "").strip()[:80]
+        if len((chunk or "").strip()) > 80:
+            chunk_preview += "..."
         if progress_callback:
             progress_callback("extract", {
                 "current": idx + 1,
                 "total": total,
                 "chunk_index": idx,
+                "remaining_chunks": remaining,
+                "chunk_preview": chunk_preview,
                 "message": f"Extracted chunk {idx + 1}/{total}",
                 "classes": len(extraction.classes),
                 "instances": len(extraction.instances),
@@ -594,8 +601,12 @@ def _extract_legacy(
         idx, chunk = chunk_data
         if cancel_check:
             cancel_check()
+        remaining = total - (idx + 1)
+        chunk_preview = (chunk or "").strip()[:80]
+        if len((chunk or "").strip()) > 80:
+            chunk_preview += "..."
         if (idx + 1) % 5 == 0 or idx == 0:
-            logger.info("[Pipeline] Step 3/6: Extracting | chunk %d/%d", idx + 1, total)
+            logger.info("[Pipeline] Step 3/6: Extracting | chunk %d/%d | %d remaining | %.80s...", idx + 1, total, remaining, (chunk or "").strip())
         result = extract_ontology(chunk, ontology_language=ontology_language)
         entities = result.get("entities", [])
         relations = result.get("relations", [])
@@ -604,6 +615,8 @@ def _extract_legacy(
                 "current": idx + 1,
                 "total": total,
                 "chunk_index": idx,
+                "remaining_chunks": remaining,
+                "chunk_preview": chunk_preview,
                 "message": f"Extracted chunk {idx + 1}/{total}",
                 "classes": len(entities),
                 "instances": 0,

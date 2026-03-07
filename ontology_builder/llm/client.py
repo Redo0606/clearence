@@ -107,7 +107,15 @@ def complete(
         if not choices:
             raise RuntimeError("Empty LLM response")
         message = choices[0].message if choices else None
-        content = (message.content or "").strip() if message else ""
+        raw = message.content if message else None
+        if raw is None:
+            return ""
+        # Handle content as list (e.g. content blocks from some APIs)
+        if isinstance(raw, list):
+            parts = [p.get("text", p) if isinstance(p, dict) else str(p) for p in raw]
+            content = "".join(str(p) for p in parts if p).strip()
+        else:
+            content = (raw or "").strip()
         return content
 
     try:

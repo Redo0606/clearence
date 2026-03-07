@@ -1,6 +1,7 @@
 """LLM-based inference of additional relations from the current graph. Filters by confidence threshold.
 
 Infers multiple elements in parallel: 2 workers for local model, 30 for ChatGPT/gpt-4o-mini.
+Uses EntityCandidate profiles for full aggregated context and co-occurrence for prioritization.
 """
 
 import json
@@ -17,6 +18,11 @@ from ontology_builder.llm.prompts import (
     inference_language_instruction,
 )
 from ontology_builder.constants import CONFIDENCE_THRESHOLD
+from ontology_builder.ontology.candidate import (
+    build_cooccurrence_pairs,
+    build_entity_candidates,
+)
+from ontology_builder.ontology.schema import normalize_relation_name
 from ontology_builder.storage.graphdb import OntologyGraph
 
 
@@ -73,10 +79,11 @@ def _stratify_batches_by_component(
     return batches
 
 
-def _parse_inferred_relations(content: str) -> list[dict]:
+def _parse_inferred_relations(content: str, normalize_relations: bool = True) -> list[dict]:
     """Parse LLM response into relation dicts above CONFIDENCE_THRESHOLD.
 
     Strips markdown fences, parses JSON, filters by confidence and required fields.
+    Applies normalize_relation_name to relation labels when normalize_relations is True.
     """
     content = (content or "").strip()
     if content.startswith("```"):
@@ -96,6 +103,9 @@ def _parse_inferred_relations(content: str) -> list[dict]:
             continue
         conf = r.get("confidence", 0.5)
         if conf >= threshold and r.get("source") and r.get("target"):
+            if normalize_relations and r.get("relation"):
+                r = dict(r)
+                r["relation"] = normalize_relation_name(r["relation"])
             result.append(r)
     return result
 
@@ -123,20 +133,23 @@ def _build_graph_text(graph: OntologyGraph, node_count: int = 0) -> str:
         return "Graph unavailable"
 
 
+def _build_candidate_context(candidates: dict[str, "EntityCandidate"], entity_names: list[str]) -> str:
+    """Build prompt context from EntityCandidate profiles for given entities."""
+    parts = []
+    for name in entity_names[:15]:
+        c = candidates.get(name)
+        if c:
+            parts.append(c.to_prompt_context())
+    return "\n\n---\n\n".join(parts) if parts else ""
+
+
 def infer_relations(graph: OntologyGraph, ontology_language: str = "en") -> list[dict]:
     """Use LLM to infer additional relations from the current graph.
 
     Infers multiple elements in parallel: 2 workers for local model, 30 for ChatGPT/gpt-4o-mini.
-    Partitions instances into batches and runs parallel inference.
+    Uses EntityCandidate profiles for full aggregated context. Prioritizes co-occurring entity pairs.
     Filters by CONFIDENCE_THRESHOLD (0.5). Returns only relations with
-    source, target, and confidence >= threshold.
-
-    Args:
-        graph: Current ontology graph.
-        ontology_language: ISO 639-1 language code. Inferred relation labels stay in this language.
-
-    Returns:
-        List of relation dicts (source, relation, target, confidence).
+    source, target, and confidence >= threshold. Relation names are normalized to canonical vocabulary.
     """
     nodes = graph.get_graph().number_of_nodes()
     edges = graph.get_graph().number_of_edges()
@@ -148,16 +161,17 @@ def infer_relations(graph: OntologyGraph, ontology_language: str = "en") -> list
         nodes, edges, workers, threshold,
     )
 
+    candidates = build_entity_candidates(graph)
+    logger.info("Built %d entity candidates for inference", len(candidates))
+
     graph_text = _build_graph_text(graph, nodes)
     instances = graph.get_instances()
     classes = graph.get_classes()
 
-    # Build inference tasks: partition entities into batches for parallel inference
     if not instances and not classes:
         logger.debug("[RelationInferer] No instances or classes, skipping inference")
         return []
 
-    # Create batches: focus on instances if present, else use classes
     entities = instances if instances else classes
     g = graph.get_graph()
     undirected = g.to_undirected()
@@ -167,13 +181,53 @@ def infer_relations(graph: OntologyGraph, ontology_language: str = "en") -> list
         for n in comp:
             node_to_component[n] = idx
 
-    # Stratify batches by component: mix entities from different components so inference can suggest cross-component relations
+    key_to_best: dict[tuple[str, str, str], dict] = {}
+    key_to_count: dict[tuple[str, str, str], int] = {}
+
+    cooccur_pairs = build_cooccurrence_pairs(candidates, min_shared_chunks=2)
+    if cooccur_pairs:
+        logger.info("Prioritizing %d co-occurring entity pairs for inference", len(cooccur_pairs))
+        pair_limit = min(len(cooccur_pairs), 50)
+        pairs_to_infer = cooccur_pairs[:pair_limit]
+        pair_entities = []
+        for a, b in pairs_to_infer:
+            pair_entities.append(a)
+            pair_entities.append(b)
+        pair_entities = list(dict.fromkeys(pair_entities))
+        ctx = _build_candidate_context(candidates, pair_entities)
+        pairs_text = "\n".join(f"- {a} | {b}" for a, b in pairs_to_infer[:20])
+        lang_instruction = inference_language_instruction(ontology_language or "en")
+        user = (
+            INFERENCE_PROMPT
+            + "\n\nEntity profiles:\n"
+            + ctx
+            + "\n\n"
+            + graph_text
+            + f"\n\nPrioritize inferring relations between these co-occurring pairs:\n{pairs_text}"
+            + lang_instruction
+        )
+        try:
+            raw = complete(
+                system="You perform ontology reasoning. Output only valid JSON.",
+                user=user,
+                temperature=getattr(settings, "llm_temperature", 0.1),
+            )
+            for r in _parse_inferred_relations(raw or ""):
+                key = (r.get("source", ""), r.get("relation", ""), r.get("target", ""))
+                if not key[0] or not key[2]:
+                    continue
+                key_to_count[key] = key_to_count.get(key, 0) + 1
+                conf = float(r.get("confidence", 0.5))
+                if key not in key_to_best or conf > float(key_to_best[key].get("confidence", 0)):
+                    key_to_best[key] = dict(r)
+        except Exception as e:
+            logger.debug("[RelationInferer] Co-occurrence inference failed | %s", e)
+
     min_per_batch = max(1, 3)
     batch_size = max(min_per_batch, (len(entities) + workers - 1) // workers)
     batches = _stratify_batches_by_component(
         entities, node_to_component, batch_size, num_components=len(components)
     )
-
     if not batches:
         batches = [entities[:1]]
 
@@ -183,9 +237,20 @@ def infer_relations(graph: OntologyGraph, ontology_language: str = "en") -> list
     lang_instruction = inference_language_instruction(ontology_language or "en")
 
     def user_fn(batch: list[str]) -> str:
-        focus = ", ".join(batch[:10])  # cap focus list length
+        candidate_ctx = _build_candidate_context(candidates, batch)
+        focus = ", ".join(batch[:10])
         if len(batch) > 10:
             focus += f" (and {len(batch) - 10} more)"
+        if candidate_ctx:
+            return (
+                INFERENCE_PROMPT
+                + "\n\nEntity profiles:\n"
+                + candidate_ctx
+                + "\n\n"
+                + graph_text
+                + f"\n\nFocus on inferring relations involving these entities: {focus}"
+                + lang_instruction
+            )
         return (
             INFERENCE_PROMPT
             + graph_text
@@ -193,7 +258,6 @@ def infer_relations(graph: OntologyGraph, ontology_language: str = "en") -> list
             + lang_instruction
         )
 
-    settings = get_settings()
     try:
         responses = complete_batch(
             items=batches,
@@ -205,20 +269,16 @@ def infer_relations(graph: OntologyGraph, ontology_language: str = "en") -> list
         )
     except Exception as e:
         logger.warning("[RelationInferer] LLM batch inference failed | error=%s", e)
-        return []
-
-    # Merge and deduplicate: max-confidence wins; vote-count bonus for triplets in 3+ batches
-    key_to_best: dict[tuple[str, str, str], dict] = {}
-    key_to_count: dict[tuple[str, str, str], int] = {}
-    for content in responses:
-        for r in _parse_inferred_relations(content):
-            key = (r.get("source", ""), r.get("relation", ""), r.get("target", ""))
-            if not key[0] or not key[2]:
-                continue
-            key_to_count[key] = key_to_count.get(key, 0) + 1
-            conf = float(r.get("confidence", 0.5))
-            if key not in key_to_best or conf > float(key_to_best[key].get("confidence", 0)):
-                key_to_best[key] = dict(r)
+    else:
+        for content in responses:
+            for r in _parse_inferred_relations(content):
+                key = (r.get("source", ""), r.get("relation", ""), r.get("target", ""))
+                if not key[0] or not key[2]:
+                    continue
+                key_to_count[key] = key_to_count.get(key, 0) + 1
+                conf = float(r.get("confidence", 0.5))
+                if key not in key_to_best or conf > float(key_to_best[key].get("confidence", 0)):
+                    key_to_best[key] = dict(r)
 
     result = []
     for key, r in key_to_best.items():
@@ -301,7 +361,7 @@ def infer_cross_component_relations(
         logger.warning("[RelationInferer] Cross-component inference failed | error=%s", e)
         return []
 
-    parsed = _parse_inferred_relations(raw or "")
+    parsed = _parse_inferred_relations(raw or "", normalize_relations=True)
     threshold = _get_confidence_threshold()
     # Apply same confidence filter as batch pass (cross-component previously bypassed it)
     result = []

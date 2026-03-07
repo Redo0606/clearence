@@ -231,11 +231,11 @@ def _close_truncated(s: str) -> str:
 # Public API
 # ---------------------------------------------------------------------------
 
-def repair_json(raw: str) -> object:
+def repair_json(raw: str | list | dict) -> object:
     """Parse JSON from LLM output applying progressive repairs.
 
     Args:
-        raw: Raw LLM response string.
+        raw: Raw LLM response string, or already-parsed list/dict.
 
     Returns:
         Parsed Python object (dict or list).
@@ -243,6 +243,8 @@ def repair_json(raw: str) -> object:
     Raises:
         json.JSONDecodeError: When all repair strategies are exhausted.
     """
+    if isinstance(raw, (list, dict)):
+        return raw
     if not raw or not raw.strip():
         raise json.JSONDecodeError("Empty content", "", 0)
 

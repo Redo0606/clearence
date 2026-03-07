@@ -15,6 +15,49 @@ from typing import Any
 
 from pydantic import BaseModel, Field
 
+# ---------------------------------------------------------------------------
+# Relation taxonomy and canonical names
+# ---------------------------------------------------------------------------
+
+RELATION_TAXONOMY = {
+    "taxonomic": ["subClassOf", "isA", "kindOf", "typeOf"],
+    "compositional": ["hasPart", "partOf", "contains", "consistsOf"],
+    "functional": ["hasAbility", "canPerform", "hasRole", "performs"],
+    "causal": ["causes", "enables", "prevents", "requires"],
+    "associative": ["relatedTo", "associatedWith", "usedIn", "appearsIn"],
+}
+
+CANONICAL_RELATION_NAMES: dict[str, str] = {
+    "isa": "subClassOf",
+    "kindof": "subClassOf",
+    "typeof": "subClassOf",
+    "subclassof": "subClassOf",
+    "contains": "hasPart",
+    "consistsof": "partOf",
+    "partof": "partOf",
+    "haspart": "hasPart",
+    "canperform": "hasAbility",
+    "hasrole": "hasAbility",
+    "performs": "hasAbility",
+    "hasability": "hasAbility",
+    "causes": "causes",
+    "enables": "enables",
+    "prevents": "prevents",
+    "requires": "requires",
+    "relatedto": "relatedTo",
+    "associatedwith": "relatedTo",
+    "usedin": "relatedTo",
+    "appearsin": "relatedTo",
+}
+
+
+def normalize_relation_name(relation: str) -> str:
+    """Map relation to canonical name. Case-insensitive. Returns original if not found."""
+    if not relation or not isinstance(relation, str):
+        return relation
+    key = relation.strip().lower()
+    return CANONICAL_RELATION_NAMES.get(key, relation)
+
 
 # ---------------------------------------------------------------------------
 # Provenance mixin
@@ -53,6 +96,8 @@ class OntologyClass(Provenance):
     parent: str | None = None
     description: str = ""
     synonyms: list[str] = Field(default_factory=list)
+    salience: float = 0.5  # 0.0 to 1.0, how central is this class to the domain
+    domain_tags: list[str] = Field(default_factory=list)  # e.g. ["gameplay", "character"]
 
 
 class OntologyInstance(Provenance):
@@ -61,6 +106,7 @@ class OntologyInstance(Provenance):
     name: str
     class_name: str = ""
     description: str = ""
+    attributes: dict[str, str] = Field(default_factory=dict)  # key-value data properties extracted inline
 
 
 class ObjectProperty(Provenance):
@@ -74,6 +120,9 @@ class ObjectProperty(Provenance):
     symmetric: bool = False
     transitive: bool = False
     confidence: float = Field(default=1.0, ge=0.0, le=1.0)
+    evidence: str = ""  # sentence(s) that support this relation
+    relation_type: str = ""  # taxonomic | compositional | functional | causal | associative
+    bidirectional: bool = False
 
 
 class DataProperty(Provenance):

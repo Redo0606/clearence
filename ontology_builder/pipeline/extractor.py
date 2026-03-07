@@ -154,12 +154,26 @@ def _parse_classes(raw: list, prov: dict) -> list[OntologyClass]:
             syn = [str(s).strip() for s in syn if s]
         else:
             syn = []
+        salience = 0.5
+        if "salience" in c and c["salience"] is not None:
+            try:
+                salience = float(c["salience"])
+                salience = max(0.0, min(1.0, salience))
+            except (TypeError, ValueError):
+                pass
+        domain_tags = c.get("domain_tags", [])
+        if isinstance(domain_tags, list):
+            domain_tags = [str(t).strip() for t in domain_tags if t]
+        else:
+            domain_tags = []
         out.append(
             OntologyClass(
                 name=name,
                 parent=c.get("parent") or None,
                 description=c.get("description") or "",
                 synonyms=syn,
+                salience=salience,
+                domain_tags=domain_tags,
                 **prov,
             )
         )
@@ -175,11 +189,17 @@ def _parse_instances(raw: list, prov: dict) -> list[OntologyInstance]:
         name = i.get("name") or ""
         if not name:
             continue
+        attrs = i.get("attributes", {})
+        if isinstance(attrs, dict):
+            attrs = {str(k): str(v) for k, v in attrs.items() if k and v is not None}
+        else:
+            attrs = {}
         out.append(
             OntologyInstance(
                 name=name,
                 class_name=i.get("class_name") or "",
                 description=i.get("description") or "",
+                attributes=attrs,
                 **prov,
             )
         )
@@ -206,6 +226,9 @@ def _parse_object_properties(data: dict, prov: dict) -> list[ObjectProperty]:
                 symmetric=bool(op.get("symmetric", False)),
                 transitive=bool(op.get("transitive", False)),
                 confidence=float(op.get("confidence", 1.0) or 1.0),
+                evidence=op.get("evidence") or "",
+                relation_type=op.get("relation_type") or "",
+                bidirectional=bool(op.get("bidirectional", False)),
                 **prov,
             )
         )

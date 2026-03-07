@@ -69,10 +69,15 @@ Return a JSON object:
       "name": "<ClassName>",
       "parent": "<ParentClassName or null>",
       "description": "<one-sentence definition>",
-      "synonyms": ["<alternative name 1>", "<alternative name 2>"]
+      "synonyms": ["<alternative name 1>", "<alternative name 2>"],
+      "salience": 0.0-1.0,
+      "domain_tags": ["<tag1>", "<tag2>"]
     }}
   ]
 }}
+
+- salience: A float from 0.0 to 1.0 indicating how central this class is to the domain. Core domain concepts = 0.8+. Generic concepts = 0.2.
+- domain_tags: List of short domain area labels this class belongs to (e.g. ["gameplay", "character"]).
 
 Rules:
 - Use CamelCase for class names.
@@ -111,10 +116,13 @@ Return a JSON object:
     {{
       "name": "<instance name>",
       "class_name": "<ClassName it belongs to>",
-      "description": "<brief description>"
+      "description": "<brief description>",
+      "attributes": {{"<key>": "<value>", ...}}
     }}
   ]
 }}
+
+- attributes: A dict of known factual key-value attributes for this instance. Examples: {{"role": "Fighter", "region": "Demacia", "difficulty": "Low"}}. Only include attributes explicitly stated in the text.
 
 Rules:
 - Only create instances that are explicitly mentioned in the text.
@@ -155,7 +163,10 @@ Return a JSON object:
       "range": "<class or null>",
       "symmetric": false,
       "transitive": false,
-      "confidence": 0.9
+      "confidence": 0.9,
+      "evidence": "<quote from text>",
+      "relation_type": "<taxonomic|compositional|functional|causal|associative>",
+      "bidirectional": false
     }}
   ],
   "data_properties": [
@@ -176,7 +187,11 @@ Return a JSON object:
 }}
 
 Rules:
+- Prefer these relation names: subClassOf, hasPart, hasAbility, causes, relatedTo. Map similar concepts to these canonical names.
 - confidence must be between 0 and 1 based on how explicitly the text supports the relation.
+- evidence: Quote the exact sentence(s) from the text that support this relation.
+- relation_type: Classify as one of: taxonomic, compositional, functional, causal, associative.
+- bidirectional: True only if the relation clearly holds in both directions.
 - Only include axioms if the text provides evidence for them.
 {ontology_language_instruction}
 
