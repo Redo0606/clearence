@@ -1,0 +1,3181 @@
+[
+  {
+    "id": "47f68451-baf1-4897-a4c7-292765fc18e9",
+    "kb_id": "d15af03c40b14b118455a592e5027129",
+    "kb_name": "Pr.Chen",
+    "timestamp": "2026-03-07T02:27:29.899921+00:00",
+    "scores": {
+      "context_recall": 0.62,
+      "entity_recall": 0.8533333333333334,
+      "answer_correctness": 0.615640854972185,
+      "faithfulness": 0.92,
+      "answer_relevancy": 0.755,
+      "retrieval_coverage": 1.0,
+      "retrieval_failure_rate": 0.0,
+      "fact_recall": 0.3854014598540146,
+      "entity_coverage": 0.8533333333333334,
+      "faithfulness_claim_level": 0.6592857142857141,
+      "context_precision": 0.84,
+      "per_question": [
+        {
+          "question": "What is an advantage?",
+          "answer": "An advantage is the control a Trainer has over the outcome of a matchup, influenced by various factors.",
+          "context_recall": 0.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.35,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 8,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What is a tactic?",
+          "answer": "A tactic is a strategic approach used by players to gain an advantage in battles.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.7962962962962963,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 4,
+          "total_ref_facts": 4
+        },
+        {
+          "question": "What is availability?",
+          "answer": "Availability is the accessibility of Pok\u00e9mon within the game, affecting their use in the meta.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.7758620689655173,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 4,
+          "total_ref_facts": 25
+        },
+        {
+          "question": "What is interaction?",
+          "answer": "Interaction is the relationship between different types and their effects on each other in battles.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.8125,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 5,
+          "total_ref_facts": 11
+        },
+        {
+          "question": "What is PvP?",
+          "answer": "PvP is Player versus Player battles in Pok\u00e9mon GO where moves have unique values.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.7121212121212122,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 15,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What factors influence stats?",
+          "answer": "Factors that influence stats include Attack, Defense, Stamina, Bulk, and the interactions of these stats as described by the Stat Product.",
+          "context_recall": 0.0,
+          "entity_recall": 0.5,
+          "answer_correctness": 0.3055555555555556,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 7,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What factors influence type?",
+          "answer": "Type effectiveness is influenced by classifications of types and their interactions.",
+          "context_recall": 0.0,
+          "entity_recall": 0.5,
+          "answer_correctness": 0.36627906976744184,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 10,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What factors influence a player?",
+          "answer": "Factors that influence a player include managing Pok\u00e9mon, utilizing movesets, using protect shields, and participating in gameplay, battles, and tournaments.",
+          "context_recall": 0.0,
+          "entity_recall": 0.6666666666666666,
+          "answer_correctness": 0.4277777777777778,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 12,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What is a trainer?",
+          "answer": "A trainer is an individual who strategizes moves and manages resources like energy and shields, controlling Pok\u00e9mon and engaging in battles within Pok\u00e9mon GO.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.8,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 10,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What is a scenario?",
+          "answer": "A scenario is a specific situation or context that affects the outcome of a battle.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.8809523809523809,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 4,
+          "total_ref_facts": 4
+        },
+        {
+          "question": "What is a team?",
+          "answer": "A team is a collection of Pok\u00e9mon selected for battles, which can include multiple Pok\u00e9mon beyond the standard line.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.8548387096774194,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 4,
+          "total_ref_facts": 5
+        },
+        {
+          "question": "What is synergy?",
+          "answer": "Synergy is the interaction between different Pok\u00e9mon and their moves that enhances their effectiveness in battles.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.8928571428571429,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 2,
+          "total_ref_facts": 2
+        },
+        {
+          "question": "What is gameplay?",
+          "answer": "Gameplay is the overall experience and mechanics involved in playing Pok\u00e9mon battles.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.7666666666666666,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 8,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What is bulk?",
+          "answer": "Bulk is a term that describes a Pok\u00e9mon's durability in battles, including Defense and Stamina.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.8125,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 7,
+          "total_ref_facts": 10
+        },
+        {
+          "question": "What factors influence gameplay?",
+          "answer": "Factors that influence gameplay include Trainers, Pok\u00e9mon, battles, minigames, scenarios, tactics, and effectiveness.",
+          "context_recall": 0.0,
+          "entity_recall": 0.5,
+          "answer_correctness": 0.4,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 8,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What is a role?",
+          "answer": "Un r\u00f4le est une fonction ou position que les Pok\u00e9mon prennent en combat, influenc\u00e9e par leurs forces et faiblesses.",
+          "context_recall": 0.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.5512820512820513,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 2,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What is a tournament?",
+          "answer": "A tournament is a competitive event where trainers battle against each other for titles and recognition.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.8055555555555556,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 9,
+          "total_ref_facts": 9
+        },
+        {
+          "question": "What factors influence a battle?",
+          "answer": "Battles are influenced by the Pok\u00e9mon involved, the energy required, and the strategies and trends from formats like the GO Battle League.",
+          "context_recall": 0.0,
+          "entity_recall": 0.5,
+          "answer_correctness": 0.38725490196078427,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 8,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What is HP?",
+          "answer": "HP is a stat that represents a Pok\u00e9mon's health points.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.6714285714285715,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 9,
+          "total_ref_facts": 23
+        },
+        {
+          "question": "What is STAB?",
+          "answer": "STAB est un m\u00e9canisme qui augmente les d\u00e9g\u00e2ts des mouvements correspondant au type d'un Pok\u00e9mon.",
+          "context_recall": 0.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.575,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 3,
+          "total_ref_facts": 17
+        },
+        {
+          "question": "What is a player?",
+          "answer": "A player is an individual who participates in the gameplay of a video game, specifically engaging with Pok\u00e9mon by capturing, battling, and trading them.",
+          "context_recall": 0.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.8793103448275862,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 12,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What is a matchup?",
+          "answer": "A matchup is an assessment of the tools and resources available to determine the likelihood of winning.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.4722222222222222,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 18,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What are effects?",
+          "answer": "Effects are consequences or results that modify the performance of a Pok\u00e9mon during battle.",
+          "context_recall": 0.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.7093023255813954,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 10,
+          "total_ref_facts": 15
+        },
+        {
+          "question": "What is a combination?",
+          "answer": "A combination is a strategic pairing of moves or Pok\u00e9mon that enhances battle effectiveness.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.875,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 3,
+          "total_ref_facts": 3
+        },
+        {
+          "question": "What is a battle?",
+          "answer": "A battle is a central gameplay element where Pok\u00e9mon engage in combat against each other.",
+          "context_recall": 0.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.8125,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 8,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What factors influence a gym?",
+          "answer": "Factors influencing a gym include Trainer strategies and the competitive nature of Trainer Battles.",
+          "context_recall": 0.0,
+          "entity_recall": 0.5,
+          "answer_correctness": 0.36363636363636365,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 8,
+          "total_ref_facts": 29
+        },
+        {
+          "question": "What is energy?",
+          "answer": "Energy is a resource used by Pok\u00e9mon to perform Charge Attacks and Fast Attacks.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.7962962962962963,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 15,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What factors influence STAB?",
+          "answer": "STAB is influenced by the type of the Pok\u00e9mon and the moves used, as well as factors affecting damage output like Attack.",
+          "context_recall": 0.0,
+          "entity_recall": 0.5,
+          "answer_correctness": 0.4318181818181818,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 3,
+          "total_ref_facts": 28
+        },
+        {
+          "question": "What is a gym?",
+          "answer": "A gym is a location in Pok\u00e9mon GO where Trainers can battle and train their Pok\u00e9mon.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.7903225806451613,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 8,
+          "total_ref_facts": 18
+        },
+        {
+          "question": "What factors influence bulk?",
+          "answer": "Defense and Stamina influence bulk.",
+          "context_recall": 1.0,
+          "entity_recall": 0.5,
+          "answer_correctness": 0.4,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 7,
+          "total_ref_facts": 21
+        },
+        {
+          "question": "What factors influence individual values (IV)?",
+          "answer": "No specific factors influencing individual values (IV) are mentioned in the retrieved facts.",
+          "context_recall": 0.0,
+          "entity_recall": 0.5,
+          "answer_correctness": 0.11428571428571428,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 4,
+          "total_ref_facts": 20
+        },
+        {
+          "question": "What is a type?",
+          "answer": "Un type est une classification qui d\u00e9termine l'efficacit\u00e9 des mouvements contre les Pok\u00e9mon en fonction de leurs attributs.",
+          "context_recall": 0.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.5555555555555556,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 12,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What are attributes?",
+          "answer": "Attributes are characteristics or qualities of Pok\u00e9mon that can be mixed and matched to enhance their effectiveness in battles.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.84375,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 6,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What is health?",
+          "answer": "Health is the remaining vitality of an opponent that can be converted into extra Fast Attacks and energy.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.8125,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 7,
+          "total_ref_facts": 8
+        },
+        {
+          "question": "What is a turn?",
+          "answer": "Un tour est une unit\u00e9 de temps pour la mesure des mouvements dans Pok\u00e9mon GO.",
+          "context_recall": 0.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.2916666666666667,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 7,
+          "total_ref_facts": 29
+        },
+        {
+          "question": "What factors influence attack?",
+          "answer": "The factors influencing attack include the Attack stat, which determines damage output, and the mechanics of Fast Attacks and Charge Attacks.",
+          "context_recall": 0.0,
+          "entity_recall": 0.5,
+          "answer_correctness": 0.39583333333333337,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 2,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What is a stage?",
+          "answer": "A stage is a level of modification applied to a stat, influencing its value.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.7692307692307693,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 1,
+          "total_ref_facts": 3
+        },
+        {
+          "question": "What is a moveset?",
+          "answer": "A moveset is the combination of Fast and Charge Attacks assigned to a Pok\u00e9mon.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.7692307692307692,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 15,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What is a line?",
+          "answer": "Une ligne est une disposition sp\u00e9cifique de trois Pok\u00e9mon s\u00e9lectionn\u00e9s pour des combats d'entra\u00eeneurs.",
+          "context_recall": 0.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.5344827586206896,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 7,
+          "total_ref_facts": 18
+        },
+        {
+          "question": "What is a debuff?",
+          "answer": "A debuff is a negative effect that reduces a Pok\u00e9mon's performance in battle.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.82,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 16,
+          "total_ref_facts": 25
+        },
+        {
+          "question": "What is an ecosystem?",
+          "answer": "An ecosystem is the complex interactions and balance of types and roles within Pok\u00e9mon battles.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.8214285714285714,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 3,
+          "total_ref_facts": 4
+        },
+        {
+          "question": "What is a match?",
+          "answer": "A match is a competitive encounter between players using their Pok\u00e9mon and strategies.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.7666666666666666,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 18,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What is effectiveness?",
+          "answer": "Effectiveness is the degree to which a move or attack is successful against a particular type of Pok\u00e9mon.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.7962962962962963,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 14,
+          "total_ref_facts": 20
+        },
+        {
+          "question": "What factors influence a league?",
+          "answer": "Factors that influence a league include Trainer interactions and the shifting strategies and trends in the GO Battle League.",
+          "context_recall": 0.0,
+          "entity_recall": 0.5,
+          "answer_correctness": 0.3928571428571429,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 17,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What is stamina?",
+          "answer": "Stamina is a stat that measures how much damage a Pok\u00e9mon can take before fainting.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.8235294117647058,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 7,
+          "total_ref_facts": 9
+        },
+        {
+          "question": "What is a cooldown?",
+          "answer": "A cooldown is a period during which a player cannot perform a specific action, such as switching Pok\u00e9mon.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.9,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 8,
+          "total_ref_facts": 8
+        },
+        {
+          "question": "What factors influence a move?",
+          "answer": "A move is influenced by its type, required Energy, its ability to deal Damage, and its effects on matchups.",
+          "context_recall": 0.0,
+          "entity_recall": 0.5,
+          "answer_correctness": 0.3611111111111111,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 15,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What are switches?",
+          "answer": "Switches are the action of withdrawing a Pok\u00e9mon from active battle and substituting it with another.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.7307692307692307,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 13,
+          "total_ref_facts": 15
+        },
+        {
+          "question": "What is a move?",
+          "answer": "A move is an action performed by Pok\u00e9mon during battles, which can be categorized into Fast Attacks and Charge Attacks.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.8636363636363636,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 15,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What factors influence energy?",
+          "answer": "Energy is influenced by its generation from Fast Attacks, its consumption range of 35 to 80, and its requirement for Charge Attacks.",
+          "context_recall": 0.0,
+          "entity_recall": 0.5,
+          "answer_correctness": 0.36904761904761907,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 14,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What is playstyle?",
+          "answer": "Playstyle is the individual approach and strategy a trainer employs in battles.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.8043478260869565,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 4,
+          "total_ref_facts": 4
+        },
+        {
+          "question": "What is a simulation?",
+          "answer": "A simulation is a tool or method used to predict the outcomes of battles based on various Pok\u00e9mon matchups.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.7894736842105263,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 6,
+          "total_ref_facts": 6
+        },
+        {
+          "question": "What is meta?",
+          "answer": "Le m\u00e9ta est l'\u00e9cosyst\u00e8me global des combats Pok\u00e9mon qui d\u00e9termine les strat\u00e9gies et influence les r\u00f4les et l'\u00e9cosyst\u00e8me des batailles.",
+          "context_recall": 0.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.5285714285714286,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 12,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What is strategy?",
+          "answer": "Strategy is a plan of action designed to achieve a specific goal in battles.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.7424242424242424,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 4,
+          "total_ref_facts": 7
+        },
+        {
+          "question": "What is a tank?",
+          "answer": "A tank is a Pok\u00e9mon that can withstand significant damage due to its high defenses.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.736842105263158,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 5,
+          "total_ref_facts": 10
+        },
+        {
+          "question": "What is a resource?",
+          "answer": "A resource is items used in Pok\u00e9mon GO, such as Candy and Stardust, to enhance gameplay.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.7307692307692307,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 14,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What is a fighter?",
+          "answer": "A fighter is a role characterized by aggressive tactics and high damage output, often associated with Fighting-type Pok\u00e9mon.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.8,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 7,
+          "total_ref_facts": 10
+        },
+        {
+          "question": "What is a shield?",
+          "answer": "A shield is a defensive tool that provides temporary protection for Pok\u00e9mon during battles.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.49390243902439024,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 19,
+          "total_ref_facts": 26
+        },
+        {
+          "question": "What is a timer?",
+          "answer": "A timer is a mechanism that tracks the duration of specific actions or events in the game.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.8913043478260869,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 5,
+          "total_ref_facts": 5
+        },
+        {
+          "question": "What is a species?",
+          "answer": "A species is a category representing different kinds of Pok\u00e9mon, each with unique strengths and weaknesses.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.7222222222222222,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 4,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What factors influence a tool?",
+          "answer": "There are no specific factors listed that influence a tool.",
+          "context_recall": 0.0,
+          "entity_recall": 0.5,
+          "answer_correctness": 0.07317073170731707,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 5,
+          "total_ref_facts": 19
+        },
+        {
+          "question": "What factors influence resources?",
+          "answer": "Factors influencing resources include their type (e.g., Energy), their required usage for moves, and the consumption range associated with them.",
+          "context_recall": 0.0,
+          "entity_recall": 0.5,
+          "answer_correctness": 0.3958333333333333,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 15,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What factors influence stamina?",
+          "answer": "The retrieved facts do not specify explicit factors that influence stamina.",
+          "context_recall": 0.0,
+          "entity_recall": 0.5,
+          "answer_correctness": 0.10344827586206896,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 7,
+          "total_ref_facts": 20
+        },
+        {
+          "question": "What is a tool?",
+          "answer": "A tool is a resource or application used to analyze or enhance gameplay in Pok\u00e9mon battles.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.7647058823529411,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 7,
+          "total_ref_facts": 8
+        },
+        {
+          "question": "What factors influence HP?",
+          "answer": "Stamina influences HP.",
+          "context_recall": 1.0,
+          "entity_recall": 0.6666666666666666,
+          "answer_correctness": 0.3125,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 8,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What is defense?",
+          "answer": "La d\u00e9fense est une statistique qui d\u00e9termine la r\u00e9duction des d\u00e9g\u00e2ts et la r\u00e9sistance d'un Pok\u00e9mon.",
+          "context_recall": 0.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.2722222222222222,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 6,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What is damage?",
+          "answer": "Damage is the amount of health points reduced from a Pok\u00e9mon as a result of an attack.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.7,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 14,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What factors influence a turn?",
+          "answer": "Les facteurs qui influencent un tour incluent les attaques rapides, les attaques charg\u00e9es, les d\u00e9g\u00e2ts, le style de jeu et les matchups.",
+          "context_recall": 0.0,
+          "entity_recall": 0.5,
+          "answer_correctness": 0.25,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 6,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What is a buff?",
+          "answer": "A buff is a positive effect that enhances a Pok\u00e9mon's performance in battle.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.7758620689655172,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 18,
+          "total_ref_facts": 25
+        },
+        {
+          "question": "What factors influence Pok\u00e9mon?",
+          "answer": "Factors that influence Pok\u00e9mon include damage, matchups, effects, and their moves and abilities, as well as Pok\u00e9mon Advantage.",
+          "context_recall": 0.0,
+          "entity_recall": 0.5,
+          "answer_correctness": 0.413265306122449,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 2,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What is an icon?",
+          "answer": "An icon is a visual element that appears in the minigame and is associated with damage calculation.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.7758620689655173,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 9,
+          "total_ref_facts": 10
+        },
+        {
+          "question": "What is a minigame?",
+          "answer": "Un minigame es un tipo de juego que determina da\u00f1o basado en el n\u00famero de \u00edconos eliminados.",
+          "context_recall": 0.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.5294117647058824,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 4,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What is a hybrid?",
+          "answer": "A hybrid is a Pok\u00e9mon that possesses characteristics of multiple types, allowing for diverse strategies in battles.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.8448275862068966,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 3,
+          "total_ref_facts": 3
+        },
+        {
+          "question": "What factors influence defense?",
+          "answer": "Le Bulk et les mouvements sp\u00e9cifiques influencent la d\u00e9fense.",
+          "context_recall": 0.0,
+          "entity_recall": 0.5,
+          "answer_correctness": 0.27564102564102566,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 5,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What is coverage?",
+          "answer": "Coverage is the ability to protect against weaknesses through various strategies in Pok\u00e9mon battles.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.8846153846153846,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 3,
+          "total_ref_facts": 3
+        },
+        {
+          "question": "What factors influence a trainer?",
+          "answer": "A trainer is influenced by their ability to strategize moves, manage resources, control Pok\u00e9mon, and engage in competitive formats.",
+          "context_recall": 0.0,
+          "entity_recall": 0.5,
+          "answer_correctness": 0.37,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 10,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What is typing?",
+          "answer": "Typing is the classification that introduces natural strengths and weaknesses for Pok\u00e9mon.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.7962962962962963,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 7,
+          "total_ref_facts": 10
+        },
+        {
+          "question": "What is an opponent?",
+          "answer": "An opponent is the player or entity against whom the player is competing.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.7307692307692307,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 2,
+          "total_ref_facts": 8
+        },
+        {
+          "question": "What factors influence a moveset?",
+          "answer": "The factors that influence a moveset include the combination of Fast and Charge Attacks, energy requirements, and its effects on matchups.",
+          "context_recall": 0.0,
+          "entity_recall": 0.5,
+          "answer_correctness": 0.4342105263157895,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 15,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What is an attack?",
+          "answer": "An attack is a stat that helps determine the damage output of a Pok\u00e9mon.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.3181818181818182,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 2,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What is a flyer?",
+          "answer": "A flyer is a role that typically involves Pok\u00e9mon with flying capabilities, often used for mobility and evasion.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.8870967741935484,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 5,
+          "total_ref_facts": 18
+        },
+        {
+          "question": "What is a mechanic?",
+          "answer": "A mechanic is the primary functions of a game designed to govern and guide the player's actions.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.7285714285714286,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 10,
+          "total_ref_facts": 14
+        },
+        {
+          "question": "What factors influence typing?",
+          "answer": "The factors that influence typing include the classification of types, their natural strengths and weaknesses, and the interactions between different types in battles.",
+          "context_recall": 1.0,
+          "entity_recall": 0.5,
+          "answer_correctness": 0.6333333333333333,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 6,
+          "total_ref_facts": 21
+        },
+        {
+          "question": "What is baiting?",
+          "answer": "Baiting is a strategy used in battles to manipulate an opponent's actions, often involving the use of shields.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.84375,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 4,
+          "total_ref_facts": 4
+        },
+        {
+          "question": "What is an IV?",
+          "answer": "An IV is an Individual Value that determines a Pok\u00e9mon's potential in various stats.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.78125,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 4,
+          "total_ref_facts": 9
+        },
+        {
+          "question": "What factors influence PvP?",
+          "answer": "Factors that influence PvP include Trainers and Movesets.",
+          "context_recall": 0.0,
+          "entity_recall": 0.5,
+          "answer_correctness": 0.4342105263157895,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 13,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What factors influence species?",
+          "answer": "Species are influenced by Type, Weakness, Resistance, and the overarching Meta.",
+          "context_recall": 1.0,
+          "entity_recall": 0.5,
+          "answer_correctness": 0.35256410256410253,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 4,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What factors influence mechanics?",
+          "answer": "Factors that influence mechanics include Player actions, Charge Attacks, Fast Attacks, Playstyle, and the Meta.",
+          "context_recall": 0.0,
+          "entity_recall": 0.5,
+          "answer_correctness": 0.42500000000000004,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 10,
+          "total_ref_facts": 25
+        },
+        {
+          "question": "What factors influence immunity?",
+          "answer": "The ontology does not specify factors that influence immunity.",
+          "context_recall": 0.0,
+          "entity_recall": 0.5,
+          "answer_correctness": 0.05,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 5,
+          "total_ref_facts": 20
+        },
+        {
+          "question": "What is a game?",
+          "answer": "A game is a structured form of play, often for entertainment, which can include various genres and activities.",
+          "context_recall": 0.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.7285714285714286,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 10,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What factors influence damage?",
+          "answer": "The factors that influence damage are the type of Move and the effectiveness of the move.",
+          "context_recall": 1.0,
+          "entity_recall": 0.5,
+          "answer_correctness": 0.3719512195121951,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 14,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What is a stat?",
+          "answer": "A stat is a characteristic that determines the strength and abilities of a Pok\u00e9mon.",
+          "context_recall": 0.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.6470588235294117,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 5,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What is a league?",
+          "answer": "A league is a competitive tier in which Pok\u00e9mon battles occur, such as Great and Ultra League.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.48255813953488375,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 18,
+          "total_ref_facts": 20
+        },
+        {
+          "question": "What is resistance?",
+          "answer": "Resistance is a characteristic that indicates a Pok\u00e9mon's ability to withstand damage from certain types of moves.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.9074074074074074,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 3,
+          "total_ref_facts": 3
+        },
+        {
+          "question": "What factors influence weakness?",
+          "answer": "Type",
+          "context_recall": 1.0,
+          "entity_recall": 0.5,
+          "answer_correctness": 0.28448275862068967,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 1,
+          "total_ref_facts": 21
+        },
+        {
+          "question": "What is immunity?",
+          "answer": "Immunity is a state where a Pok\u00e9mon is completely unaffected by a specific type of move.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.7727272727272727,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 5,
+          "total_ref_facts": 9
+        },
+        {
+          "question": "What is Pok\u00e9mon?",
+          "answer": "Pok\u00e9mon are fictional creatures that players can capture, train, and battle within the Pok\u00e9mon video game series.",
+          "context_recall": 0.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.7448979591836735,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 2,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What is a livestream?",
+          "answer": "A livestream is a live broadcast where trainers and entertainers share knowledge and skills related to Pok\u00e9mon battles.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.8636363636363636,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 7,
+          "total_ref_facts": 12
+        },
+        {
+          "question": "What is weakness?",
+          "answer": "Weakness is a characteristic of a Pok\u00e9mon type that makes it more vulnerable to damage from certain other types.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.8421052631578947,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 1,
+          "total_ref_facts": 10
+        },
+        {
+          "question": "What factors influence interaction?",
+          "answer": "Type and effects like resistance and weakness influence interaction.",
+          "context_recall": 1.0,
+          "entity_recall": 0.5,
+          "answer_correctness": 0.31521739130434784,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 5,
+          "total_ref_facts": 22
+        }
+      ]
+    },
+    "health": {
+      "structural": {
+        "node_count": 1795,
+        "edge_count": 7814,
+        "edge_to_node_ratio": 4.353,
+        "density": 0.0049,
+        "connected_components": 25,
+        "largest_component_coverage": 0.97,
+        "avg_degree": 8.71,
+        "max_degree": 889,
+        "degree_std": 39.31,
+        "orphan_nodes": 0
+      },
+      "semantic": {
+        "unlabeled_nodes_pct": 0.2,
+        "unique_relation_types": 551,
+        "relation_type_entropy": 3.501,
+        "avg_property_count": 3.17,
+        "class_instance_ratio": 0.55
+      },
+      "retrieval": {
+        "index_record_count": 9609,
+        "hyperedge_count": 1795,
+        "facts_per_node": 5.35,
+        "hyperedge_coverage": 1.0
+      },
+      "overall_score": 75.0,
+      "badge": "Needs Attention",
+      "kb_id": "d15af03c40b14b118455a592e5027129"
+    },
+    "report_url": "",
+    "num_questions": 100,
+    "score_deltas": {
+      "answer_correctness": -0.0396,
+      "faithfulness": -0.005,
+      "retrieval_coverage": 0.0,
+      "fact_recall": -0.0788
+    },
+    "regressions": [
+      "fact_recall: 0.46 \u2192 0.39 (\u0394-0.08)"
+    ]
+  },
+  {
+    "id": "5979f7f1-081a-41f8-a44a-15a2c6f55a77",
+    "kb_id": "d15af03c40b14b118455a592e5027129",
+    "kb_name": "Pr.Chen",
+    "timestamp": "2026-03-07T02:06:37.816236+00:00",
+    "scores": {
+      "context_recall": 0.75,
+      "entity_recall": 0.8533333333333334,
+      "answer_correctness": 0.6552738360126635,
+      "faithfulness": 0.925,
+      "answer_relevancy": 0.77,
+      "retrieval_coverage": 1.0,
+      "retrieval_failure_rate": 0.0,
+      "fact_recall": 0.464228079612695,
+      "entity_coverage": 0.8533333333333334,
+      "faithfulness_claim_level": 0.765833333333333,
+      "context_precision": 0.84,
+      "per_question": [
+        {
+          "question": "What is gameplay?",
+          "answer": "Gameplay is the overall experience and mechanics involved in playing Pok\u00e9mon battles.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.7758620689655172,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 8,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What is a team?",
+          "answer": "A team is a collection of Pok\u00e9mon selected for battles, which can include multiple Pok\u00e9mon beyond the standard line.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.8548387096774194,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 4,
+          "total_ref_facts": 5
+        },
+        {
+          "question": "What factors influence mechanics?",
+          "answer": "Factors that influence mechanics include Player actions, Charge Attacks, Fast Attacks, and the Meta, which affects Strategy and Role.",
+          "context_recall": 0.0,
+          "entity_recall": 0.5,
+          "answer_correctness": 0.4627659574468085,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 10,
+          "total_ref_facts": 22
+        },
+        {
+          "question": "What is a game?",
+          "answer": "A game is a structured form of play, often for entertainment or fun, which can include various genres.",
+          "context_recall": 0.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.8142857142857143,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 10,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What is strategy?",
+          "answer": "Strategy is a plan of action designed to achieve a specific goal in battles.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.7857142857142858,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 4,
+          "total_ref_facts": 7
+        },
+        {
+          "question": "What factors influence a move?",
+          "answer": "The factors that influence a move include its type, energy requirements, and characteristics like damage dealt and undercharging.",
+          "context_recall": 0.0,
+          "entity_recall": 0.5,
+          "answer_correctness": 0.31976744186046513,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 16,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What is a livestream?",
+          "answer": "A livestream is a live broadcast where trainers and entertainers share knowledge and skills related to Pok\u00e9mon battles.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.8636363636363636,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 7,
+          "total_ref_facts": 10
+        },
+        {
+          "question": "What is damage?",
+          "answer": "Damage is the harm inflicted by either Fast or Charge Attacks, reducing a Pok\u00e9mon's health points.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.7093023255813953,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 16,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What is PvP?",
+          "answer": "PvP is Player versus Player battles in Pok\u00e9mon GO where moves have unique values.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.71875,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 17,
+          "total_ref_facts": 18
+        },
+        {
+          "question": "What is a timer?",
+          "answer": "A timer is a mechanism that tracks the duration of specific actions or events in the game.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.8913043478260869,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 5,
+          "total_ref_facts": 5
+        },
+        {
+          "question": "What is health?",
+          "answer": "Health is the remaining vitality of an opponent that can be converted into extra Fast Attacks and energy.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.7941176470588236,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 7,
+          "total_ref_facts": 8
+        },
+        {
+          "question": "What is a turn?",
+          "answer": "A turn is a unit of time for the measurement of moves in Pok\u00e9mon GO.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.49,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 7,
+          "total_ref_facts": 7
+        },
+        {
+          "question": "What is a moveset?",
+          "answer": "A moveset is the combination of Fast and Charge Attacks assigned to a Pok\u00e9mon.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.7692307692307692,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 16,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What is effectiveness?",
+          "answer": "Effectiveness is the degree to which a move or attack is successful against a particular type of Pok\u00e9mon.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.8571428571428572,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 14,
+          "total_ref_facts": 18
+        },
+        {
+          "question": "What is a move?",
+          "answer": "A move is an action performed by Pok\u00e9mon during battles, categorized into Fast Attacks and Charge Attacks.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.84375,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 16,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What is a tool?",
+          "answer": "A tool is a resource or application used to analyze or enhance gameplay in Pok\u00e9mon battles.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.7727272727272727,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 7,
+          "total_ref_facts": 8
+        },
+        {
+          "question": "What are effects?",
+          "answer": "Effects are consequences or results that modify the performance of a Pok\u00e9mon during battle.",
+          "context_recall": 0.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.7051282051282051,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 10,
+          "total_ref_facts": 13
+        },
+        {
+          "question": "What is coverage?",
+          "answer": "Coverage is the ability to protect against weaknesses through various strategies in Pok\u00e9mon battles.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.8448275862068966,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 3,
+          "total_ref_facts": 3
+        },
+        {
+          "question": "What factors influence a turn?",
+          "answer": "Fast Attacks, Charge Attacks, and damage are factors that influence a turn.",
+          "context_recall": 1.0,
+          "entity_recall": 0.5,
+          "answer_correctness": 0.4078947368421053,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 7,
+          "total_ref_facts": 15
+        },
+        {
+          "question": "What factors influence stamina?",
+          "answer": "The retrieved facts do not specify any direct factors that influence stamina.",
+          "context_recall": 0.0,
+          "entity_recall": 0.5,
+          "answer_correctness": 0.07692307692307693,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 7,
+          "total_ref_facts": 17
+        },
+        {
+          "question": "What is resistance?",
+          "answer": "Resistance is a characteristic that indicates a Pok\u00e9mon's ability to withstand damage from certain types of moves.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.9074074074074074,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 3,
+          "total_ref_facts": 3
+        },
+        {
+          "question": "What is a minigame?",
+          "answer": "A minigame is a type-based game that determines damage based on the number of icons cleared.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.8333333333333333,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 7,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What is a match?",
+          "answer": "A match is a competitive encounter between players using their Pok\u00e9mon and strategies.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.7758620689655173,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 18,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What is a tank?",
+          "answer": "A tank is a Pok\u00e9mon that can withstand significant damage due to its high defenses.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.78125,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 5,
+          "total_ref_facts": 5
+        },
+        {
+          "question": "What is interaction?",
+          "answer": "Interaction is the relationship between different types and their effects on each other in battles.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.7857142857142858,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 5,
+          "total_ref_facts": 7
+        },
+        {
+          "question": "What is a hybrid?",
+          "answer": "A hybrid is a Pok\u00e9mon that possesses characteristics of multiple types, allowing for diverse strategies in battles.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.8571428571428572,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 3,
+          "total_ref_facts": 3
+        },
+        {
+          "question": "What is a battle?",
+          "answer": "A battle is a central gameplay element where Pok\u00e9mon engage in combat against each other.",
+          "context_recall": 0.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.8666666666666667,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 8,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What is a combination?",
+          "answer": "A combination is a strategic pairing of moves or Pok\u00e9mon that enhances battle effectiveness.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.875,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 3,
+          "total_ref_facts": 3
+        },
+        {
+          "question": "What factors influence switches?",
+          "answer": "Factors that influence switches include cooldown effects, cleansing effects of Pok\u00e9mon, and the concept of Switch Advantage which affects matchups.",
+          "context_recall": 0.0,
+          "entity_recall": 0.5,
+          "answer_correctness": 0.7105263157894737,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 14,
+          "total_ref_facts": 23
+        },
+        {
+          "question": "What is typing?",
+          "answer": "Typing is the classification that introduces natural strengths and weaknesses for Pok\u00e9mon.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.82,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 7,
+          "total_ref_facts": 8
+        },
+        {
+          "question": "What factors influence a player?",
+          "answer": "Factors that influence a player include managing Pok\u00e9mon, utilizing movesets, using protect shields, and participating in gameplay, battles, and tournaments.",
+          "context_recall": 0.0,
+          "entity_recall": 0.6666666666666666,
+          "answer_correctness": 0.6555555555555556,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 12,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What factors influence a league?",
+          "answer": "Strategies and trends in Pok\u00e9mon battles may influence a league.",
+          "context_recall": 1.0,
+          "entity_recall": 0.5,
+          "answer_correctness": 0.29878048780487804,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 18,
+          "total_ref_facts": 26
+        },
+        {
+          "question": "What factors influence defense?",
+          "answer": "Defense is influenced by Bulk and can be modified by Stage.",
+          "context_recall": 1.0,
+          "entity_recall": 0.5,
+          "answer_correctness": 0.3712121212121212,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 14,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What is synergy?",
+          "answer": "Synergy is the interaction between different Pok\u00e9mon and their moves that enhances their effectiveness in battles.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.8793103448275863,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 2,
+          "total_ref_facts": 2
+        },
+        {
+          "question": "What is a scenario?",
+          "answer": "A scenario is a specific situation or context that affects the outcome of a battle.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.8809523809523809,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 4,
+          "total_ref_facts": 4
+        },
+        {
+          "question": "What is HP?",
+          "answer": "HP is a stat that represents a Pok\u00e9mon's health points.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.6875,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 9,
+          "total_ref_facts": 21
+        },
+        {
+          "question": "What is availability?",
+          "answer": "Availability is the accessibility of Pok\u00e9mon within the game, affecting their use in the meta.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.7962962962962963,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 4,
+          "total_ref_facts": 24
+        },
+        {
+          "question": "What is immunity?",
+          "answer": "Immunity is a state where a Pok\u00e9mon is completely unaffected by a specific type of move.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.8333333333333333,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 5,
+          "total_ref_facts": 5
+        },
+        {
+          "question": "What are switches?",
+          "answer": "Switches are the action of withdrawing a Pok\u00e9mon from active battle and substituting it with another.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.7307692307692307,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 13,
+          "total_ref_facts": 15
+        },
+        {
+          "question": "What is a stat?",
+          "answer": "A stat is a characteristic that determines the strength and abilities of a Pok\u00e9mon.",
+          "context_recall": 0.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.675,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 12,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What is energy?",
+          "answer": "Energy is a resource used by Pok\u00e9mon to perform Charge Attacks and Fast Attacks.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.8333333333333333,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 15,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What factors influence attack?",
+          "answer": "Factors influencing attack include the Attack stat itself, which determines damage output, and the mechanics of Fast Attacks and Charge Attacks that govern how damage is inflicted and energy is utiliz...",
+          "context_recall": 0.0,
+          "entity_recall": 0.5,
+          "answer_correctness": 0.4364406779661017,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 2,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What are attributes?",
+          "answer": "Attributes are characteristics or qualities of Pok\u00e9mon that can be mixed and matched to enhance their effectiveness in battles.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.8666666666666667,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 6,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What is a matchup?",
+          "answer": "A matchup is an assessment of the tools and resources available to determine the likelihood of winning.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.4551282051282051,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 18,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What factors influence interaction?",
+          "answer": "Type influences interaction, along with resistance and weakness.",
+          "context_recall": 1.0,
+          "entity_recall": 0.5,
+          "answer_correctness": 0.30128205128205127,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 5,
+          "total_ref_facts": 15
+        },
+        {
+          "question": "What factors influence effects?",
+          "answer": "Effects are influenced by moves, interactions, and type dynamics such as effectiveness, resistance, and weakness.",
+          "context_recall": 0.0,
+          "entity_recall": 0.5,
+          "answer_correctness": 0.35526315789473684,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 10,
+          "total_ref_facts": 21
+        },
+        {
+          "question": "What is a fighter?",
+          "answer": "A fighter is a role characterized by aggressive tactics and high damage output, often associated with Fighting-type Pok\u00e9mon.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.782051282051282,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 7,
+          "total_ref_facts": 8
+        },
+        {
+          "question": "What is bulk?",
+          "answer": "Bulk is a term that describes a Pok\u00e9mon's durability in battles, including Defense and Stamina.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.8125,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 7,
+          "total_ref_facts": 10
+        },
+        {
+          "question": "What factors influence STAB?",
+          "answer": "The factors that influence STAB include the type of the move and the Pok\u00e9mon's type.",
+          "context_recall": 1.0,
+          "entity_recall": 0.5,
+          "answer_correctness": 0.35,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 4,
+          "total_ref_facts": 19
+        },
+        {
+          "question": "What is a flyer?",
+          "answer": "A flyer is a role that typically involves Pok\u00e9mon with flying capabilities, often used for mobility and evasion.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.8870967741935484,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 5,
+          "total_ref_facts": 5
+        },
+        {
+          "question": "What is Pok\u00e9mon?",
+          "answer": "Pok\u00e9mon are fictional creatures that players can capture, train, and battle within the Pok\u00e9mon video game series.",
+          "context_recall": 0.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.8076923076923077,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 2,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What factors influence PvP?",
+          "answer": "Factors influencing PvP include Trainers, Moveset, and multipliers that affect move effectiveness.",
+          "context_recall": 0.0,
+          "entity_recall": 0.5,
+          "answer_correctness": 0.7051282051282051,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 15,
+          "total_ref_facts": 26
+        },
+        {
+          "question": "What is a debuff?",
+          "answer": "A debuff is a negative effect that reduces a Pok\u00e9mon's performance in battle.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.82,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 16,
+          "total_ref_facts": 21
+        },
+        {
+          "question": "What is an IV?",
+          "answer": "An IV is an Individual Value that determines a Pok\u00e9mon's potential in various stats.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.8333333333333333,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 4,
+          "total_ref_facts": 7
+        },
+        {
+          "question": "What is a line?",
+          "answer": "A line is a specific arrangement of three Pok\u00e9mon selected for Trainer Battles.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.8478260869565217,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 7,
+          "total_ref_facts": 12
+        },
+        {
+          "question": "What is a simulation?",
+          "answer": "A simulation is a tool or method used to predict the outcomes of battles based on various Pok\u00e9mon matchups.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.8235294117647058,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 6,
+          "total_ref_facts": 6
+        },
+        {
+          "question": "What is STAB?",
+          "answer": "STAB is the Same Type Attack Bonus, a mechanic that increases the damage of moves that match a Pok\u00e9mon's type.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.8333333333333333,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 4,
+          "total_ref_facts": 11
+        },
+        {
+          "question": "What is defense?",
+          "answer": "Defense is a stat representing a Pok\u00e9mon's ability to withstand physical attacks, determining the damage reduced and received.",
+          "context_recall": 0.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.6891891891891893,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 14,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What is an attack?",
+          "answer": "An attack is a stat that helps determine the damage output of a Pok\u00e9mon.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.3269230769230769,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 2,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What is a tactic?",
+          "answer": "A tactic is a strategic approach used by players to gain an advantage in battles.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.7962962962962963,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 4,
+          "total_ref_facts": 4
+        },
+        {
+          "question": "What factors influence Pok\u00e9mon?",
+          "answer": "Factors that influence Pok\u00e9mon include damage, matchups, effects, and Pok\u00e9mon Advantage.",
+          "context_recall": 0.0,
+          "entity_recall": 0.5,
+          "answer_correctness": 0.3833333333333333,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 2,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What is a resource?",
+          "answer": "A resource is items used in Pok\u00e9mon GO, such as Candy and Stardust, to enhance gameplay.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.5227272727272727,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 14,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What factors influence species?",
+          "answer": "Species are influenced by their unique strengths and weaknesses, Type interactions, and the overarching Meta that affects strategy and ecosystem.",
+          "context_recall": 1.0,
+          "entity_recall": 0.5,
+          "answer_correctness": 0.4068627450980392,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 4,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What factors influence a tool?",
+          "answer": "The retrieved facts do not specify factors that influence a tool.",
+          "context_recall": 0.0,
+          "entity_recall": 0.5,
+          "answer_correctness": 0.058823529411764705,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 5,
+          "total_ref_facts": 16
+        },
+        {
+          "question": "What is an opponent?",
+          "answer": "An opponent is the player or entity against whom the player is competing.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.8157894736842105,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 2,
+          "total_ref_facts": 2
+        },
+        {
+          "question": "What is a tournament?",
+          "answer": "A tournament is a competitive event where trainers battle against each other for titles and recognition.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.7972972972972973,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 9,
+          "total_ref_facts": 9
+        },
+        {
+          "question": "What is a league?",
+          "answer": "A league is a competitive tier in which Pok\u00e9mon battles occur, such as Great and Ultra League.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.4722222222222222,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 18,
+          "total_ref_facts": 18
+        },
+        {
+          "question": "What factors influence gameplay?",
+          "answer": "Factors that influence gameplay include Trainers, Pok\u00e9mon, battles, minigames, tactics, effectiveness, scenarios, and team composition.",
+          "context_recall": 0.0,
+          "entity_recall": 0.5,
+          "answer_correctness": 0.675,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 8,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What factors influence individual values (IV)?",
+          "answer": "The retrieved facts do not specify factors that influence individual values (IV).",
+          "context_recall": 0.0,
+          "entity_recall": 0.5,
+          "answer_correctness": 0.10256410256410257,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 4,
+          "total_ref_facts": 15
+        },
+        {
+          "question": "What factors influence a battle?",
+          "answer": "Factors that influence a battle include gameplay elements, energy requirements, and the location where the battle occurs, such as gyms.",
+          "context_recall": 0.0,
+          "entity_recall": 0.5,
+          "answer_correctness": 0.33163265306122447,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 8,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What is a gym?",
+          "answer": "A gym is a location in Pok\u00e9mon GO where Trainers can battle and train their Pok\u00e9mon.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.8333333333333333,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 8,
+          "total_ref_facts": 14
+        },
+        {
+          "question": "What factors influence a moveset?",
+          "answer": "The factors that influence a moveset include the combination of Fast and Charge Attacks, the types of moves included, the ability to deal damage, and matchups.",
+          "context_recall": 1.0,
+          "entity_recall": 0.5,
+          "answer_correctness": 0.36904761904761907,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 16,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What is a species?",
+          "answer": "A species is a category representing different kinds of Pok\u00e9mon, each with unique strengths and weaknesses.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.7222222222222222,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 4,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What factors influence type?",
+          "answer": "Type effectiveness is influenced by classification, interactions between types, and their effects in battles.",
+          "context_recall": 1.0,
+          "entity_recall": 0.5,
+          "answer_correctness": 0.39285714285714285,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 10,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What is a buff?",
+          "answer": "A buff is a positive effect that enhances a Pok\u00e9mon's performance in battle.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.82,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 18,
+          "total_ref_facts": 21
+        },
+        {
+          "question": "What is an icon?",
+          "answer": "An icon is a visual element that appears in the minigame and is associated with damage calculation.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.7758620689655173,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 9,
+          "total_ref_facts": 10
+        },
+        {
+          "question": "What is a type?",
+          "answer": "A type is a classification that determines the effectiveness of moves against Pok\u00e9mon based on their attributes.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.7444444444444445,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 13,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What factors influence energy?",
+          "answer": "Energy is influenced by its generation from Fast Attacks, its consumption for Charge Attacks, and its role in enhancing a Pok\u00e9mon's moveset.",
+          "context_recall": 0.0,
+          "entity_recall": 0.5,
+          "answer_correctness": 0.3782051282051282,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 14,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What is a mechanic?",
+          "answer": "A mechanic is the primary functions of a game designed to govern and guide the player's actions.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.7285714285714286,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 10,
+          "total_ref_facts": 14
+        },
+        {
+          "question": "What factors influence a trainer?",
+          "answer": "A trainer is influenced by their ability to strategize moves, manage resources like energy and shields, and their participation in gameplay, battles, and tournaments.",
+          "context_recall": 0.0,
+          "entity_recall": 0.5,
+          "answer_correctness": 0.49390243902439024,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 10,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What is weakness?",
+          "answer": "Weakness is a characteristic of a Pok\u00e9mon type that makes it more vulnerable to damage from certain other types.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.9333333333333333,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 1,
+          "total_ref_facts": 3
+        },
+        {
+          "question": "What is stamina?",
+          "answer": "Stamina is a stat that measures how much damage a Pok\u00e9mon can take before fainting.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.8235294117647058,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 7,
+          "total_ref_facts": 9
+        },
+        {
+          "question": "What is playstyle?",
+          "answer": "Playstyle is the individual approach and strategy a trainer employs in battles.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.8043478260869565,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 4,
+          "total_ref_facts": 4
+        },
+        {
+          "question": "What factors influence bulk?",
+          "answer": "Defense and Stamina influence bulk.",
+          "context_recall": 1.0,
+          "entity_recall": 0.5,
+          "answer_correctness": 0.3804347826086957,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 7,
+          "total_ref_facts": 18
+        },
+        {
+          "question": "What is a trainer?",
+          "answer": "A trainer is an individual who strategizes moves and manages resources like energy and shields, controlling Pok\u00e9mon and engaging in battles within Pok\u00e9mon GO.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.7727272727272727,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 10,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What is meta?",
+          "answer": "Meta is the overarching ecosystem of Pok\u00e9mon battles that influences strategies and gameplay.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.75,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 14,
+          "total_ref_facts": 23
+        },
+        {
+          "question": "What is baiting?",
+          "answer": "Baiting is a strategy used in battles to manipulate an opponent's actions, often involving the use of shields.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.84375,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 4,
+          "total_ref_facts": 4
+        },
+        {
+          "question": "What factors influence stats?",
+          "answer": "Stats are influenced by factors such as Defense, Bulk, Stamina, and various moves that can raise or lower Attack and Defense.",
+          "context_recall": 1.0,
+          "entity_recall": 0.5,
+          "answer_correctness": 0.4880952380952381,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 6,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What is an advantage?",
+          "answer": "An advantage is a concept that refers to the control a Trainer has over the outcome of a matchup, influenced by various factors.",
+          "context_recall": 0.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.39583333333333337,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 15,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What factors influence resources?",
+          "answer": "Resources are influenced by their type, usage in gameplay, and consumption range.",
+          "context_recall": 0.0,
+          "entity_recall": 0.5,
+          "answer_correctness": 0.36428571428571427,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 15,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What is a stage?",
+          "answer": "A stage is a level of modification applied to a stat that can alter its value.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.7962962962962963,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 1,
+          "total_ref_facts": 3
+        },
+        {
+          "question": "What is an ecosystem?",
+          "answer": "An ecosystem is the complex interactions and balance of types and roles within Pok\u00e9mon battles.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.8214285714285714,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 3,
+          "total_ref_facts": 4
+        },
+        {
+          "question": "What factors influence typing?",
+          "answer": "The factors that influence typing include the classification of types and their interactions in battles.",
+          "context_recall": 1.0,
+          "entity_recall": 0.5,
+          "answer_correctness": 0.3475609756097561,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 6,
+          "total_ref_facts": 16
+        },
+        {
+          "question": "What factors influence HP?",
+          "answer": "HP is influenced by Stamina, Defense, and Bulk.",
+          "context_recall": 1.0,
+          "entity_recall": 0.6666666666666666,
+          "answer_correctness": 0.3467741935483871,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 10,
+          "total_ref_facts": 29
+        },
+        {
+          "question": "What factors influence immunity?",
+          "answer": "The ontology does not specify factors that influence immunity.",
+          "context_recall": 0.0,
+          "entity_recall": 0.5,
+          "answer_correctness": 0.06666666666666667,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 5,
+          "total_ref_facts": 13
+        },
+        {
+          "question": "What is a role?",
+          "answer": "A role is a function or position that Pok\u00e9mon can take on in battles, influenced by their strengths and weaknesses.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.84375,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 5,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What factors influence damage?",
+          "answer": "Damage is influenced by the Move used and its effectiveness.",
+          "context_recall": 1.0,
+          "entity_recall": 0.5,
+          "answer_correctness": 0.35256410256410253,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 15,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What is a player?",
+          "answer": "A player is an individual who engages with Pok\u00e9mon by capturing, battling, and trading them.",
+          "context_recall": 0.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.8461538461538463,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 12,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What is a cooldown?",
+          "answer": "A cooldown is a period during which a player cannot perform a specific action, such as switching Pok\u00e9mon.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.9,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 8,
+          "total_ref_facts": 8
+        },
+        {
+          "question": "What is a shield?",
+          "answer": "A shield is a defensive tool that provides temporary protection for Pok\u00e9mon during battles.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.48255813953488375,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 19,
+          "total_ref_facts": 26
+        }
+      ]
+    },
+    "health": {
+      "structural": {
+        "node_count": 548,
+        "edge_count": 1640,
+        "edge_to_node_ratio": 2.993,
+        "density": 0.0109,
+        "connected_components": 3,
+        "largest_component_coverage": 0.982,
+        "avg_degree": 5.99,
+        "max_degree": 166,
+        "degree_std": 12.28,
+        "orphan_nodes": 0
+      },
+      "semantic": {
+        "unlabeled_nodes_pct": 0.0,
+        "unique_relation_types": 355,
+        "relation_type_entropy": 5.587,
+        "avg_property_count": 3.39,
+        "class_instance_ratio": 0.63
+      },
+      "retrieval": {
+        "index_record_count": 2188,
+        "hyperedge_count": 548,
+        "facts_per_node": 3.99,
+        "hyperedge_coverage": 1.0
+      },
+      "overall_score": 100.0,
+      "badge": "Healthy",
+      "kb_id": "d15af03c40b14b118455a592e5027129"
+    },
+    "report_url": "",
+    "num_questions": 100,
+    "score_deltas": {
+      "answer_correctness": 0.0074,
+      "faithfulness": -0.01,
+      "retrieval_coverage": 0.0,
+      "fact_recall": -0.1139
+    },
+    "regressions": [
+      "fact_recall: 0.58 \u2192 0.46 (\u0394-0.11)"
+    ]
+  },
+  {
+    "id": "f04142d4-5fe6-4138-ade6-b5d4f0ba6723",
+    "kb_id": "d15af03c40b14b118455a592e5027129",
+    "kb_name": "Pr.Chen",
+    "timestamp": "2026-03-07T01:55:35.786984+00:00",
+    "scores": {
+      "context_recall": 0.75,
+      "entity_recall": 1.0,
+      "answer_correctness": 0.6479212777097064,
+      "faithfulness": 0.935,
+      "answer_relevancy": 0.76,
+      "retrieval_coverage": 1.0,
+      "retrieval_failure_rate": 0.0,
+      "fact_recall": 0.5781049935979513,
+      "entity_coverage": 1.0,
+      "faithfulness_claim_level": 0.7488333333333332,
+      "context_precision": 0.84,
+      "per_question": [
+        {
+          "question": "What is health?",
+          "answer": "Health is the remaining vitality of an opponent that can be converted into extra Fast Attacks and energy.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.8333333333333333,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 7,
+          "total_ref_facts": 8
+        },
+        {
+          "question": "What is STAB?",
+          "answer": "STAB is the Same Type Attack Bonus, a mechanic that increases the damage of moves that match a Pok\u00e9mon's type.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.9137931034482758,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 4,
+          "total_ref_facts": 4
+        },
+        {
+          "question": "What factors influence gameplay?",
+          "answer": "Factors that influence gameplay include Trainers, Pok\u00e9mon, battles, minigames, tactics, effectiveness, and scenarios.",
+          "context_recall": 0.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.40384615384615385,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 8,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What is a buff?",
+          "answer": "A buff is a positive effect that enhances a Pok\u00e9mon's performance in battle.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.8076923076923077,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 18,
+          "total_ref_facts": 21
+        },
+        {
+          "question": "What is a livestream?",
+          "answer": "A livestream is a live broadcast where trainers and entertainers share knowledge and skills related to Pok\u00e9mon battles.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.8142857142857143,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 7,
+          "total_ref_facts": 7
+        },
+        {
+          "question": "What is a line?",
+          "answer": "A line is a specific arrangement of three Pok\u00e9mon selected for Trainer Battles.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.8478260869565217,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 7,
+          "total_ref_facts": 12
+        },
+        {
+          "question": "What is typing?",
+          "answer": "Typing is the classification that introduces natural strengths and weaknesses for Pok\u00e9mon.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.8333333333333333,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 7,
+          "total_ref_facts": 8
+        },
+        {
+          "question": "What is a role?",
+          "answer": "A role is a function or position that Pok\u00e9mon can take on in battles, influenced by their strengths and weaknesses.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.46153846153846156,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 5,
+          "total_ref_facts": 11
+        },
+        {
+          "question": "What factors influence species?",
+          "answer": "Species are influenced by factors such as stats (Defense, Bulk, Stamina) and type interactions (Resistance and Weakness).",
+          "context_recall": 0.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.3475609756097561,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 4,
+          "total_ref_facts": 4
+        },
+        {
+          "question": "What is a resource?",
+          "answer": "A resource is items used in Pok\u00e9mon GO, such as Candy and Stardust, to enhance gameplay.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.736842105263158,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 14,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What is a stat?",
+          "answer": "A stat is a numerical value representing a specific attribute of a Pok\u00e9mon, influencing its performance in battle.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.738095238095238,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 14,
+          "total_ref_facts": 29
+        },
+        {
+          "question": "What is interaction?",
+          "answer": "Interaction is the relationship between different types and their effects on each other in battles.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.7941176470588236,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 5,
+          "total_ref_facts": 7
+        },
+        {
+          "question": "What factors influence resources?",
+          "answer": "Resources are influenced by their usage in gameplay and the strategic management by trainers.",
+          "context_recall": 0.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.33333333333333337,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 15,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What is a timer?",
+          "answer": "A timer is a mechanism that tracks the duration of specific actions or events in the game.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.8913043478260869,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 5,
+          "total_ref_facts": 5
+        },
+        {
+          "question": "What is a match?",
+          "answer": "A match is a competitive encounter between players using their Pok\u00e9mon and strategies.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.7758620689655173,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 18,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What is a matchup?",
+          "answer": "A matchup is an assessment of the tools and resources available to determine the likelihood of winning.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.47857142857142854,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 18,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What factors influence a trainer?",
+          "answer": "A trainer is influenced by their strategic moves, resource management (energy and shields), participation in gameplay and battles, and the tools they utilize for analysis.",
+          "context_recall": 0.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.6818181818181818,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 10,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What factors influence immunity?",
+          "answer": "The ontology does not specify factors that influence immunity.",
+          "context_recall": 0.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.06451612903225806,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 5,
+          "total_ref_facts": 5
+        },
+        {
+          "question": "What factors influence a turn?",
+          "answer": "Fast Attacks, Charge Attacks, and their influence on damage.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.6666666666666667,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 7,
+          "total_ref_facts": 7
+        },
+        {
+          "question": "What are attributes?",
+          "answer": "Attributes are characteristics or qualities of Pok\u00e9mon that can be mixed and matched to enhance their effectiveness in battles.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.8055555555555556,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 7,
+          "total_ref_facts": 20
+        },
+        {
+          "question": "What is a game?",
+          "answer": "A game is a structured form of play, often for entertainment or fun.",
+          "context_recall": 0.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.7333333333333334,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 10,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What is a move?",
+          "answer": "A move is an action performed by Pok\u00e9mon during battles, categorized into Fast Attacks and Charge Attacks.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.84375,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 17,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What factors influence defense?",
+          "answer": "Defense is influenced by its ability to reduce damage, increase bulk and resilience, can be modified by Stage, and is influenced by Bulk.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.43181818181818177,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 19,
+          "total_ref_facts": 24
+        },
+        {
+          "question": "What is a flyer?",
+          "answer": "A flyer is a role that typically involves Pok\u00e9mon with flying capabilities, often used for mobility and evasion.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.8529411764705882,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 5,
+          "total_ref_facts": 5
+        },
+        {
+          "question": "What is a combination?",
+          "answer": "A combination is a strategic pairing of moves or Pok\u00e9mon that enhances battle effectiveness.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.8076923076923077,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 3,
+          "total_ref_facts": 3
+        },
+        {
+          "question": "What is a turn?",
+          "answer": "A turn is a unit of time for the measurement of moves in Pok\u00e9mon GO.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.49,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 7,
+          "total_ref_facts": 7
+        },
+        {
+          "question": "What is strategy?",
+          "answer": "Strategy is a plan of action designed to achieve a specific goal in battles.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.82,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 4,
+          "total_ref_facts": 4
+        },
+        {
+          "question": "What is a battle?",
+          "answer": "A battle is a central gameplay element where Pok\u00e9mon engage in combat against each other.",
+          "context_recall": 0.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.8666666666666667,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 8,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What is a cooldown?",
+          "answer": "A cooldown is a period during which a player cannot perform a specific action, such as switching Pok\u00e9mon.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.9,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 8,
+          "total_ref_facts": 8
+        },
+        {
+          "question": "What is coverage?",
+          "answer": "Coverage is the ability to protect against weaknesses through various strategies in Pok\u00e9mon battles.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.8846153846153846,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 3,
+          "total_ref_facts": 3
+        },
+        {
+          "question": "What is a stage?",
+          "answer": "A stage is a level of modification applied to a stat, which can increase or decrease its value.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.8571428571428572,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 1,
+          "total_ref_facts": 3
+        },
+        {
+          "question": "What is a player?",
+          "answer": "A player is an individual who engages with Pok\u00e9mon by capturing, battling, and trading them.",
+          "context_recall": 0.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.8333333333333333,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 13,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What factors influence HP?",
+          "answer": "HP is influenced by Stamina, Defense, and Bulk.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.38636363636363635,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 11,
+          "total_ref_facts": 16
+        },
+        {
+          "question": "What is a scenario?",
+          "answer": "A scenario is a specific situation or context that affects the outcome of a battle.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.8809523809523809,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 4,
+          "total_ref_facts": 4
+        },
+        {
+          "question": "What factors influence switches?",
+          "answer": "Factors that influence switches include Switch Advantage, cooldown effects, the ability to trigger buffs, and the involvement of Pok\u00e9mon.",
+          "context_recall": 0.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.6739130434782609,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 14,
+          "total_ref_facts": 15
+        },
+        {
+          "question": "What factors influence stamina?",
+          "answer": "The ontology does not specify factors that influence stamina.",
+          "context_recall": 0.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.08333333333333331,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 7,
+          "total_ref_facts": 9
+        },
+        {
+          "question": "What factors influence a moveset?",
+          "answer": "The factors influencing a moveset include the combination of Fast and Charge Attacks, energy requirements, damage output, and their influence on matchups.",
+          "context_recall": 0.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.6777777777777778,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 17,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What is synergy?",
+          "answer": "Synergy is the interaction between different Pok\u00e9mon and their moves that enhances their effectiveness in battles.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.8928571428571429,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 2,
+          "total_ref_facts": 2
+        },
+        {
+          "question": "What factors influence typing?",
+          "answer": "The factors that influence typing include the classification of types and their interactions in battles.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.6212121212121212,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 6,
+          "total_ref_facts": 8
+        },
+        {
+          "question": "What is resistance?",
+          "answer": "Resistance is a characteristic that indicates a Pok\u00e9mon's ability to withstand damage from certain types of moves.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.9074074074074074,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 3,
+          "total_ref_facts": 3
+        },
+        {
+          "question": "What is a team?",
+          "answer": "A team is a collection of Pok\u00e9mon selected for battles, which can include multiple Pok\u00e9mon beyond the standard line.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.8548387096774194,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 4,
+          "total_ref_facts": 5
+        },
+        {
+          "question": "What is a trainer?",
+          "answer": "A trainer is an individual who strategizes moves and manages resources like energy and shields, and also controls Pok\u00e9mon to engage in battles within Pok\u00e9mon GO.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.782608695652174,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 10,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What is an IV?",
+          "answer": "An IV is an Individual Value that determines a Pok\u00e9mon's potential in various stats.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.86,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 4,
+          "total_ref_facts": 4
+        },
+        {
+          "question": "What is baiting?",
+          "answer": "Baiting is a strategy used in battles to manipulate an opponent's actions, often involving the use of shields.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.84375,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 4,
+          "total_ref_facts": 4
+        },
+        {
+          "question": "What factors influence stats?",
+          "answer": "Stats are influenced by moves and factors such as Defense, Bulk, and Stamina.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.40384615384615385,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 7,
+          "total_ref_facts": 16
+        },
+        {
+          "question": "What is bulk?",
+          "answer": "Bulk is a term describing a Pok\u00e9mon's durability in battles.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.4285714285714286,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 7,
+          "total_ref_facts": 10
+        },
+        {
+          "question": "What factors influence attack?",
+          "answer": "Factors influencing attack include the type of moves (Fast Attacks and Charge Attacks), energy management, and the Attack stat, which can be adjusted by various moves.",
+          "context_recall": 0.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.4744897959183674,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 3,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What factors influence a tool?",
+          "answer": "The retrieved facts do not specify factors that influence a tool.",
+          "context_recall": 0.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.027027027027027025,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 5,
+          "total_ref_facts": 8
+        },
+        {
+          "question": "What are switches?",
+          "answer": "Switches are the action of withdrawing a Pok\u00e9mon from active battle and substituting it with another.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.7571428571428571,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 13,
+          "total_ref_facts": 15
+        },
+        {
+          "question": "What is availability?",
+          "answer": "Availability is the accessibility of Pok\u00e9mon within the game, affecting their use in the meta.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.7962962962962963,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 4,
+          "total_ref_facts": 13
+        },
+        {
+          "question": "What is a tool?",
+          "answer": "A tool is a resource or application used to analyze or enhance gameplay in Pok\u00e9mon battles.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.7432432432432432,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 7,
+          "total_ref_facts": 8
+        },
+        {
+          "question": "What factors influence type?",
+          "answer": "The factors that influence type include the attributes of the types and their interactions with each other in battles.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.35,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 14,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What factors influence interaction?",
+          "answer": "Type, Weakness, and Resistance influence interaction.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.27941176470588236,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 5,
+          "total_ref_facts": 7
+        },
+        {
+          "question": "What is a tactic?",
+          "answer": "A tactic is a strategic approach used by players to gain an advantage in battles.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.7962962962962963,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 4,
+          "total_ref_facts": 4
+        },
+        {
+          "question": "What is an advantage?",
+          "answer": "An advantage is the control a Trainer has over a matchup's outcome, influenced by various factors.",
+          "context_recall": 0.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.375,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 15,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What is an icon?",
+          "answer": "An icon is a visual element that appears in the minigame and is associated with damage calculation.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.86,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 9,
+          "total_ref_facts": 10
+        },
+        {
+          "question": "What is a type?",
+          "answer": "A type is a classification that determines the effectiveness of moves against Pok\u00e9mon based on their attributes.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.7894736842105263,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 15,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What is a hybrid?",
+          "answer": "A hybrid is a Pok\u00e9mon that possesses characteristics of multiple types, allowing for diverse strategies in battles.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.8448275862068966,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 3,
+          "total_ref_facts": 3
+        },
+        {
+          "question": "What factors influence STAB?",
+          "answer": "The factors that influence STAB include the type of the move and the type of the Pok\u00e9mon.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.6599999999999999,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 4,
+          "total_ref_facts": 4
+        },
+        {
+          "question": "What is a species?",
+          "answer": "A species is a category representing different kinds of Pok\u00e9mon, each with unique strengths and weaknesses.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.8200000000000001,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 4,
+          "total_ref_facts": 4
+        },
+        {
+          "question": "What is a mechanic?",
+          "answer": "A mechanic is the primary functions of a game designed to govern and guide the player's actions.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.5,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 10,
+          "total_ref_facts": 10
+        },
+        {
+          "question": "What factors influence energy?",
+          "answer": "Energy is influenced by its generation from Fast Attacks, its consumption range of 35 to 80, and its requirement for performing Charge Attacks.",
+          "context_recall": 0.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.3563829787234043,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 15,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What is a debuff?",
+          "answer": "A debuff is a negative effect that reduces a Pok\u00e9mon's performance in battle.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.8636363636363636,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 16,
+          "total_ref_facts": 21
+        },
+        {
+          "question": "What factors influence a move?",
+          "answer": "The factors that influence a move include its type (Fast or Charge Attack), the energy required for execution, and its ability to deal damage.",
+          "context_recall": 0.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.381578947368421,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 17,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What is a fighter?",
+          "answer": "A fighter is a role characterized by aggressive tactics and high damage output, often associated with Fighting-type Pok\u00e9mon.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.8055555555555556,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 7,
+          "total_ref_facts": 8
+        },
+        {
+          "question": "What is effectiveness?",
+          "answer": "Effectiveness is the degree to which a move or attack is successful against a particular type of Pok\u00e9mon.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.8571428571428572,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 14,
+          "total_ref_facts": 15
+        },
+        {
+          "question": "What is defense?",
+          "answer": "Defense is a stat that determines the damage reduced and received by a Pok\u00e9mon, increasing its bulk and resilience in battles.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.6612903225806451,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 19,
+          "total_ref_facts": 24
+        },
+        {
+          "question": "What is gameplay?",
+          "answer": "Gameplay is the overall experience and mechanics involved in playing Pok\u00e9mon battles.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.7666666666666666,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 8,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What is an ecosystem?",
+          "answer": "The ecosystem is the complex interactions and balance of types and roles within Pok\u00e9mon battles.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.8214285714285714,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 3,
+          "total_ref_facts": 4
+        },
+        {
+          "question": "What factors influence bulk?",
+          "answer": "Defense and Stamina influence bulk.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.36538461538461536,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 7,
+          "total_ref_facts": 10
+        },
+        {
+          "question": "What factors influence damage?",
+          "answer": "The factors that influence damage include the type of move used and the effectiveness of that move.",
+          "context_recall": 0.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.41279069767441856,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 20,
+          "total_ref_facts": 29
+        },
+        {
+          "question": "What is a gym?",
+          "answer": "A gym is a location in Pok\u00e9mon GO where Trainers can battle and train their Pok\u00e9mon.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.8,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 8,
+          "total_ref_facts": 14
+        },
+        {
+          "question": "What is playstyle?",
+          "answer": "Playstyle is the individual approach and strategy a trainer employs in battles.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.7916666666666667,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 4,
+          "total_ref_facts": 4
+        },
+        {
+          "question": "What factors influence IV?",
+          "answer": "No specific factors influencing IV are mentioned.",
+          "context_recall": 0.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.037037037037037035,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 4,
+          "total_ref_facts": 4
+        },
+        {
+          "question": "What is immunity?",
+          "answer": "Immunity is a state where a Pok\u00e9mon is completely unaffected by a specific type of move.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.86,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 5,
+          "total_ref_facts": 5
+        },
+        {
+          "question": "What is damage?",
+          "answer": "Damage is the harm inflicted by either Fast or Charge Attacks.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.39285714285714285,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 20,
+          "total_ref_facts": 29
+        },
+        {
+          "question": "What is weakness?",
+          "answer": "Weakness is a characteristic of a Pok\u00e9mon type that makes it more vulnerable to damage from certain other types.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.9333333333333333,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 1,
+          "total_ref_facts": 3
+        },
+        {
+          "question": "What factors influence effects?",
+          "answer": "Factors that influence effects include moves, interactions, and the types of Pok\u00e9mon.",
+          "context_recall": 0.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.4078947368421053,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 10,
+          "total_ref_facts": 13
+        },
+        {
+          "question": "What factors influence mechanics?",
+          "answer": "Mechanics are influenced by Fast Attacks, Charge Attacks, Playstyle, Type, and Meta.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.36363636363636365,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 10,
+          "total_ref_facts": 10
+        },
+        {
+          "question": "What is a simulation?",
+          "answer": "A simulation is a tool or method used to predict the outcomes of battles based on various Pok\u00e9mon matchups.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.8235294117647058,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 6,
+          "total_ref_facts": 6
+        },
+        {
+          "question": "What is a tournament?",
+          "answer": "A tournament is a competitive event where trainers battle against each other for titles and recognition.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.7972972972972973,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 9,
+          "total_ref_facts": 9
+        },
+        {
+          "question": "What is meta?",
+          "answer": "Meta is the overarching ecosystem of Pok\u00e9mon battles that determines strategies and describes effective gameplay strategies.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.7222222222222222,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 14,
+          "total_ref_facts": 14
+        },
+        {
+          "question": "What is a minigame?",
+          "answer": "A minigame is a type-based game that determines damage based on the number of icons cleared.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.7941176470588236,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 7,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What is PvP?",
+          "answer": "PvP is Player versus Player battles in Pok\u00e9mon GO where moves have unique values.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.4444444444444444,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 17,
+          "total_ref_facts": 18
+        },
+        {
+          "question": "What factors influence PvP?",
+          "answer": "Factors that influence PvP include the Trainers involved and the Moveset utilized.",
+          "context_recall": 0.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.4342105263157895,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 15,
+          "total_ref_facts": 18
+        },
+        {
+          "question": "What is HP?",
+          "answer": "HP is a stat that represents a Pok\u00e9mon's health points.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.7258064516129032,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 10,
+          "total_ref_facts": 16
+        },
+        {
+          "question": "What factors influence Pok\u00e9mon?",
+          "answer": "Factors that influence Pok\u00e9mon include damage, matchups, effects, and Pok\u00e9mon Advantage.",
+          "context_recall": 0.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.3928571428571429,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 2,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What is a shield?",
+          "answer": "A shield is a defensive tool that provides temporary protection for Pok\u00e9mon during battles.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.7439024390243902,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 19,
+          "total_ref_facts": 26
+        },
+        {
+          "question": "What is stamina?",
+          "answer": "Stamina is a stat that measures how much damage a Pok\u00e9mon can take before fainting.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.8235294117647058,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 7,
+          "total_ref_facts": 9
+        },
+        {
+          "question": "What factors influence a league?",
+          "answer": "Strategies and trends in Pok\u00e9mon battles may influence a league.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.3782051282051282,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 18,
+          "total_ref_facts": 18
+        },
+        {
+          "question": "What is energy?",
+          "answer": "Energy is a resource used by Pok\u00e9mon to perform Charge Attacks and Fast Attacks.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.5,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 15,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What is an attack?",
+          "answer": "An attack is a stat that helps determine the damage output of a Pok\u00e9mon.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.3475609756097561,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 3,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What is a moveset?",
+          "answer": "A moveset is the combination of Fast and Charge Attacks assigned to a Pok\u00e9mon.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.78,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 17,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What are effects?",
+          "answer": "Effects are consequences or results that modify the performance of a Pok\u00e9mon during battle.",
+          "context_recall": 0.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.7432432432432432,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 10,
+          "total_ref_facts": 13
+        },
+        {
+          "question": "What is an opponent?",
+          "answer": "An opponent is the player or entity against whom the player is competing.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.8333333333333333,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 2,
+          "total_ref_facts": 2
+        },
+        {
+          "question": "What is a league?",
+          "answer": "A league is a competitive tier in which Pok\u00e9mon battles occur, such as Great and Ultra League.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.45408163265306123,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 18,
+          "total_ref_facts": 18
+        },
+        {
+          "question": "What is a tank?",
+          "answer": "A tank is a Pok\u00e9mon that can withstand significant damage due to its high defenses.",
+          "context_recall": 1.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.7285714285714285,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 5,
+          "total_ref_facts": 5
+        },
+        {
+          "question": "What is Pok\u00e9mon?",
+          "answer": "Pok\u00e9mon are fictional creatures that players can capture, train, and battle within the Pok\u00e9mon video game series.",
+          "context_recall": 0.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.8,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 2,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What factors influence a player?",
+          "answer": "Factors that influence a player include managing Pok\u00e9mon, utilizing movesets, using protect shields, and engaging in gameplay and battles.",
+          "context_recall": 0.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.3351063829787234,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 13,
+          "total_ref_facts": 30
+        },
+        {
+          "question": "What factors influence a battle?",
+          "answer": "Battles are influenced by gameplay, energy requirements, the presence of Pok\u00e9mon, and the specific locations where they occur, such as gyms.",
+          "context_recall": 0.0,
+          "entity_recall": 1.0,
+          "answer_correctness": 0.39,
+          "retrieval_failure": false,
+          "ref_facts_in_ctx": 8,
+          "total_ref_facts": 30
+        }
+      ]
+    },
+    "health": {
+      "structural": {
+        "node_count": 392,
+        "edge_count": 1038,
+        "edge_to_node_ratio": 2.648,
+        "density": 0.0135,
+        "connected_components": 3,
+        "largest_component_coverage": 0.974,
+        "avg_degree": 5.3,
+        "max_degree": 122,
+        "degree_std": 9.83,
+        "orphan_nodes": 0
+      },
+      "semantic": {
+        "unlabeled_nodes_pct": 0.0,
+        "unique_relation_types": 278,
+        "relation_type_entropy": 5.579,
+        "avg_property_count": 3.57,
+        "class_instance_ratio": 0.75
+      },
+      "retrieval": {
+        "index_record_count": 1430,
+        "hyperedge_count": 392,
+        "facts_per_node": 3.65,
+        "hyperedge_coverage": 1.0
+      },
+      "overall_score": 100.0,
+      "badge": "Healthy",
+      "kb_id": "d15af03c40b14b118455a592e5027129"
+    },
+    "report_url": "",
+    "num_questions": 100,
+    "score_deltas": {},
+    "regressions": []
+  }
+]
