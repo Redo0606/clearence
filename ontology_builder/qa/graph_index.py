@@ -14,10 +14,13 @@ import logging
 import re
 import sys
 import threading
+import time
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Any
 
 import numpy as np
+import orjson
 from tqdm import tqdm
 
 from ontology_builder.constants import ENCODE_BATCH_SIZE, MAX_RETRIEVAL_FACTS
@@ -26,6 +29,9 @@ from ontology_builder.storage.graphdb import OntologyGraph
 from ontology_builder.storage.hypergraph import HyperGraph, build_hypergraph
 
 logger = logging.getLogger(__name__)
+
+INDEX_SUFFIX = ".qa_index.npz"
+RECORDS_SUFFIX = ".qa_records.json"
 
 _lock = threading.Lock()
 _records: list[dict[str, Any]] = []
@@ -77,11 +83,17 @@ def _graph_to_records(graph: OntologyGraph) -> list[dict[str, Any]]:
     for u, v, data in g.edges(data=True):
         r = data.get("relation", "related_to")
         conf = data.get("confidence", 1.0)
+        evidence = data.get("evidence", "")
         full = f"subject: {u}, attribute: {r}, value: {v}"
+        if evidence:
+            full += f" | Evidence: {evidence}"
+        value_text = v
+        if evidence:
+            value_text = f"{v} | Evidence: {evidence}"
         docs = data.get("source_documents", [])
         records.append({
             "key": f"{u} {r}",
-            "value": v,
+            "value": value_text,
             "full": full,
             "node": u,
             "kind": "edge",
@@ -176,8 +188,21 @@ def _build_ontological_context(query: str, graph: OntologyGraph) -> str:
 # Index building
 # ---------------------------------------------------------------------------
 
-def build_index(graph: OntologyGraph, verbose: bool = True) -> None:
-    """Build embedding index with hypergraph and ontological context support."""
+def build_index(
+    graph: OntologyGraph,
+    verbose: bool = True,
+    kb_path: Path | None = None,
+    precomputed_embeddings: dict[str, Any] | None = None,
+) -> None:
+    """Build embedding index with hypergraph and ontological context support.
+
+    If kb_path is provided and persisted index files exist, loads from disk
+    (~50-150ms) instead of rebuilding (several seconds).
+
+    If precomputed_embeddings is provided (e.g. from loaded npz), skips encode()
+    and populates the index directly. Expects keys: key_embeddings, value_embeddings.
+    Falls back to normal rebuild if None or malformed.
+    """
     global _records, _key_embeddings, _value_embeddings, _node_names
     global _node_to_record_indices, _hyperedges, _graph_ref, _hypergraph_ref
 
@@ -189,9 +214,47 @@ def build_index(graph: OntologyGraph, verbose: bool = True) -> None:
             logger.debug("[QAIndex] Skipping rebuild: index already for same graph")
             return
 
-    logger.info("[QAIndex] Building index | nodes=%d | edges=%d", nodes, edges)
+    # Attempt disk load if kb_path provided and index files exist
+    if kb_path is not None:
+        # Support both _index.npz (new) and .qa_index.npz (legacy) for backward compatibility
+        index_path = kb_path.parent / (kb_path.stem + "_index.npz")
+        if not index_path.exists():
+            index_path = kb_path.parent / (kb_path.stem + INDEX_SUFFIX)
+        records_path = kb_path.parent / (kb_path.stem + RECORDS_SUFFIX)
+        if index_path.exists() and records_path.exists():
+            t0 = time.perf_counter()
+            try:
+                loaded = np.load(index_path, allow_pickle=False)
+                key_emb = loaded["key_embeddings"]
+                value_emb = loaded["value_embeddings"]
+                loaded.close()
+                records = orjson.loads(records_path.read_bytes())
+                hyperedges, node_to_indices = _build_hyperedges(records)
+                with _lock:
+                    _records = records
+                    _key_embeddings = key_emb
+                    _value_embeddings = value_emb
+                    _node_names = set(graph.get_graph().nodes())
+                    _node_to_record_indices = node_to_indices
+                    _hyperedges = hyperedges
+                    _graph_ref = graph
+                    _hypergraph_ref = build_hypergraph(graph.to_factual_blocks())
+                load_ms = (time.perf_counter() - t0) * 1000
+                logger.info("QA index loaded from cache, skipping recomputation")
+                logger.info(
+                    "[QAIndex] Loaded from disk | records=%d | hyperedges=%d | time=%.0fms",
+                    len(records),
+                    len(hyperedges),
+                    load_ms,
+                )
+                return
+            except Exception as e:
+                logger.debug("[QAIndex] Disk load failed, rebuilding: %s", e)
+
+    logger.info("[QAIndex] Building index from graph | nodes=%d | edges=%d", nodes, edges)
 
     records = _graph_to_records(graph)
+    logger.info("[QAIndex] Converted to %d retrieval records (nodes + edges + data properties)", len(records))
     if not records:
         with _lock:
             _records = []
@@ -210,27 +273,47 @@ def build_index(graph: OntologyGraph, verbose: bool = True) -> None:
     factual_blocks = graph.to_factual_blocks()
     hg = build_hypergraph(factual_blocks)
 
-    keys = [r["key"] for r in records]
-    values = [r["value"] for r in records]
-    logger.debug("[QAIndex] Encoding %d records", len(records))
-    model = get_embedding_model()
-    key_chunks = []
-    value_chunks = []
-    for i in tqdm(
-        range(0, len(records), ENCODE_BATCH_SIZE),
-        desc="Encoding records",
-        disable=not verbose,
-        unit="batch",
-        file=sys.stderr,
-        dynamic_ncols=True,
-        mininterval=0.5,
-    ):
-        batch_keys = keys[i : i + ENCODE_BATCH_SIZE]
-        batch_values = values[i : i + ENCODE_BATCH_SIZE]
-        key_chunks.append(model.encode(batch_keys, convert_to_numpy=True, show_progress_bar=False))
-        value_chunks.append(model.encode(batch_values, convert_to_numpy=True, show_progress_bar=False))
-    key_emb = np.vstack(key_chunks) if key_chunks else np.array([])
-    value_emb = np.vstack(value_chunks) if value_chunks else np.array([])
+    key_emb: np.ndarray
+    value_emb: np.ndarray
+    if precomputed_embeddings and isinstance(precomputed_embeddings.get("key_embeddings"), np.ndarray) and isinstance(precomputed_embeddings.get("value_embeddings"), np.ndarray):
+        key_emb = np.asarray(precomputed_embeddings["key_embeddings"], dtype=np.float32)
+        value_emb = np.asarray(precomputed_embeddings["value_embeddings"], dtype=np.float32)
+        if key_emb.shape[0] == len(records) and value_emb.shape[0] == len(records):
+            logger.info("[QAIndex] Using precomputed embeddings, skipping encode")
+        else:
+            key_emb = None
+            value_emb = None
+    else:
+        key_emb = None
+        value_emb = None
+
+    if key_emb is None or value_emb is None:
+        keys = [r["key"] for r in records]
+        values = [r["value"] for r in records]
+        num_batches = (len(records) + ENCODE_BATCH_SIZE - 1) // ENCODE_BATCH_SIZE
+        logger.info(
+            "[QAIndex] Encoding %d records (key + value embeddings, %d batches). This may take 1-2 min for large graphs.",
+            len(records),
+            num_batches * 2,
+        )
+        model = get_embedding_model()
+        key_chunks = []
+        value_chunks = []
+        for i in tqdm(
+            range(0, len(records), ENCODE_BATCH_SIZE),
+            desc="Encoding records",
+            disable=not verbose,
+            unit="batch",
+            file=sys.stderr,
+            dynamic_ncols=True,
+            mininterval=0.5,
+        ):
+            batch_keys = keys[i : i + ENCODE_BATCH_SIZE]
+            batch_values = values[i : i + ENCODE_BATCH_SIZE]
+            key_chunks.append(model.encode(batch_keys, convert_to_numpy=True, show_progress_bar=False))
+            value_chunks.append(model.encode(batch_values, convert_to_numpy=True, show_progress_bar=False))
+        key_emb = np.vstack(key_chunks) if key_chunks else np.array([])
+        value_emb = np.vstack(value_chunks) if value_chunks else np.array([])
 
     with _lock:
         _records = records
@@ -241,7 +324,22 @@ def build_index(graph: OntologyGraph, verbose: bool = True) -> None:
         _hyperedges = hyperedges
         _graph_ref = graph
         _hypergraph_ref = hg
-    logger.info("[QAIndex] Index built: %d records, %d hyperedges", len(records), len(hyperedges))
+    logger.info("[QAIndex] Index ready | records=%d | hyperedges=%d", len(records), len(hyperedges))
+
+    # Persist to disk if kb_path provided (companion file: <kb_id>_index.npz)
+    if kb_path is not None:
+        index_path = kb_path.parent / (kb_path.stem + "_index.npz")
+        records_path = kb_path.parent / (kb_path.stem + RECORDS_SUFFIX)
+        try:
+            np.savez(
+                index_path,
+                key_embeddings=key_emb,
+                value_embeddings=value_emb,
+            )
+            records_path.write_bytes(orjson.dumps(records))
+            logger.info("[QAIndex] Persisted to disk | %s", index_path.name)
+        except Exception as e:
+            logger.debug("[QAIndex] Persist failed: %s", e)
 
 
 def clear_index() -> None:

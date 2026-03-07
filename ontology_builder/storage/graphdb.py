@@ -55,6 +55,7 @@ class OntologyGraph:
         self._axioms: list[dict[str, Any]] = []
         self._data_properties: list[dict[str, Any]] = []
         self.embedding_cache: dict[str, Any] = {}  # node name -> np.ndarray (filled at add time)
+        self._loading_mode = False
 
     # ------------------------------------------------------------------
     # Node operations
@@ -105,13 +106,16 @@ class OntologyGraph:
         # Avoid duplicate keyword: attrs may contain type/kind when merging existing node
         node_attrs = {k: v for k, v in attrs.items() if k not in ("type", "kind")}
         self.graph.add_node(name, type=etype, kind=kind, **node_attrs)
-        desc = attrs.get("description", "") or self.graph.nodes[name].get("description", "") or ""
-        text = f"{name} {desc}".strip() or name
-        try:
-            model = get_embedding_model()
-            self.embedding_cache[name] = model.encode(text, convert_to_numpy=True, show_progress_bar=False)
-        except Exception as e:
-            logger.debug("[GraphDB] Embedding cache skip for %r: %s", name, e)
+        if not self._loading_mode:
+            desc = attrs.get("description", "") or self.graph.nodes[name].get("description", "") or ""
+            text = f"{name} {desc}".strip() or name
+            try:
+                model = get_embedding_model()
+                self.embedding_cache[name] = model.encode(
+                    text, convert_to_numpy=True, show_progress_bar=False
+                )
+            except Exception as e:
+                logger.debug("[GraphDB] Embedding cache skip for %r: %s", name, e)
 
     def add_class(
         self,
@@ -122,10 +126,16 @@ class OntologyGraph:
         source_document: str | None = None,
         chunk_ids: list[int] | None = None,
         vote_count: int | None = None,
+        salience: float | None = None,
+        domain_tags: list[str] | None = None,
     ) -> None:
         attrs: dict[str, Any] = {}
         if synonyms:
             attrs["synonyms"] = list(synonyms)
+        if salience is not None:
+            attrs["salience"] = float(salience)
+        if domain_tags:
+            attrs["domain_tags"] = list(domain_tags)
         if source_document:
             attrs["source_documents"] = _merge_source_documents(
                 self.graph.nodes.get(name, {}).get("source_documents", []),
@@ -144,6 +154,7 @@ class OntologyGraph:
         provenance: dict | None = None,
         chunk_ids: list[int] | None = None,
         vote_count: int | None = None,
+        attributes: dict[str, str] | None = None,
     ) -> None:
         attrs: dict[str, Any] = {}
         if source_document:
@@ -158,6 +169,10 @@ class OntologyGraph:
                 source_document=source_document,
                 provenance=provenance,
             )
+        if attributes:
+            for attr_name, attr_val in attributes.items():
+                if attr_name and attr_val is not None:
+                    self.add_data_property(name, attr_name, str(attr_val), "string", source_document=source_document)
 
     # ------------------------------------------------------------------
     # Edge operations

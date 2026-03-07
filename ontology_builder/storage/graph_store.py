@@ -12,16 +12,19 @@ Thread-safety:
     progress. For production multi-tenant use, consider a per-session or
     per-request graph store with proper locking.
 """
-import json
 import logging
 import time
 from pathlib import Path
 from typing import Any
 
+import orjson
+
 from ontology_builder.ontology.canonicalizer import seed_from_entities
 from ontology_builder.storage.graphdb import OntologyGraph
 
 logger = logging.getLogger(__name__)
+
+COMPACT_JSON = True
 
 _current_graph: OntologyGraph | None = None
 _current_export: dict[str, Any] | None = None
@@ -101,6 +104,14 @@ def get_export() -> dict[str, Any] | None:
     return _current_export
 
 
+def get_export_for_api() -> dict[str, Any] | None:
+    """Return graph export without embeddings (for API responses). Embeddings excluded — persisted separately in _index.npz."""
+    data = get_export()
+    if data is None:
+        return None
+    return _strip_embeddings_for_export(data)
+
+
 def get_subject() -> str | None:
     """Return the document subject/domain if set."""
     return _document_subject
@@ -115,13 +126,31 @@ def clear() -> None:
     _document_subject = None
 
 
+def _strip_embeddings_for_export(data: dict[str, Any]) -> dict[str, Any]:
+    """Remove embedding vectors from export; persisted separately in _index.npz."""
+    out = dict(data)
+    out.pop("embedding_cache", None)
+    nodes = out.get("nodes", [])
+    if nodes:
+        filtered = []
+        for n in nodes:
+            if isinstance(n, dict):
+                n = {k: v for k, v in n.items() if k != "embedding" and not (isinstance(k, str) and k.endswith("_embedding"))}
+            filtered.append(n)
+        out["nodes"] = filtered
+    return out
+
+
 def save_to_path(path: Path) -> None:
     """Persist current graph export to a JSON file."""
     data = get_export()
     if data is None:
         raise ValueError("No graph to save")
+    # Embeddings excluded — persisted separately in _index.npz
+    data = _strip_embeddings_for_export(data)
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(data, indent=2), encoding="utf-8")
+    opts = 0 if COMPACT_JSON else orjson.OPT_INDENT_2
+    path.write_bytes(orjson.dumps(data, option=opts))
 
 
 def save_to_path_with_metadata(
@@ -154,8 +183,8 @@ def save_to_path_with_metadata(
     existing_meta: dict[str, Any] = {}
     if meta_path.exists():
         try:
-            existing_meta = json.loads(meta_path.read_text(encoding="utf-8"))
-        except (json.JSONDecodeError, OSError):
+            existing_meta = orjson.loads(meta_path.read_bytes())
+        except (orjson.JSONDecodeError, OSError):
             pass
 
     created_at = existing_meta.get("created_at", time.time())
@@ -190,7 +219,8 @@ def save_to_path_with_metadata(
         "documents": doc_list,
         "ontology_language": lang,
     }
-    meta_path.write_text(json.dumps(meta, indent=2), encoding="utf-8")
+    opts = 0 if COMPACT_JSON else orjson.OPT_INDENT_2
+    meta_path.write_bytes(orjson.dumps(meta, option=opts))
 
 
 def update_kb_metadata(
@@ -206,14 +236,15 @@ def update_kb_metadata(
     meta_path = base_dir / f"{kb_id}.meta.json"
     if not meta_path.exists():
         raise FileNotFoundError(f"Knowledge base '{kb_id}' not found.")
-    existing = json.loads(meta_path.read_text(encoding="utf-8"))
+    existing = orjson.loads(meta_path.read_bytes())
     if name is not None:
         existing["name"] = name
     if description is not None:
         existing["description"] = description
     if ontology_language is not None:
         existing["ontology_language"] = ontology_language
-    meta_path.write_text(json.dumps(existing, indent=2), encoding="utf-8")
+    opts = 0 if COMPACT_JSON else orjson.OPT_INDENT_2
+    meta_path.write_bytes(orjson.dumps(existing, option=opts))
     return existing
 
 
@@ -236,7 +267,7 @@ def list_knowledge_bases() -> list[dict[str, Any]]:
         meta_path = path.with_suffix(".meta.json")
         if meta_path.exists():
             try:
-                meta = json.loads(meta_path.read_text(encoding="utf-8"))
+                meta = orjson.loads(meta_path.read_bytes())
                 result.append({
                     "id": kb_id,
                     "name": meta.get("name", kb_id),
@@ -246,7 +277,7 @@ def list_knowledge_bases() -> list[dict[str, Any]]:
                     "documents": meta.get("documents", []),
                     "ontology_language": meta.get("ontology_language", "en"),
                 })
-            except (json.JSONDecodeError, OSError) as e:
+            except (orjson.JSONDecodeError, OSError) as e:
                 logger.warning("[GraphStore] Skipping invalid meta %s: %s", meta_path, e)
                 result.append({
                     "id": kb_id,
@@ -281,12 +312,30 @@ def load_from_path(path: Path, seed_canonicalizer: bool = True) -> OntologyGraph
             Set to False for read-only operations (health, evaluate) to avoid
             expensive embedding of all entities.
     """
-    data = json.loads(path.read_text(encoding="utf-8"))
+    t0 = time.perf_counter()
+    data = orjson.loads(path.read_bytes())
+    parse_ms = (time.perf_counter() - t0) * 1000
+    logger.debug("[GraphLoad] parse_json_ms=%.0f", parse_ms)
+
+    t1 = time.perf_counter()
     graph = _graph_from_export(data)
+    graph_recon_ms = (time.perf_counter() - t1) * 1000
+    logger.debug("[GraphLoad] graph_reconstruction_ms=%.0f", graph_recon_ms)
     if seed_canonicalizer:
+        t2 = time.perf_counter()
         entity_names = list(graph.get_graph().nodes())
         if entity_names:
             seed_from_entities(entity_names)
+        canonicalizer_ms = (time.perf_counter() - t2) * 1000
+        logger.debug("[GraphLoad] canonicalizer_seed_ms=%.0f", canonicalizer_ms)
+
+    total_ms = (time.perf_counter() - t0) * 1000
+    logger.info(
+        "[GraphLoad] load_complete | nodes=%d | edges=%d | time=%.2fs",
+        graph.get_graph().number_of_nodes(),
+        graph.get_graph().number_of_edges(),
+        total_ms / 1000,
+    )
     return graph
 
 
@@ -298,6 +347,7 @@ def _graph_from_export(data: dict[str, Any]) -> OntologyGraph:
     Preserves provenance (source_documents), synonyms, and other attributes.
     """
     graph = OntologyGraph()
+    graph._loading_mode = True
     nodes_data = data.get("nodes", [])
     links_data = data.get("links")
     if not isinstance(links_data, list):
@@ -344,7 +394,7 @@ def _graph_from_export(data: dict[str, Any]) -> OntologyGraph:
     emb_cache = data.get("embedding_cache", {})
     if isinstance(emb_cache, dict) and emb_cache:
         import numpy as np
-        graph.embedding_cache = {k: np.array(v, dtype=np.float32) for k, v in emb_cache.items()}
+        graph.embedding_cache = {k: np.asarray(v, dtype=np.float32) for k, v in emb_cache.items()}
     for dp in data.get("data_properties", []):
         entity = dp.get("entity", "")
         attr = dp.get("attribute", "")
@@ -355,4 +405,5 @@ def _graph_from_export(data: dict[str, Any]) -> OntologyGraph:
             graph.add_data_property(entity, attr, val, dtype, source_documents=src_docs)
         else:
             graph.add_data_property(entity, attr, val, dtype)
+    graph._loading_mode = False
     return graph

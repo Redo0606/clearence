@@ -97,7 +97,7 @@ def build_hypergraph(factual_blocks: list[dict[str, Any]]) -> HyperGraph:
             hg.add_edge(frozenset(indices))
 
     logger.info(
-        "[HyperGraph] Built | nodes=%d | edges=%d",
+        "[QAIndex] Hypergraph structure ready | hypernodes=%d | hyperedges=%d (OG-RAG; embedding encoding next)",
         len(hg.nodes),
         len(hg.edges),
     )

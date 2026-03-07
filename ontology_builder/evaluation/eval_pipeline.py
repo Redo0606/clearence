@@ -6,6 +6,7 @@ import logging
 import re
 import uuid
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Any, Callable
 
 from ontology_builder.evaluation.graph_health import compute_graph_health
@@ -397,6 +398,7 @@ def run_evaluation(
     num_questions: int = 5,
     reports_dir: str | None = None,
     progress_callback: Callable[[str, dict], None] | None = None,
+    kb_path: Path | None = None,
 ) -> EvalRecord:
     """Run full evaluation: questions, answers, scores, health."""
 
@@ -406,7 +408,7 @@ def run_evaluation(
 
     set_graph(graph, document_subject=None)
     set_current_kb_id(kb_id)
-    build_index(graph, verbose=False)
+    build_index(graph, verbose=False, kb_path=kb_path)
 
     emit("health", {})
     health = compute_graph_health(graph, kb_id=kb_id)

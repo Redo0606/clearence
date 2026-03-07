@@ -238,6 +238,62 @@ def _apply_inverse_propagation(
     return added
 
 
+def detect_relation_properties(graph: OntologyGraph) -> tuple[set[str], set[str]]:
+    """Auto-detect transitive and symmetric relations from graph structure.
+
+    Transitivity: if relation R has >3 open chains (A->B->C via R but no A->C), mark R transitive.
+    Symmetry: if >70% of R edges have reverse edge, mark R symmetric.
+    Adds axioms to graph. Returns (detected_transitive, detected_symmetric).
+    """
+    g = graph.get_graph()
+    relation_names: set[str] = set()
+    for _, _, d in g.edges(data=True):
+        r = d.get("relation")
+        if r and r != "subClassOf":
+            relation_names.add(r)
+
+    detected_transitive: set[str] = set()
+    detected_symmetric: set[str] = set()
+
+    for r in relation_names:
+        edges_r = [(u, v) for u, v, d in g.edges(data=True) if d.get("relation") == r]
+        if len(edges_r) < 2:
+            continue
+
+        # Transitivity: count open chains A->B->C via R with no A->C
+        open_chains = 0
+        edge_set = set(edges_r)
+        for a, b in edges_r:
+            for c in [v for u, v in edges_r if u == b]:
+                if a != c and (a, c) not in edge_set:
+                    open_chains += 1
+                    if open_chains > 3:
+                        break
+            if open_chains > 3:
+                break
+        if open_chains > 3:
+            existing = [ax for ax in graph.axioms if ax.get("axiom_type") == "transitivity" and ax.get("entities") and ax["entities"][0] == r]
+            if not existing:
+                graph.add_axiom({"axiom_type": "transitivity", "entities": [r], "description": "auto-detected from graph structure"})
+                detected_transitive.add(r)
+                logger.info("Auto-detected transitivity for relation: %s", r)
+
+        # Symmetry: count edges with reverse vs without
+        with_reverse = 0
+        total = len(edges_r)
+        for a, b in edges_r:
+            if (b, a) in edge_set:
+                with_reverse += 1
+        if total > 0 and with_reverse / total > 0.7:
+            existing = [ax for ax in graph.axioms if ax.get("axiom_type") == "symmetry" and ax.get("entities") and ax["entities"][0] == r]
+            if not existing:
+                graph.add_axiom({"axiom_type": "symmetry", "entities": [r], "description": "auto-detected from graph structure"})
+                detected_symmetric.add(r)
+                logger.info("Auto-detected symmetry for relation: %s", r)
+
+    return detected_transitive, detected_symmetric
+
+
 def _axiom_relation_sets(graph: OntologyGraph) -> tuple[set[str], set[str], list[tuple[str, str]]]:
     """Scan graph._axioms for transitivity, symmetry, inverse. Return (transitive, symmetric, inverse_pairs)."""
     transitive: set[str] = set()
@@ -262,7 +318,7 @@ def _axiom_relation_sets(graph: OntologyGraph) -> tuple[set[str], set[str], list
 def run_inference(graph: OntologyGraph, subject: str | None = None) -> ReasoningResult:
     """Apply all OWL 2 RL rules until fixpoint (no new inferences).
 
-    Auto-detects transitive/symmetric relations from graph axioms; adds inverse propagation.
+    Auto-detects transitive/symmetric relations from graph structure and axioms.
     Returns a ``ReasoningResult`` with counts, violations, and full trace.
     """
     result = ReasoningResult()
@@ -270,10 +326,14 @@ def run_inference(graph: OntologyGraph, subject: str | None = None) -> Reasoning
     transitive = set(TRANSITIVE_RELATIONS)
     symmetric = set(SYMMETRIC_RELATIONS)
     inverse_pairs: list[tuple[str, str]] = []
-    # Scan axioms for transitivity, symmetry, inverse (do not mutate module-level constants)
     ax_trans, ax_sym, inverse_pairs = _axiom_relation_sets(graph)
     transitive.update(ax_trans)
     symmetric.update(ax_sym)
+
+    # Pre-reasoning: detect relation properties from graph structure
+    det_trans, det_sym = detect_relation_properties(graph)
+    transitive.update(det_trans)
+    symmetric.update(det_sym)
 
     if subject:
         subject_lower = subject.lower().strip()
