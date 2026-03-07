@@ -1,12 +1,13 @@
 # Clearence - Common development tasks
 # Run `make help` for available targets
 
-.PHONY: help install run test lint format clean docker-build docker-up docker-down
+.PHONY: help install run run-dev test lint format clean docker-build docker-up docker-down
 
 help:
 	@echo "Clearence - Available targets:"
 	@echo "  make install       - Install package with dev dependencies (editable)"
-	@echo "  make run           - Run the FastAPI app with uvicorn (reload)"
+	@echo "  make run           - Run the FastAPI app with uvicorn (no reload)"
+	@echo "  make run-dev       - Run with --reload for dev (restarts on file changes)"
 	@echo "  make test          - Run pytest"
 	@echo "  make lint          - Run ruff check"
 	@echo "  make format        - Run ruff format"
@@ -19,6 +20,9 @@ install:
 	pip install -e ".[dev]"
 
 run:
+	uvicorn app.main:app --host 0.0.0.0 --port 8000
+
+run-dev:
 	uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 
 test:
