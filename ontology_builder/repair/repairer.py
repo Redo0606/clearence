@@ -166,13 +166,36 @@ def _node_text(node: str, data: dict[str, Any]) -> str:
     return f"{node} {desc}".strip() or node
 
 
+def _node_combined_text(
+    graph: OntologyGraph,
+    node: str,
+    data: dict[str, Any],
+) -> str:
+    """Combined text for semantic orphan matching: description + data props + relation targets."""
+    parts = [data.get("description", "")]
+    for dp in getattr(graph, "data_properties", []) or []:
+        if dp.get("entity") == node:
+            parts.append(str(dp.get("value", "")))
+    g = graph.get_graph()
+    for _, target, d in g.out_edges(node, data=True):
+        if d.get("relation") not in ("subClassOf", "type"):
+            parts.append(target)
+    combined = " ".join(filter(None, parts))
+    return combined.strip() or node
+
+
 def _link_orphans(
     graph: OntologyGraph,
     config: RepairConfig,
     report: RepairReport,
     progress_callback: Callable[[str, str, dict], None] | None,
 ) -> None:
-    """Link orphan nodes to similar connected nodes via embeddings."""
+    """Link orphan nodes to similar connected nodes via embeddings.
+
+    Enhanced: tries combined text (description + data props + relation targets) first;
+    falls back to name-only when combined is empty. Links orphan to target's parent when
+    match has cosine >= 0.75 to preserve hierarchy.
+    """
     g = graph.get_graph()
     orphans = [n for n in g.nodes() if g.degree(n) == 0]
     connected = [n for n in g.nodes() if g.degree(n) > 0]
@@ -182,30 +205,57 @@ def _link_orphans(
     if progress_callback:
         progress_callback("orphans", f"Linking {len(orphans)} orphan nodes", {"count": len(orphans)})
 
-    orphan_texts = [_node_text(n, g.nodes[n]) for n in orphans]
-    conn_texts = [_node_text(n, g.nodes[n]) for n in connected]
+    # Build combined texts for semantic matching
+    orphan_combined = [_node_combined_text(graph, n, g.nodes[n]) for n in orphans]
+    conn_combined = [_node_combined_text(graph, n, g.nodes[n]) for n in connected]
+    use_combined = any(t != n for t, n in zip(orphan_combined, orphans)) or any(
+        t != c for t, c in zip(conn_combined, connected)
+    )
+
+    if use_combined:
+        orphan_texts = orphan_combined
+        conn_texts = conn_combined
+    else:
+        orphan_texts = [_node_text(n, g.nodes[n]) for n in orphans]
+        conn_texts = [_node_text(n, g.nodes[n]) for n in connected]
+
     orphan_embs = _get_node_embeddings(graph, orphans, orphan_texts)
     conn_embs = _get_node_embeddings(graph, connected, conn_texts)
     sim = _cosine_similarity_matrix(orphan_embs, conn_embs)
+
+    semantic_threshold = 0.75
+    name_threshold = config.similarity_threshold
 
     linked = 0
     for i, orphan in enumerate(orphans):
         row = sim[i]
         top_indices = np.argsort(row)[::-1][: config.max_orphan_links]
+        thresh = semantic_threshold if use_combined else name_threshold
         for j in top_indices:
-            if row[j] >= config.similarity_threshold and connected[j] in g:
+            if row[j] >= thresh and connected[j] in g:
                 target = connected[j]
-                graph.add_relation(
-                    orphan,
-                    "related_to",
-                    target,
-                    confidence=DEFAULT_CONFIDENCE,
-                    source_document="inferred",
-                    provenance={"origin": "repair", "rule": "orphan_link"},
-                )
-                report.inferred_edges.append((orphan, "related_to", target))
-                report.edges_added += 1
-                linked += 1
+                # Link to target's parent when possible to preserve hierarchy
+                parent = None
+                for _, p, d in g.out_edges(target, data=True):
+                    if d.get("relation") == "subClassOf":
+                        parent = p
+                        break
+                link_to = parent if parent and parent in g else target
+                if link_to == target or not graph.has_edge(orphan, link_to, "related_to"):
+                    graph.add_relation(
+                        orphan,
+                        "related_to",
+                        link_to,
+                        confidence=DEFAULT_CONFIDENCE,
+                        source_document="inferred",
+                        provenance={"origin": "repair", "rule": "orphan_link"},
+                    )
+                    report.inferred_edges.append((orphan, "related_to", link_to))
+                    report.edges_added += 1
+                    linked += 1
+                    if parent and link_to == parent:
+                        logger.info("[Repair] Orphan linked via semantic match: %s -> %s (parent of %s)", orphan, parent, target)
+                    break
     report.orphans_linked = linked
 
 
@@ -217,8 +267,8 @@ def _bridge_components(
 ) -> None:
     """Bridge components to the largest via embedding similarity.
 
-    By default bridges all non-largest components. Set small_component_threshold
-    to only bridge components smaller than that (e.g. 10 for legacy behavior).
+    Multi-hop: looks for intermediate node semantically between the two bridge nodes.
+    If intermediate_score >= 0.6, adds A -> intermediate -> B. Else direct bridge.
     """
     g = graph.get_graph()
     undirected = g.to_undirected()
@@ -227,7 +277,6 @@ def _bridge_components(
         return
 
     largest = max(components, key=len)
-    # Bridge all non-largest, or only "small" ones if threshold set
     if config.small_component_threshold is not None:
         to_bridge = [c for c in components if c != largest and len(c) < config.small_component_threshold]
     else:
@@ -235,7 +284,6 @@ def _bridge_components(
     if not to_bridge:
         return
 
-    # Scale max bridges: at least cover all when many components
     max_bridges = min(len(components) - 1, config.max_component_bridges)
 
     if progress_callback:
@@ -253,12 +301,17 @@ def _bridge_components(
     largest_embs = _get_node_embeddings(graph, largest_nodes, largest_texts)
     sim = _cosine_similarity_matrix(rep_embs, largest_embs)
 
-    # When many components, allow slightly lower similarity to get more bridges
     threshold = config.bridge_similarity_threshold
     if threshold is None and len(components) > 20:
         threshold = min(config.similarity_threshold, 0.70)
     elif threshold is None:
         threshold = config.similarity_threshold
+
+    # Non-component nodes (in largest) for intermediate search
+    comp_sets = set(frozenset(c) for c in to_bridge)
+    all_nodes = list(g.nodes())
+    all_texts = [_node_text(n, g.nodes[n]) for n in all_nodes]
+    all_embs = _get_node_embeddings(graph, all_nodes, all_texts)
 
     bridged = 0
     for i, rep in enumerate(reps):
@@ -268,7 +321,53 @@ def _bridge_components(
         best_j = int(np.argmax(row))
         if row[best_j] >= threshold:
             target = largest_nodes[best_j]
-            if rep in g and target in g:
+            if rep not in g or target not in g:
+                continue
+
+            # Find intermediate node: max (sim(node, A) + sim(node, B)) / 2 over non-component nodes
+            rep_emb = rep_embs[i : i + 1]
+            tgt_emb = largest_embs[best_j : best_j + 1]
+            sim_to_rep = _cosine_similarity_matrix(all_embs, rep_emb).flatten()
+            sim_to_tgt = _cosine_similarity_matrix(all_embs, tgt_emb).flatten()
+            intermediate_scores = (sim_to_rep + sim_to_tgt) / 2.0
+
+            best_intermediate_idx = -1
+            best_score = 0.0
+            rep_comp = next((c for c in to_bridge if rep in c), set())
+            for j in range(len(all_nodes)):
+                node = all_nodes[j]
+                if node == rep or node == target:
+                    continue
+                if node in rep_comp or any(node in c for c in to_bridge):
+                    continue
+                if intermediate_scores[j] > best_score:
+                    best_score = intermediate_scores[j]
+                    best_intermediate_idx = j
+
+            if best_intermediate_idx >= 0 and best_score >= 0.6:
+                intermediate = all_nodes[best_intermediate_idx]
+                graph.add_relation(
+                    rep,
+                    "related_to",
+                    intermediate,
+                    confidence=DEFAULT_CONFIDENCE,
+                    source_document="inferred",
+                    provenance={"origin": "repair", "rule": "component_bridge"},
+                )
+                graph.add_relation(
+                    intermediate,
+                    "related_to",
+                    target,
+                    confidence=DEFAULT_CONFIDENCE,
+                    source_document="inferred",
+                    provenance={"origin": "repair", "rule": "component_bridge"},
+                )
+                report.inferred_edges.append((rep, "related_to", intermediate))
+                report.inferred_edges.append((intermediate, "related_to", target))
+                report.edges_added += 2
+                bridged += 1
+                logger.info("[Repair] Multi-hop bridge: %s -> %s -> %s", rep, intermediate, target)
+            else:
                 graph.add_relation(
                     rep,
                     "related_to",

@@ -114,19 +114,21 @@
       position: fixed;
       top: 60px;
       right: 0;
-      width: 320px;
+      width: 380px;
       max-width: 100%;
       height: calc(100vh - 60px);
       background: var(--bg-sidebar);
       border-left: 1px solid var(--border-subtle);
       z-index: 30;
       overflow-y: auto;
-      padding: 14px;
+      padding: 16px;
       font-size: 12px;
       transform: translateX(100%);
       transition: transform 0.2s ease;
     }
     #detail-panel.visible { transform: translateX(0); }
+    #detail-panel .panel-section { margin-bottom: 20px; padding-bottom: 16px; border-bottom: 1px solid var(--border-subtle); }
+    #detail-panel .panel-section:last-child { border-bottom: none; }
     #detail-panel .detail-title { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); margin-bottom: 8px; }
     #detail-panel .detail-row { margin-bottom: 10px; }
     #detail-panel .detail-label { color: var(--text-muted); font-size: 10px; }
@@ -135,8 +137,11 @@
     #detail-panel .score-bar { height: 6px; border-radius: 3px; background: var(--bg-card); overflow: hidden; margin-top: 4px; }
     #detail-panel .score-fill { height: 100%; border-radius: 3px; }
     #detail-panel .repair-tag { background: var(--accent-secondary-2); border: 1px solid var(--accent-secondary-4); color: var(--accent-secondary-dim); padding: 2px 6px; border-radius: 4px; font-size: 10px; }
-    #minimap { position: absolute; bottom: 16px; right: 16px; width: 160px; height: 120px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg-card); z-index: 10; pointer-events: none; display: none; }
+    #detail-panel .node-link { color: var(--accent-tertiary); text-decoration: none; }
+    #detail-panel .node-link:hover { text-decoration: underline; }
+    #minimap { position: absolute; bottom: 16px; right: 16px; width: 180px; height: 120px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg-card); z-index: 10; overflow: hidden; display: none; }
     #minimap.visible { display: block; }
+    #hull-overlay { position: absolute; top: 12px; left: 12px; right: 12px; bottom: 12px; border-radius: 12px; z-index: 0; pointer-events: none; }
   </style>
 </head>
 <body>
@@ -194,11 +199,13 @@
         <button id="reset-focus-btn" class="ctrl-item ctrl-btn" type="button">Reset</button>
         <div class="ctrl-sep"></div>
         <button id="edge-label-toggle" class="ctrl-item ctrl-btn" type="button">Labels: ON</button>
+        <button id="hub-edges-toggle" class="ctrl-item ctrl-btn" type="button" style="display:none;">Show all connections</button>
       </div>
     </div>
     <div id="graph-wrap">
       <div id="stabilization-progress"><div class="bar" id="stabilization-progress-bar"></div></div>
       <div id="spotlight-bg"></div>
+      <canvas id="hull-overlay"></canvas>
       <div id="graph"></div>
       <div id="node-tooltip"></div>
       <div id="viewer-init-error"></div>
@@ -239,7 +246,9 @@
     var data = { nodes: nodes, edges: edges };
     var nodeCount = nodes.get().length;
     var showEdgeLabels = nodeCount < 400;
-    var defaultLayoutMode = nodeCount > 1500 ? "hierarchical" : "force";
+    var subClassRatio = {{ sub_class_ratio_json | default('0') | safe }};
+    var useHierarchicalByDefault = subClassRatio > 0.15 && !{{ has_cycles_json | safe }};
+    var defaultLayoutMode = (nodeCount > 1500 || useHierarchicalByDefault) ? "hierarchical" : "force";
 
     var C = (function() {
       var s = getComputedStyle(document.documentElement);
@@ -310,6 +319,9 @@
     var hierarchyLevels = {{ hierarchy_json | safe }};
     var clusters = {{ clusters_json | safe }};
     var isolated = {{ isolated_json | safe }};
+    var hubIds = new Set({{ hub_ids_json | default('[]') | safe }});
+    var HUB_EDGE_CAP = 25;
+    var clusterPalette = ["rgba(255,80,160,0.05)", "rgba(100,180,255,0.05)", "rgba(255,200,80,0.05)", "rgba(120,220,180,0.05)"];
     var hasCycles = {{ has_cycles_json | safe }};
     var preSelectNode = {{ pre_select_node_json | safe }};
     var initialDepth = {{ depth_json | safe }};
@@ -352,7 +364,11 @@
       }
     }
 
+    var edgeLabelsOnHoverOnly = nodeCount > 200;
+    var hoveredEdgeId = null;
+
     function getRelationLabel(edge) {
+      if (edgeLabelsOnHoverOnly) return "";
       var rel = edge && (edge.relation || edge.label) ? (edge.relation || edge.label) : "related_to";
       return showEdgeLabels ? rel : "";
     }
@@ -384,16 +400,11 @@
 
       if (isSpot) {
         if (!relatedNodes || !relatedNodes.has(n.id)) {
-          return {
-            id: n.id,
-            borderWidth: 0,
-            color: { background: "rgba(0,0,0,0)", border: "rgba(0,0,0,0)", highlight: { background: "rgba(0,0,0,0)", border: "rgba(0,0,0,0)" }, hover: { background: "rgba(0,0,0,0)", border: "rgba(0,0,0,0)" } },
-            font: { color: "rgba(0,0,0,0)", size: 13, face: "Space Grotesk" },
-            shadow: false,
-          };
+          return { id: n.id, opacity: 0.15 };
         }
         return {
           id: n.id,
+          opacity: isFocus ? 1 : 0.9,
           borderWidth: isFocus ? 2.8 : 2.0,
           color: { background: isFocus ? C.bgCardHover : C.bgCard, border: accent, highlight: { background: C.bgCardHover, border: accent }, hover: { background: C.bgCardHover, border: accent } },
           font: { color: C.textPrimary, size: isFocus ? 14 : 13, face: "Space Grotesk" },
@@ -433,9 +444,15 @@
         relatedEdges = getConnectedEdgesForNodes(relatedNodes);
       }
       var active = !state.selectedNodeId && !state.focusedNodeId || (relatedEdges && relatedEdges.has(e.id));
+      var edgeLabel = getRelationLabel(e);
+      if (edgeLabelsOnHoverOnly) {
+        var showOnHover = state.hoveredEdgeId === e.id;
+        var showOnSelect = (state.selectedNodeId || state.focusedNodeId) && relatedEdges && relatedEdges.has(e.id);
+        edgeLabel = (showOnHover || showOnSelect) ? (e.relation || e.label || "related_to") : "";
+      }
       return {
         id: e.id,
-        label: getRelationLabel(e),
+        label: edgeLabel,
         color: { color: state.selectedNodeId || state.focusedNodeId ? (active ? base : withAlpha(base, 0.06)) : base, opacity: state.selectedNodeId || state.focusedNodeId ? (active ? 1.0 : 0.06) : 0.88 },
         width: state.selectedNodeId || state.focusedNodeId ? (active ? 2.6 : 0.4) : 1.8,
         dashes: state.selectedNodeId || state.focusedNodeId ? (active ? baseDashes : [3, 6]) : baseDashes,
@@ -445,7 +462,21 @@
     }
 
     function getState() {
-      return { selectedNodeId: selectedNodeId, focusedNodeId: focusedNodeId, hoveredNodeId: hoveredNodeId, selectedDepth: selectedDepth, edgeFilter: edgeFilter, viewMode: viewMode };
+      return { selectedNodeId: selectedNodeId, focusedNodeId: focusedNodeId, hoveredNodeId: hoveredNodeId, hoveredEdgeId: hoveredEdgeId, selectedDepth: selectedDepth, edgeFilter: edgeFilter, viewMode: viewMode };
+    }
+
+    function applyLabelVisibility(focusNodeId) {
+      var fn = focusNodeId || selectedNodeId || focusedNodeId;
+      var related = fn ? getConnectedNodesNHop(fn, selectedDepth >= 999 ? 10 : selectedDepth) : null;
+      var allNodes = nodes.get();
+      var updates = [];
+      for (var i = 0; i < allNodes.length; i++) {
+        var n = allNodes[i];
+        if (n.hidden) continue;
+        var showLabel = n.id === fn || (related && related.has(n.id)) || (n.degree != null && n.degree > 20) || hoveredNodeId === n.id;
+        updates.push({ id: n.id, label: showLabel ? (n.baseLabel || n.label || n.id) : "" });
+      }
+      if (updates.length) nodes.update(updates);
     }
 
     function applyStyles() {
@@ -477,43 +508,45 @@
       if (edgeLabelToggle) edgeLabelToggle.textContent = "Labels: " + (showEdgeLabels ? "ON" : "OFF");
     }
 
-    var physicsIters = nodeCount < 100 ? 300 : nodeCount < 500 ? 200 : nodeCount < 1000 ? 120 : 80;
+    var physicsIters = nodeCount < 100 ? 1500 : nodeCount < 500 ? 1200 : nodeCount < 1000 ? 800 : 500;
+    var physicsEnabled = nodeCount <= 600;
+    var physicsConfig = useHierarchicalByDefault
+      ? { enabled: physicsEnabled, hierarchicalRepulsion: { centralGravity: 0.0, springLength: 150, springConstant: 0.01, nodeDistance: 180, damping: 0.09 }, stabilization: { enabled: true, iterations: physicsIters, updateInterval: 25, fit: true } }
+      : { enabled: physicsEnabled, solver: "barnesHut", barnesHut: { gravitationalConstant: -9000, centralGravity: 0.08, springLength: 280, springConstant: 0.035, damping: 0.45, avoidOverlap: 1 }, stabilization: { enabled: true, iterations: physicsIters, updateInterval: 25, fit: true }, minVelocity: 0.75 };
     var options = {
       autoResize: true,
-      layout: { improvedLayout: true },
-      physics: {
-        enabled: true,
-        barnesHut: {
-          gravitationalConstant: -2800,
-          centralGravity: 0.35,
-          springLength: 140,
-          springConstant: 0.06,
-          damping: 0.12,
-          avoidOverlap: 0.25,
-        },
-        stabilization: {
+      layout: {
+        improvedLayout: true,
+        hierarchical: useHierarchicalByDefault ? {
           enabled: true,
-          iterations: physicsIters,
-          updateInterval: 50,
-          fit: true,
-        },
+          direction: "UD",
+          sortMethod: "hubsize",
+          levelSeparation: 240,
+          nodeSpacing: 210,
+          treeSpacing: 280,
+          blockShifting: true,
+          edgeMinimization: true,
+          parentCentralization: true
+        } : { enabled: false }
       },
+      physics: physicsConfig,
       interaction: { hover: true, tooltipDelay: 999999, navigationButtons: false, keyboard: true, dragNodes: true, zoomView: true, dragView: true },
       nodes: {
         shape: "box",
         shapeProperties: { borderRadius: 8 },
-        margin: { top: 10, right: 12, bottom: 10, left: 12 },
-        widthConstraint: { minimum: 140, maximum: 280 },
+        margin: 12,
+        widthConstraint: { minimum: 160, maximum: 280 },
         font: { color: C.textPrimary, size: 13, face: "Space Grotesk" },
         borderWidth: 1.2,
         borderWidthSelected: 2.2,
         color: { background: C.bgCard, border: C.border, highlight: { background: C.bgCardHover, border: C.accent }, hover: { background: C.bgCardHover, border: C.accent } }
       },
       edges: {
-        smooth: { type: "continuous" },
+        smooth: { enabled: true, type: "cubicBezier", forceDirection: "vertical", roundness: 0.6 },
         width: 1.8,
-        hoverWidth: 2.4,
-        selectionWidth: 2.2,
+        hoverWidth: 2,
+        selectionWidth: 2,
+        font: { size: 10, align: "middle" },
         arrows: { to: { enabled: true, scaleFactor: 0.5 } },
         labelHighlightBold: true,
         color: { inherit: false },
@@ -523,12 +556,12 @@
 
     var network = new vis.Network(container, data, options);
 
-    if (defaultLayoutMode === "hierarchical") {
-      network.setOptions({
-        layout: { hierarchical: { enabled: true, direction: "UD", sortMethod: "directed", levelSeparation: 180, nodeSpacing: 140, treeSpacing: 200 } },
-        physics: { enabled: true, hierarchicalRepulsion: { centralGravity: 0.0, springLength: 150, springConstant: 0.01, nodeDistance: 180, damping: 0.09 }, stabilization: { enabled: true, iterations: physicsIters, updateInterval: 50, fit: true } },
-      });
-    }
+    network.on("dragEnd", function() {
+      if (simulationFrozen) {
+        network.setOptions({ physics: { enabled: true } });
+      }
+      network.stabilize(150);
+    });
 
     var progressBar = document.getElementById("stabilization-progress-bar");
     var progressWrap = document.getElementById("stabilization-progress");
@@ -537,6 +570,113 @@
         var pct = params.total ? (params.iterations / params.total) * 100 : 0;
         progressBar.style.width = pct + "%";
       }
+    });
+
+    var currentZoomScale = 1.0;
+    var showAllHubEdges = false;
+
+    function convexHull(points) {
+      if (points.length < 3) return points;
+      var cross = function(o, a, b) { return (a.x - o.x) * (b.y - o.y) - (a.y - o.y) * (b.x - o.x); };
+      points.sort(function(a, b) { return a.x !== b.x ? a.x - b.x : a.y - b.y; });
+      var lower = [], upper = [];
+      for (var i = 0; i < points.length; i++) {
+        while (lower.length >= 2 && cross(lower[lower.length - 2], lower[lower.length - 1], points[i]) <= 0) lower.pop();
+        lower.push(points[i]);
+      }
+      for (var j = points.length - 1; j >= 0; j--) {
+        while (upper.length >= 2 && cross(upper[upper.length - 2], upper[upper.length - 1], points[j]) <= 0) upper.pop();
+        upper.push(points[j]);
+      }
+      lower.pop(); upper.pop();
+      return lower.concat(upper);
+    }
+
+    function drawHullOverlay() {
+      var hullCanvas = document.getElementById("hull-overlay");
+      if (!hullCanvas || !clusters || clusters.length === 0) return;
+      var ctx = hullCanvas.getContext("2d");
+      var rect = hullCanvas.getBoundingClientRect();
+      if (rect.width === 0 || rect.height === 0) return;
+      hullCanvas.width = rect.width;
+      hullCanvas.height = rect.height;
+      ctx.clearRect(0, 0, rect.width, rect.height);
+      var pos = network.getPositions();
+      for (var c = 0; c < clusters.length; c++) {
+        var clusterNodes = clusters[c];
+        var pts = [];
+        for (var i = 0; i < clusterNodes.length; i++) {
+          var p = pos[clusterNodes[i]];
+          if (p) {
+            var dom = network.canvasToDOM({ x: p.x, y: p.y });
+            pts.push({ x: dom.x - rect.left, y: dom.y - rect.top });
+          }
+        }
+        if (pts.length >= 3) {
+          var hull = convexHull(pts);
+          ctx.fillStyle = clusterPalette[c % clusterPalette.length];
+          ctx.beginPath();
+          ctx.moveTo(hull[0].x, hull[0].y);
+          for (var h = 1; h < hull.length; h++) ctx.lineTo(hull[h].x, hull[h].y);
+          ctx.closePath();
+          ctx.fill();
+        }
+      }
+    }
+
+    function computeEdgeHidden(e) {
+      var rel = e.relation || "";
+      var hideByFilter = false;
+      if (edgeFilter === "subClassOf") hideByFilter = rel !== "subClassOf";
+      else if (edgeFilter === "type") hideByFilter = rel !== "type" && rel !== "instanceOf";
+      else if (edgeFilter === "other") hideByFilter = rel === "subClassOf" || rel === "type" || rel === "instanceOf";
+      var hierarchyRels = ["subClassOf"];
+      var structuralRels = ["subClassOf", "type", "instanceOf", "part_of", "contains"];
+      var hideByZoom = false;
+      if (currentZoomScale < 0.45) hideByZoom = hierarchyRels.indexOf(rel) === -1;
+      else if (currentZoomScale < 0.75) hideByZoom = structuralRels.indexOf(rel) === -1;
+      var hideByHub = false;
+      if (!showAllHubEdges) {
+        if (hubIds.has(e.from) && e.hubOutRank != null && e.hubOutRank >= HUB_EDGE_CAP) hideByHub = true;
+        if (hubIds.has(e.to) && e.hubInRank != null && e.hubInRank >= HUB_EDGE_CAP) hideByHub = true;
+      }
+      return hideByFilter || hideByZoom || hideByHub;
+    }
+
+    function applyEdgeVisibility() {
+      var allEdges = edges.get();
+      var nodeMap = {};
+      nodes.get().forEach(function(n) { nodeMap[n.id] = n; });
+      var updates = [];
+      for (var i = 0; i < allEdges.length; i++) {
+        var e = allEdges[i];
+        var hide = computeEdgeHidden(e);
+        if (viewMode === "classes" && (e.relation || "") !== "subClassOf") hide = true;
+        if (viewMode === "instances" && (e.relation || "") !== "type" && (e.relation || "") !== "instanceOf") hide = true;
+        if (nodeMap[e.from] && nodeMap[e.from].hidden) hide = true;
+        if (nodeMap[e.to] && nodeMap[e.to].hidden) hide = true;
+        updates.push({ id: e.id, hidden: hide });
+      }
+      if (updates.length) edges.update(updates);
+    }
+
+    var hullDrawThrottle = null;
+    network.on("afterDrawing", function() {
+      if (hullDrawThrottle) clearTimeout(hullDrawThrottle);
+      hullDrawThrottle = setTimeout(function() { hullDrawThrottle = null; drawHullOverlay(); }, 150);
+    });
+
+    network.on("zoom", function(params) {
+      currentZoomScale = params.scale;
+      if (params.scale < 0.55) {
+        var allNodes = nodes.get();
+        var updates = allNodes.map(function(n) { return { id: n.id, label: "" }; });
+        if (updates.length) nodes.update(updates);
+      } else {
+        applyLabelVisibility(null);
+      }
+      applyEdgeVisibility();
+      drawHullOverlay();
     });
 
     if (fitBtn) {
@@ -570,18 +710,7 @@
     if (edgeFilterSelect) {
       edgeFilterSelect.addEventListener("change", function() {
         edgeFilter = edgeFilterSelect.value || "all";
-        var allEdges = edges.get();
-        var updates = [];
-        for (var i = 0; i < allEdges.length; i++) {
-          var e = allEdges[i];
-          var rel = e.relation || "";
-          var hide = false;
-          if (edgeFilter === "subClassOf") hide = rel !== "subClassOf";
-          else if (edgeFilter === "type") hide = rel !== "type" && rel !== "instanceOf";
-          else if (edgeFilter === "other") hide = rel === "subClassOf" || rel === "type" || rel === "instanceOf";
-          updates.push({ id: e.id, hidden: hide });
-        }
-        if (updates.length) edges.update(updates);
+        applyEdgeVisibility();
         nhopCache.clear();
         applyStyles();
       });
@@ -614,29 +743,71 @@
       return { total: edgeIds.length, incoming: inCount, outgoing: outCount, relItems: relItems };
     }
 
+    function groupEdgesByRelation(nodeId) {
+      var edgeIds = network.getConnectedEdges(nodeId) || [];
+      var groups = { Parents: [], Children: [], Instances: [], Dependencies: [], Other: [] };
+      edgeIds.forEach(function(eid) {
+        var e = edges.get(eid);
+        if (!e) return;
+        var other = (e.from === nodeId ? e.to : e.from);
+        var item = "<a href=\"#\" class=\"node-link\" data-id=\"" + escHtml(other) + "\">" + escHtml(other) + "</a>";
+        if (e.relation === "subClassOf") {
+          if (e.to === nodeId) groups.Parents.push(item);
+          else groups.Children.push(item);
+        } else if (e.relation === "type" || e.relation === "instanceOf") {
+          if (e.from === nodeId) groups.Instances.push(item);
+          else groups.Parents.push(item);
+        } else if (e.relation === "depends_on" || e.relation === "part_of" || e.relation === "contains") {
+          groups.Dependencies.push(item);
+        } else groups.Other.push(item);
+      });
+      return groups;
+    }
+
     function showNodeDetail(nodeId) {
       var meta = nodeDefaults[nodeId] || {};
       var attrs = nodeAttrs[nodeId] || {};
       var stats = buildNodeRelationSummary(nodeId);
       var docs = attrs.source_documents;
-      var docStr = Array.isArray(docs) && docs.length ? docs.slice(0, 2).join(", ") : "—";
+      var docStr = Array.isArray(docs) && docs.length ? docs.slice(0, 3).join(", ") : "—";
       var kind = (attrs.kind || meta.kind || "class").toUpperCase();
-      var edgeIds = network.getConnectedEdges(nodeId) || [];
-      var edgeList = edgeIds.slice(0, 5).map(function(eid) {
-        var e = edges.get(eid);
-        if (!e) return "";
-        var ea = edgeAttrs[e.id] || {};
-        var sc = ea.correctness_score != null ? (ea.correctness_score * 100).toFixed(0) + "%" : "—";
-        var rel = e.relation || e.label || "related_to";
-        var other = (e.from === nodeId ? e.to : e.from);
-        return "<div class=\"detail-row\"><span class=\"detail-value\">" + escHtml(rel) + "</span> → " + escHtml(other) + " <span class=\"detail-label\">(" + sc + ")</span></div>";
-      }).join("");
+      var desc = (attrs.description || meta.description || "").slice(0, 300);
+      var hierarchyLevel = hierarchyLevels[nodeId] != null ? hierarchyLevels[nodeId] : "—";
+      var clusterId = clusters.findIndex(function(c) { return c.indexOf(nodeId) !== -1; });
+      var groups = groupEdgesByRelation(nodeId);
+      var relHtml = "";
+      ["Parents", "Children", "Instances", "Dependencies", "Other"].forEach(function(g) {
+        if (groups[g].length) relHtml += "<div class=\"detail-row\"><span class=\"detail-label\">" + g + "</span><br>" + groups[g].slice(0, 8).join(" ") + (groups[g].length > 8 ? " …" : "") + "</div>";
+      });
       var repairTag = docStr.indexOf("repair") !== -1 ? "<span class=\"repair-tag\">⚙ Repair</span>" : "";
-      detailContent.innerHTML = "<div class=\"detail-title\">Node</div>"
-        + "<div class=\"detail-row\"><span class=\"detail-label\">Kind</span><br><span class=\"detail-value\">" + escHtml(kind) + "</span> " + repairTag + "</div>"
-        + "<div class=\"detail-row\"><span class=\"detail-label\">Degree</span><br><span class=\"detail-value\">" + stats.incoming + " in, " + stats.outgoing + " out</span></div>"
-        + (docStr !== "—" ? "<div class=\"detail-row\"><span class=\"detail-label\">Source</span><br><span class=\"detail-value\">" + escHtml(docStr) + "</span></div>" : "")
-        + (edgeList ? "<div class=\"detail-row\"><span class=\"detail-label\">Edges (sample)</span>" + edgeList + "</div>" : "");
+      detailContent.innerHTML =
+        "<div class=\"panel-section\"><div class=\"detail-title\">Node Overview</div>"
+        + "<div class=\"detail-row\"><span class=\"detail-label\">Name</span><br><span class=\"detail-value\" style=\"font-weight:600;\">" + escHtml(nodeId) + "</span></div>"
+        + "<div class=\"detail-row\"><span class=\"detail-label\">Type</span><br><span class=\"detail-value\">" + escHtml(kind) + "</span> " + repairTag + "</div>"
+        + (desc ? "<div class=\"detail-row\"><span class=\"detail-label\">Description</span><br><span class=\"detail-value\">" + escHtml(desc) + "</span></div>" : "")
+        + (docStr !== "—" ? "<div class=\"detail-row\"><span class=\"detail-label\">Sources</span><br><span class=\"detail-value\">" + escHtml(docStr) + "</span></div>" : "")
+        + "</div>"
+        + "<div class=\"panel-section\"><div class=\"detail-title\">Graph Metrics</div>"
+        + "<div class=\"detail-row\"><span class=\"detail-label\">Degree</span><br><span class=\"detail-value\">" + stats.total + " (in: " + stats.incoming + ", out: " + stats.outgoing + ")</span></div>"
+        + "<div class=\"detail-row\"><span class=\"detail-label\">Hierarchy Level</span><br><span class=\"detail-value\">" + hierarchyLevel + "</span></div>"
+        + (clusterId >= 0 ? "<div class=\"detail-row\"><span class=\"detail-label\">Cluster</span><br><span class=\"detail-value\">" + clusterId + "</span></div>" : "")
+        + "</div>"
+        + (relHtml ? "<div class=\"panel-section\"><div class=\"detail-title\">Relationships</div>" + relHtml + "</div>" : "")
+        + "<div class=\"panel-section\"><div class=\"detail-title\">Neighborhood</div>"
+        + "<div style=\"display:flex;gap:6px;flex-wrap:wrap;\">"
+        + "<button type=\"button\" class=\"ctrl-btn expand-btn\" data-hops=\"1\">Expand 1 hop</button>"
+        + "<button type=\"button\" class=\"ctrl-btn expand-btn\" data-hops=\"2\">Expand 2 hops</button>"
+        + "<button type=\"button\" class=\"ctrl-btn collapse-btn\">Collapse</button>"
+        + "</div></div>";
+      detailContent.querySelectorAll(".node-link").forEach(function(a) {
+        a.addEventListener("click", function(ev) { ev.preventDefault(); var id = a.getAttribute("data-id"); if (id) { selectedNodeId = id; applyStyles(); showNodeDetail(id); network.focus(id, { scale: 1.2, animation: { duration: 300 } }); } });
+      });
+      detailContent.querySelectorAll(".expand-btn").forEach(function(btn) {
+        btn.addEventListener("click", function() { var h = parseInt(btn.getAttribute("data-hops"), 10); selectedDepth = h; if (depthSelect) depthSelect.value = String(h); nhopCache.clear(); applyStyles(); applyLabelVisibility(); });
+      });
+      detailContent.querySelectorAll(".collapse-btn").forEach(function(btn) {
+        btn.addEventListener("click", function() { selectedNodeId = null; exitSpotlight(); nhopCache.clear(); applyStyles(); applyLabelVisibility(); detailPanel.classList.remove("visible"); if (detailPanelClose) detailPanelClose.style.display = "none"; });
+      });
       detailPanel.classList.add("visible");
       if (detailPanelClose) detailPanelClose.style.display = "block";
     }
@@ -724,15 +895,18 @@
 
     network.on("hoverEdge", function(params) {
       if (focusedNodeId) return;
+      hoveredEdgeId = params.edge;
       var edge = edges.get(params.edge);
       if (!edge) return;
       var hoverDashes = edge.isDimmed ? [2, 4] : [7, 5];
       var hoverWidth = edge.isDimmed ? 0.8 : Math.max(2.8, edge.width || 2.6);
-      edges.update([{ id: edge.id, dashes: hoverDashes, width: hoverWidth }]);
+      edges.update([{ id: edge.id, dashes: hoverDashes, width: hoverWidth, label: edgeLabelsOnHoverOnly ? (edge.relation || edge.label || "related_to") : getRelationLabel(edge) }]);
+      applyStyles();
     });
 
     network.on("blurEdge", function(params) {
       if (focusedNodeId) return;
+      hoveredEdgeId = null;
       applyStyles();
     });
 
@@ -775,6 +949,21 @@
       enterSpotlight(params.nodes[0]);
     });
 
+    if (hubIds.size > 0) {
+      var hubBtn = document.getElementById("hub-edges-toggle");
+      if (hubBtn) {
+        hubBtn.style.display = "flex";
+        hubBtn.textContent = showAllHubEdges ? "Cap hub edges" : "Show all connections";
+        hubBtn.addEventListener("click", function() {
+          showAllHubEdges = !showAllHubEdges;
+          hubBtn.textContent = showAllHubEdges ? "Cap hub edges" : "Show all connections";
+          applyEdgeVisibility();
+          applyStyles();
+        });
+      }
+    }
+    applyEdgeVisibility();
+    applyLabelVisibility();
     applyEdgeLabelMode();
     applyStyles();
 
@@ -803,12 +992,14 @@
         }
         var useHierarchy = newMode === "hierarchical";
         network.setOptions({
-          layout: { hierarchical: { enabled: useHierarchy, direction: "UD", sortMethod: "directed", levelSeparation: 180, nodeSpacing: 140, treeSpacing: 200 } },
+          layout: {
+            hierarchical: useHierarchy ? { enabled: true, direction: "UD", sortMethod: "hubsize", levelSeparation: 240, nodeSpacing: 210, treeSpacing: 280, blockShifting: true, edgeMinimization: true, parentCentralization: true } : { enabled: false }
+          },
           physics: {
-            enabled: true,
+            enabled: physicsEnabled,
             hierarchicalRepulsion: useHierarchy ? { centralGravity: 0.0, springLength: 150, springConstant: 0.01, nodeDistance: 180, damping: 0.09 } : undefined,
-            barnesHut: useHierarchy ? undefined : { gravitationalConstant: -2800, centralGravity: 0.35, springLength: 140, springConstant: 0.06, damping: 0.12, avoidOverlap: 0.25 },
-            stabilization: { enabled: true, iterations: physicsIters, updateInterval: 50, fit: true },
+            barnesHut: useHierarchy ? undefined : { gravitationalConstant: -9000, centralGravity: 0.08, springLength: 280, springConstant: 0.035, damping: 0.45, avoidOverlap: 1 },
+            stabilization: { enabled: true, iterations: physicsIters, updateInterval: 25, fit: true },
           },
         });
         simulationFrozen = false;
@@ -827,7 +1018,7 @@
         if (DEBUG) debugLog("Graph has cycles, falling back to force layout");
         setLayout("force");
         network.setOptions({ physics: { enabled: true }, layout: { hierarchical: { enabled: false } } });
-        network.setOptions({ physics: { barnesHut: { gravitationalConstant: -2800, centralGravity: 0.35, springLength: 140, springConstant: 0.06, damping: 0.12, avoidOverlap: 0.25 }, stabilization: { enabled: true, iterations: physicsIters, updateInterval: 50, fit: true } } });
+        network.setOptions({ physics: { barnesHut: { gravitationalConstant: -9000, centralGravity: 0.08, springLength: 280, springConstant: 0.035, damping: 0.45, avoidOverlap: 1 }, stabilization: { enabled: true, iterations: physicsIters, updateInterval: 25, fit: true } } });
         simulationFrozen = false;
         network.once("stabilizationIterationsDone", function() {
           network.setOptions({ physics: { enabled: false } });
@@ -860,7 +1051,7 @@
 
     function fallbackToForceLayout() {
       setLayout("force");
-      network.setOptions({ layout: { hierarchical: { enabled: false } }, physics: { enabled: true, barnesHut: { gravitationalConstant: -2800, centralGravity: 0.35, springLength: 140, springConstant: 0.06, damping: 0.12, avoidOverlap: 0.25 }, stabilization: { enabled: true, iterations: physicsIters, updateInterval: 50, fit: true } } });
+      network.setOptions({ layout: { hierarchical: { enabled: false } }, physics: { enabled: physicsEnabled, barnesHut: { gravitationalConstant: -9000, centralGravity: 0.08, springLength: 280, springConstant: 0.035, damping: 0.45, avoidOverlap: 1 }, stabilization: { enabled: true, iterations: physicsIters, updateInterval: 25, fit: true } } });
       simulationFrozen = false;
       network.once("stabilizationIterationsDone", function() {
         network.setOptions({ physics: { enabled: false } });
@@ -883,21 +1074,7 @@
           nodeUpdates.push({ id: n.id, hidden: hide });
         }
         if (nodeUpdates.length) nodes.update(nodeUpdates);
-        var allEdges = edges.get();
-        var edgeUpdates = [];
-        for (var j = 0; j < allEdges.length; j++) {
-          var edge = allEdges[j];
-          var fromNode = nodes.get(edge.from);
-          var toNode = nodes.get(edge.to);
-          var rel = edge.relation || "";
-          var hide = false;
-          if (viewMode === "classes") hide = rel !== "subClassOf";
-          else if (viewMode === "instances") hide = rel !== "type" && rel !== "instanceOf";
-          if (fromNode && fromNode.hidden) hide = true;
-          if (toNode && toNode.hidden) hide = true;
-          edgeUpdates.push({ id: edge.id, hidden: hide });
-        }
-        if (edgeUpdates.length) edges.update(edgeUpdates);
+        applyEdgeVisibility();
         applyStyles();
         network.fit({ animation: { duration: 280, easingFunction: "easeInOutCubic" } });
       });
@@ -916,7 +1093,29 @@
         debugLog("Layout done. Positions: NaN=" + nanCount);
       }
       network.fit({ animation: { duration: 350, easingFunction: "easeInOutCubic" } });
-      requestAnimationFrame(function() { container.classList.add("ready"); });
+      requestAnimationFrame(function() {
+        container.classList.add("ready");
+        applyLabelVisibility();
+        applyEdgeVisibility();
+        drawHullOverlay();
+      });
+      if (nodeCount > 100 && nodeCount <= 300) {
+        var minimapEl = document.getElementById("minimap");
+        if (minimapEl) {
+          minimapEl.classList.add("visible");
+          minimapEl.style.pointerEvents = "auto";
+          var mmNodes = new vis.DataSet(nodes.get().map(function(n) { return { id: n.id, label: "", shape: "dot", size: 4, color: n.accent || C.accent }; }));
+          var mmEdges = new vis.DataSet(edges.get().filter(function(e) { return !e.hidden; }).map(function(e) { return { from: e.from, to: e.to, width: 0.5 }; }));
+          var mmNet = new vis.Network(minimapEl, { nodes: mmNodes, edges: mmEdges }, {
+            physics: { enabled: false },
+            interaction: { dragNodes: false, zoomView: true, dragView: true },
+            nodes: { font: { size: 0 } },
+            edges: { smooth: false }
+          });
+          mmNet.setPositions(network.getPositions());
+          mmNet.fit();
+        }
+      }
     });
 
     setTimeout(function() { container.classList.add("ready"); }, 3000);

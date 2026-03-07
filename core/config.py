@@ -61,6 +61,8 @@ class Settings(BaseSettings):
 
     upload_max_size_mb: int = 20
     llm_timeout_seconds: int = 120
+    # SSE streaming: max seconds to wait for next pipeline progress update (batch jobs need higher values).
+    pipeline_timeout_seconds: float = 7200.0
     llm_max_retries: int = 3
     # None = auto: 2 workers for local (LM Studio), 30 for ChatGPT/OpenAI cloud (max throughput for gpt-4o-mini). Override via LLM_PARALLEL_WORKERS.
     llm_parallel_workers: int | None = None

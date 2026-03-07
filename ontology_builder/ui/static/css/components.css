@@ -532,6 +532,8 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: var(--a
 .job-card.job-create .job-type-badge { background: var(--teal-2); color: var(--teal); }
 .job-card.job-extend { border-left: 3px solid var(--accent-secondary); }
 .job-card.job-extend .job-type-badge { background: var(--accent-secondary-2); color: var(--accent-secondary); }
+.job-card.job-enrich { border-left: 3px solid var(--accent); }
+.job-card.job-enrich .job-type-badge { background: var(--accent-12); color: var(--accent); }
 .onto-card { cursor: pointer; transition: all 0.2s ease; animation: cardIn 0.3s ease-out; }
 .onto-card .onto-card-expandable { overflow: hidden; max-height: 500px; transition: max-height 0.25s ease, opacity 0.2s ease; }
 .onto-card.collapsed .onto-card-expandable { max-height: 0; opacity: 0; margin-top: 0 !important; padding-top: 0 !important; }

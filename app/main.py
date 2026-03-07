@@ -60,7 +60,7 @@ async def lifespan(app: FastAPI):
                 # Build QA index in background so server starts immediately; embedding many chunks can take a long time.
                 async def _build_index_background() -> None:
                     try:
-                        await asyncio.to_thread(build_qa_index, graph, False)
+                        await asyncio.to_thread(build_qa_index, graph, False, path)
                         logger.info("Ontology API | QA index ready for KB: %s", last_id)
                     except Exception as e:
                         logger.warning("Ontology API | background QA index build failed for %s: %s", last_id, e)

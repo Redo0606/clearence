@@ -7,11 +7,14 @@ colors edges by relation type. Uses normalized graph model for stable layout.
 from __future__ import annotations
 
 import hashlib
+import math
 import io
 import json
 import logging
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
+
+import orjson
 
 import matplotlib
 matplotlib.use("Agg")
@@ -37,6 +40,19 @@ _RELATION_COLORS: dict[str, str] = {
     "depends_on": "#fad54e",
 }
 _DEFAULT_EDGE_COLOR = "#6b7fa8"
+
+# Relation-specific spring lengths for semantic layout (Section 5)
+RELATION_SPRING_LENGTH: dict[str, int] = {
+    "subClassOf": 260,
+    "instanceOf": 180,
+    "type": 180,
+    "depends_on": 320,
+    "contains": 220,
+    "part_of": 240,
+}
+
+HUB_DEGREE_THRESHOLD = 80  # Nodes with degree > this are hubs (Phase 2 Section 3)
+HUB_EDGE_CAP = 25  # Max edges shown for hubs until "show all"
 
 _EDGE_STYLES: dict[str, dict[str, Any]] = {
     "subClassOf": {"width": 2.2, "dashes": False, "color": "#b81365"},
@@ -65,14 +81,20 @@ def _build_vis_data(graph: "OntologyGraph") -> dict[str, Any]:
         ng.disconnected_count,
     )
 
-    NODE_WIDTH = 140
-    NODE_HEIGHT = 40
+    NODE_WIDTH = 160
+    NODE_HEIGHT = 50
+    g_raw = graph.get_graph()
+    degree_map = dict(g_raw.degree())
     vis_nodes: list[dict[str, Any]] = []
     for n in ng.nodes:
         if n.id == "__root__":
             continue
         kind = n.type
         accent = "#b81365" if kind == "class" else "#b1ddf1" if kind == "instance" else "#a08898"
+        degree = degree_map.get(n.id, 1)
+        is_hub = degree > HUB_DEGREE_THRESHOLD
+        # Section 7: size = 20 + log(degree+1)*14, cap at 90
+        node_size = min(90, 20 + math.log(degree + 1) * 14)
         vis_nodes.append({
             "id": n.id,
             "baseLabel": n.label,
@@ -82,28 +104,56 @@ def _build_vis_data(graph: "OntologyGraph") -> dict[str, Any]:
             "description": n.metadata.get("description", ""),
             "width": NODE_WIDTH,
             "height": NODE_HEIGHT,
+            "degree": degree,
+            "isHub": is_hub,
+            "mass": max(1.5, min(6, degree * 0.6)),
+            "size": node_size,
         })
+
+    hub_ids = {nid for nid, d in degree_map.items() if d > HUB_DEGREE_THRESHOLD}
+    hub_out_rank: dict[tuple[str, str, str], int] = {}
+    hub_in_rank: dict[tuple[str, str, str], int] = {}
+    for nid in hub_ids:
+        out_edges = [(e.source, e.target, e.relation) for e in ng.edges if e.source == nid and e.source != "__root__" and e.target != "__root__"]
+        for i, key in enumerate(out_edges):
+            hub_out_rank[key] = i
+        in_edges = [(e.source, e.target, e.relation) for e in ng.edges if e.target == nid and e.source != "__root__" and e.target != "__root__"]
+        for i, key in enumerate(in_edges):
+            hub_in_rank[key] = i
 
     vis_edges: list[dict[str, Any]] = []
     edge_attrs: dict[str, dict[str, Any]] = {}
-    g_raw = graph.get_graph()
     for e in ng.edges:
         if e.source == "__root__" or e.target == "__root__":
             continue
         eid = _edge_id(e.source, e.target, e.relation)
         style = _EDGE_STYLES.get(e.relation, {"width": 1.5, "dashes": False, "color": _DEFAULT_EDGE_COLOR})
         color = style.get("color", _RELATION_COLORS.get(e.relation, _DEFAULT_EDGE_COLOR))
+        # Edge length by relation type (Section 5); opacity by correctness (Section 12)
+        edge_len = RELATION_SPRING_LENGTH.get(e.relation, 240)
+        correctness = None
+        for _u, _v, data in g_raw.edges(e.source, e.target, data=True):
+            if data.get("relation") == e.relation:
+                correctness = data.get("correctness_score")
+                break
+        opacity = 0.35 + (correctness * 0.6) if correctness is not None else 0.96
+        edge_key = (e.source, e.target, e.relation)
+        out_rank = hub_out_rank.get(edge_key, -1)
+        in_rank = hub_in_rank.get(edge_key, -1)
         vis_edges.append({
             "id": eid,
             "from": e.source,
             "to": e.target,
             "label": e.relation,
+            "hubOutRank": out_rank if out_rank >= 0 else None,
+            "hubInRank": in_rank if in_rank >= 0 else None,
             "relation": e.relation,
+            "length": edge_len,
             "arrows": {"to": {"enabled": True, "scaleFactor": 0.7}},
-            "color": {"color": color, "opacity": 0.96, "highlight": color, "hover": color},
+            "color": {"color": color, "opacity": opacity, "highlight": color, "hover": color},
             "width": style.get("width", 1.5) if not e.inferred else 1.2,
             "dashes": style.get("dashes", False),
-            "smooth": {"type": "cubicBezier"},
+            "curveOffset": (int(hashlib.md5(e.relation.encode()).hexdigest()[:8], 16) % 100) / 100.0 * 0.3,
             "font": {
                 "size": 10,
                 "align": "middle",
@@ -135,6 +185,9 @@ def _build_vis_data(graph: "OntologyGraph") -> dict[str, Any]:
             "source_documents": d.get("source_documents", []),
         }
 
+    sub_class_count = sum(1 for e in vis_edges if e.get("relation") == "subClassOf")
+    sub_class_ratio = sub_class_count / len(vis_edges) if vis_edges else 0
+
     stats = graph.export().get("stats", {})
     rel_count = stats.get("relations")
     if rel_count is None:
@@ -163,6 +216,8 @@ def _build_vis_data(graph: "OntologyGraph") -> dict[str, Any]:
         "isolated": list(ng.isolated),
         "has_cycles": ng.has_cycles,
         "stats_html": stats_html,
+        "sub_class_ratio": sub_class_ratio,
+        "hub_ids": list(hub_ids),
     }
 
 
@@ -171,6 +226,63 @@ def _load_template():
     templates_dir = Path(__file__).resolve().parent / "templates"
     env = Environment(loader=FileSystemLoader(str(templates_dir)))
     return env.get_template("graph_viewer.html.j2")
+
+
+def _persist_vis_data(path: Path, graph: "OntologyGraph") -> None:
+    """Persist pre-computed vis data to .vis.json for fast view loads."""
+    try:
+        vis_data = _build_vis_data(graph)
+        # Ensure JSON-serializable: clusters and isolated are already lists from _build_vis_data
+        out = {
+            "nodes": vis_data["nodes"],
+            "edges": vis_data["edges"],
+            "edge_attrs": vis_data["edge_attrs"],
+            "node_attrs": vis_data["node_attrs"],
+            "relations": vis_data["relations"],
+            "hierarchy": vis_data["hierarchy"],
+            "clusters": vis_data["clusters"],
+            "isolated": vis_data["isolated"],
+            "has_cycles": vis_data["has_cycles"],
+            "stats_html": vis_data["stats_html"],
+            "sub_class_ratio": vis_data.get("sub_class_ratio", 0),
+            "hub_ids": vis_data.get("hub_ids", []),
+        }
+        vis_path = path.parent / (path.stem + ".vis.json")
+        vis_path.write_bytes(orjson.dumps(out))
+        logger.debug("[GraphViewer] Persisted vis data to %s", vis_path.name)
+    except Exception as e:
+        logger.debug("[GraphViewer] Persist vis data failed: %s", e)
+
+
+def render_vis_from_file(
+    vis_path: Path,
+    pre_select_node: str | None = None,
+    depth: int = 1,
+    debug: bool = False,
+) -> str:
+    """Render graph viewer HTML from pre-computed .vis.json (no graph load)."""
+    vis_data = orjson.loads(vis_path.read_bytes())
+    theme = get_theme()
+    css_root = get_css_root_block()
+    return _load_template().render(
+        nodes_json=json.dumps(vis_data["nodes"]),
+        edges_json=json.dumps(vis_data["edges"]),
+        edge_attrs_json=json.dumps(vis_data["edge_attrs"]),
+        node_attrs_json=json.dumps(vis_data["node_attrs"]),
+        relations_json=json.dumps(vis_data["relations"]),
+        hierarchy_json=json.dumps(vis_data["hierarchy"]),
+        clusters_json=json.dumps(vis_data["clusters"]),
+        isolated_json=json.dumps(vis_data["isolated"]),
+        has_cycles_json=json.dumps(vis_data["has_cycles"]),
+        stats_html=vis_data["stats_html"],
+        sub_class_ratio_json=json.dumps(vis_data.get("sub_class_ratio", 0)),
+        hub_ids_json=json.dumps(vis_data.get("hub_ids", [])),
+        pre_select_node_json=json.dumps(pre_select_node),
+        depth_json=json.dumps(depth),
+        debug_json=json.dumps(debug),
+        theme=theme,
+        css_root=css_root,
+    )
 
 
 def visualize(graph: "OntologyGraph", save_path: str | None = None) -> io.BytesIO | None:
@@ -255,6 +367,8 @@ def generate_visjs_html(
         isolated_json=json.dumps(vis_data["isolated"]),
         has_cycles_json=json.dumps(vis_data["has_cycles"]),
         stats_html=vis_data["stats_html"],
+        sub_class_ratio_json=json.dumps(vis_data.get("sub_class_ratio", 0)),
+        hub_ids_json=json.dumps(vis_data.get("hub_ids", [])),
         pre_select_node_json=json.dumps(pre_select_node),
         depth_json=json.dumps(depth),
         debug_json=json.dumps(debug),

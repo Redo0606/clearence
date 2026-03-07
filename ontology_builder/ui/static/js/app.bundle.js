@@ -123,6 +123,7 @@
       }
     }
 
+    const graphIconSvg = '<svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><circle cx="12" cy="6" r="2"/><circle cx="7" cy="16" r="2"/><circle cx="17" cy="16" r="2"/><path stroke-linecap="round" d="M12 8v4M8.5 14.5l-2 2M15.5 14.5l2 2"/></svg>';
     function renderChatTabs() {
       const container = document.getElementById('chat-tabs');
       if (!container) return;
@@ -132,10 +133,14 @@
         wrap.className = 'chat-tab-wrap flex items-center shrink-0';
         const btn = document.createElement('button');
         btn.type = 'button';
-        btn.className = 'chat-tab shrink-0 flex items-center' + (c.id === _activeChatId ? ' active' : '');
-        btn.innerHTML = '<span class="truncate max-w-[100px]">' + esc((c.kbName || 'Chat').substring(0, 20)) + (c.messages.length ? ' (' + c.messages.length + ')' : '') + '</span>';
+        btn.className = 'chat-tab shrink-0 flex items-center gap-1' + (c.id === _activeChatId ? ' active' : '');
+        const viewerUrl = c.kbId ? window.location.origin + API + '/graph/viewer?kb_id=' + encodeURIComponent(c.kbId) : '';
+        const graphLink = c.kbId
+          ? '<a href="' + viewerUrl + '" class="chat-tab-graph-link shrink-0 opacity-70 hover:opacity-100 transition-opacity" title="Open graph viewer" onclick="event.stopPropagation()">' + graphIconSvg + '</a>'
+          : '';
+        btn.innerHTML = graphLink + '<span class="truncate max-w-[100px]">' + esc((c.kbName || 'Chat').substring(0, 20)) + (c.messages.length ? ' (' + c.messages.length + ')' : '') + '</span>';
         btn.title = c.kbName + (c.messages.length ? ' · ' + c.messages.length + ' messages' : '');
-        btn.addEventListener('click', () => { logClick('chat-tab', c.id); switchToChat(c.id); });
+        btn.addEventListener('click', (e) => { if (e.target.closest('.chat-tab-graph-link')) return; logClick('chat-tab', c.id); switchToChat(c.id); });
         const delBtn = document.createElement('button');
         delBtn.type = 'button';
         delBtn.className = 'chat-tab-delete shrink-0';
@@ -1526,8 +1531,9 @@
     function createJobCard(job) {
       job.progress = job.progress || {};
       const isCreate = job.jobType === 'create';
-      const typeClass = isCreate ? 'job-create' : 'job-extend';
-      const typeLabel = isCreate ? 'New KB' : 'Expanding';
+      const isEnrich = job.jobType === 'enrich';
+      const typeClass = isCreate ? 'job-create' : (isEnrich ? 'job-enrich' : 'job-extend');
+      const typeLabel = isCreate ? 'New KB' : (isEnrich ? 'Web Enrich' : 'Expanding');
       const card = document.createElement('div');
       card.className = 'job-card job-clickable ' + typeClass;
       card.dataset.jobId = job.localId;
@@ -1562,6 +1568,7 @@
         jobType: job.jobType,
         kbId: job.kbId,
         pipeline_report: job.pipeline_report,
+        enrichment_report: job.enrichment_report,
         progress: job.progress || {},
         liveMetrics: job.liveMetrics || {},
         qualityGrade: job.qualityGrade,
@@ -1601,19 +1608,30 @@
           const job = { ...rec, card: null, abortController: null, progress: rec.progress || {} };
           jobs.push(job);
           job.card = createJobCard(job);
-          const typeClass = job.jobType === 'create' ? 'job-create' : 'job-extend';
+          const typeClass = job.jobType === 'create' ? 'job-create' : (job.jobType === 'enrich' ? 'job-enrich' : 'job-extend');
           job.card.className = 'job-card job-clickable ' + typeClass + ' ' + (job.status || 'done');
           jobQueue.appendChild(job.card);
-          if (job.status === 'done' && job.pipeline_report) {
-            const report = job.pipeline_report;
-            const totals = report.totals || report.extraction_totals || {};
+          if (job.status === 'done' && (job.pipeline_report || job.enrichment_report)) {
             const sl = job.card.querySelector('.stage-label');
             if (sl) sl.textContent = 'Complete';
             const metricsEl = job.card.querySelector('.job-metrics');
             if (metricsEl) {
-              const cls = totals.classes ?? 0, inst = totals.instances ?? 0, rel = totals.relations ?? 0;
-              const elapsed = report.elapsed_seconds ?? 0;
-              metricsEl.textContent = (cls + ' cls, ' + inst + ' inst, ' + rel + ' rel' + (elapsed > 0 ? ' · ' + elapsed.toFixed(1) + 's' : ''));
+              if (job.enrichment_report) {
+                const er = job.enrichment_report;
+                const mp = [(er.pages_fetched ?? 0) + ' pages'];
+                if (er.nodes_added) mp.push('+' + er.nodes_added + ' nodes');
+                if (er.nodes_updated) mp.push(er.nodes_updated + ' updated');
+                if (er.edges_added) mp.push('+' + er.edges_added + ' edges');
+                if (er.axioms_added) mp.push('+' + er.axioms_added + ' axioms');
+                if (er.dp_added) mp.push('+' + er.dp_added + ' data props');
+                metricsEl.textContent = mp.join(' · ');
+              } else {
+                const report = job.pipeline_report;
+                const totals = report.totals || report.extraction_totals || {};
+                const cls = totals.classes ?? 0, inst = totals.instances ?? 0, rel = totals.relations ?? 0;
+                const elapsed = report.elapsed_seconds ?? 0;
+                metricsEl.textContent = (cls + ' cls, ' + inst + ' inst, ' + rel + ' rel' + (elapsed > 0 ? ' · ' + elapsed.toFixed(1) + 's' : ''));
+              }
             }
           } else if (job.status === 'error' || job.status === 'cancelled') {
             const sl = job.card.querySelector('.stage-label');
@@ -1659,11 +1677,20 @@
         job.liveMetrics.axioms += d.axioms ?? 0;
       } else if (step === 'chunk_done') {
         job.chunksTotal = d.total_chunks ?? 0;
+      } else if (step === 'web_fetch_query') {
+        job.liveProgress = { phase: 'fetch', query: d.query, queryIndex: d.query_index, totalQueries: d.total_queries, remaining: d.remaining_queries, pagesSoFar: d.pages_so_far };
+      } else if (step === 'web_fetch_page') {
+        job.liveProgress = { phase: 'fetch_page', title: d.title, url: d.url, query: d.query, pagesSoFar: d.pages_so_far };
+      } else if (step === 'web_build_section') {
+        job.liveProgress = { phase: 'build', title: d.title, pageIndex: d.page_index, totalPages: d.total_pages, remaining: d.remaining_pages };
+      } else if (step === 'extract' && d.remaining_chunks != null) {
+        job.liveProgress = { phase: 'extract', current: d.current, total: d.total, remaining: d.remaining_chunks, preview: d.chunk_preview };
       } else if (step === 'merge_done') {
         job.liveMetrics.classes = d.classes ?? 0;
         job.liveMetrics.instances = d.instances ?? 0;
         job.liveMetrics.relations = d.relations ?? 0;
         job.liveMetrics.axioms = d.axioms ?? 0;
+        job.liveMetrics.data_properties = d.data_properties ?? 0;
       } else if (step === 'inference_done' && d.inferred) {
         job.liveMetrics.relations = (job.liveMetrics.relations || 0) + (d.inferred || 0);
       } else if (step === 'reasoning_done' && d.inferred_edges) {
@@ -1691,6 +1718,18 @@
           'repair': (d.phase ? d.phase + '...' : 'Repairing...'), 'repair_done': 'Repaired', 'repair_skip': 'Skipped repair',
           'enrichment': (d.message || 'Enrichment...'), 'population': (d.message || 'Population...'),
           'quality': (d.message || 'Quality...'), 'quality_done': (d.grade ? 'Grade ' + d.grade : 'Quality done'),
+          'web_queries_start': 'Inferring queries...',
+          'web_queries_planned': (d.count ? d.count + ' queries' : 'Queries planned'),
+          'web_fetch_query': (d.query ? 'Query ' + (d.query_index || '?') + '/' + (d.total_queries || '?') + ': ' + (d.query || '').slice(0, 30) : 'Fetching...'),
+          'web_fetch_page': (d.title ? 'Fetching: ' + (d.title || '').slice(0, 40) : 'Fetching page...'),
+          'web_build_section': (d.title ? 'Section ' + (d.page_index || '?') + '/' + (d.total_pages || '?') : 'Building doc...'),
+          'web_pages_fetched': (d.count ? d.count + ' pages fetched' : 'Pages fetched'),
+          'web_document_built': 'Document built',
+          'web_pipeline_run': 'Running extraction...',
+          'web_analysis_start': 'Analyzing graph...',
+          'web_analysis_done': (d.grade ? 'Grade ' + d.grade : (d.nodes ? d.nodes + ' nodes' : 'Analysis done')),
+          'web_threshold_check': (d.passed ? 'Threshold met' : (d.reason || 'Checking threshold')),
+          'web_merge_done': (d.merge_skipped ? (d.skip_reason || 'Skipped') : ((d.nodes_added ? '+' + d.nodes_added + ' nodes ' : '') + (d.nodes_updated ? d.nodes_updated + ' updated ' : '') + (d.edges_added ? '+' + d.edges_added + ' edges ' : '') + (d.axioms_added ? '+' + d.axioms_added + ' axioms ' : '') + (d.dp_added ? '+' + d.dp_added + ' data props' : '') || 'Merged')),
         };
         label.textContent = stageMap[step] || step;
       }
@@ -1703,8 +1742,8 @@
         } else if (step === 'extract' && (job.chunksCompleted || 0) > 0 && (job.chunksTotal || 0) > 0) {
           metricsEl.textContent = (job.chunksCompleted || 0) + ' of ' + (job.chunksTotal || 0) + ' chunks';
         } else if (step === 'merge_done') {
-          const cls = d.classes ?? 0, inst = d.instances ?? 0, rel = d.relations ?? 0;
-          metricsEl.textContent = cls + ' cls, ' + inst + ' inst, ' + rel + ' rel';
+          const cls = d.classes ?? 0, inst = d.instances ?? 0, rel = d.relations ?? 0, ax = d.axioms ?? 0, dp = d.data_properties ?? 0;
+          metricsEl.textContent = cls + ' cls, ' + inst + ' inst, ' + rel + ' rel' + (ax > 0 ? ', ' + ax + ' ax' : '') + (dp > 0 ? ', ' + dp + ' data props' : '');
         } else if (step === 'inference_done' && d.inferred) {
           metricsEl.textContent = '+ ' + (d.inferred || 0) + ' inferred relations';
         } else if (step === 'reasoning_done') {
@@ -1712,6 +1751,33 @@
           if (inf > 0) metricsEl.textContent = inf + ' relations in ' + iter + ' reasoning iterations';
         } else if (step === 'quality_done' && d.grade) {
           metricsEl.textContent = 'Grade ' + d.grade + (d.score != null ? ' · ' + Number(d.score).toFixed(2) : '');
+        } else if (step === 'web_queries_planned' && d.count) {
+          metricsEl.textContent = d.count + ' search queries';
+        } else if (step === 'web_pages_fetched' && d.count) {
+          metricsEl.textContent = d.count + ' pages fetched';
+        } else if (step === 'web_merge_done') {
+          if (d.merge_skipped) metricsEl.textContent = d.skip_reason || 'Skipped';
+          else {
+            const p = [];
+            if (d.nodes_added) p.push('+' + d.nodes_added + ' nodes');
+            if (d.nodes_updated) p.push(d.nodes_updated + ' updated');
+            if (d.edges_added) p.push('+' + d.edges_added + ' edges');
+            if (d.axioms_added) p.push('+' + d.axioms_added + ' axioms');
+            if (d.dp_added) p.push('+' + d.dp_added + ' data props');
+            metricsEl.textContent = p.length ? p.join(', ') : 'Merged';
+          }
+        } else if (step === 'web_analysis_done' && d.grade) {
+          metricsEl.textContent = 'Grade ' + d.grade + (d.score != null ? ' · ' + Number(d.score).toFixed(2) : '');
+        } else if (step === 'web_threshold_check') {
+          metricsEl.textContent = d.passed ? 'Passed' : (d.reason || '');
+        } else if (step === 'web_fetch_query' && d.remaining_queries != null) {
+          metricsEl.textContent = (d.query_index || '?') + '/' + (d.total_queries || '?') + ' queries · ' + (d.remaining_queries || 0) + ' left · ' + (d.pages_so_far || 0) + ' pages';
+        } else if (step === 'web_fetch_page') {
+          metricsEl.textContent = (d.pages_so_far || 0) + ' pages';
+        } else if (step === 'web_build_section' && d.remaining_pages != null) {
+          metricsEl.textContent = (d.page_index || '?') + '/' + (d.total_pages || '?') + ' · ' + (d.remaining_pages || 0) + ' left';
+        } else if (step === 'extract' && d.remaining_chunks != null) {
+          metricsEl.textContent = (d.current || '?') + '/' + (d.total || '?') + ' chunks · ' + (d.remaining_chunks || 0) + ' left';
         }
       }
       if (_modalJob && _modalJob.localId === job.localId) {
@@ -1722,6 +1788,111 @@
     function showJobDetailModal(job) {
       _modalJob = job;
       jobDetailTitle.textContent = job.title || 'Job Details';
+      if (job.jobType === 'enrich') {
+        const er = job.enrichment_report || {};
+        const progress = job.progress || {};
+        const hasQueries = !!progress.web_queries_planned;
+        const hasPages = !!progress.web_pages_fetched;
+        const hasDoc = !!progress.web_document_built;
+        const docSkipped = progress.web_document_built && progress.web_document_built.skipped;
+        const hasPipeline = !!progress.web_pipeline_run;
+        const hasAnalysis = !!progress.web_analysis_done;
+        const hasThreshold = !!progress.web_threshold_check;
+        const hasMerge = !!progress.web_merge_done;
+        const mergeSkipped = er.merge_skipped || progress.web_merge_done?.merge_skipped;
+        const skipReason = er.skip_reason || progress.web_merge_done?.skip_reason || '';
+        const analysis = er.analysis || {};
+        const queries = er.queries || progress.web_queries_planned?.queries || [];
+        const queryCount = er.queries_count ?? progress.web_queries_planned?.count ?? queries.length;
+        const pagesCount = er.pages_fetched ?? progress.web_pages_fetched?.count ?? 0;
+        const stepStatus = (done, running) => done ? '<span style="color:var(--success);">✓</span>' : (running ? '<span style="color:var(--accent-secondary);">●</span>' : '<span style="color:var(--text-muted-2);">○</span>');
+        let html = '<div class="space-y-4">';
+        html += '<div class="rounded-lg p-3" style="background:var(--bg-input); border:1px solid var(--border);">';
+        html += '<p class="text-xs font-medium uppercase tracking-wider mb-2" style="color:var(--text-muted);">Status</p>';
+        html += '<p class="font-mono text-sm"><span class="stat-value">' + (job.status || 'running') + '</span></p>';
+        if (mergeSkipped && skipReason) html += '<p class="text-xs mt-1" style="color:var(--warning);">' + esc(skipReason) + '</p>';
+        html += '</div>';
+        var lp = job.liveProgress;
+        if (lp && job.status === 'running') {
+          html += '<div class="rounded-lg p-3" style="background:var(--accent-5); border:1px solid var(--accent-4);">';
+          html += '<p class="text-xs font-medium uppercase tracking-wider mb-2" style="color:var(--text-muted);">Processing progress</p>';
+          if (lp.phase === 'fetch') {
+            html += '<p class="text-sm" style="color:var(--text-primary);">Query ' + (lp.queryIndex || '?') + '/' + (lp.totalQueries || '?') + ': <span class="font-mono">' + esc((lp.query || '').slice(0, 50)) + '</span></p>';
+            html += '<p class="text-xs mt-1" style="color:var(--text-muted);">' + (lp.remaining ?? '?') + ' queries remaining · ' + (lp.pagesSoFar ?? 0) + ' pages fetched so far</p>';
+          } else if (lp.phase === 'fetch_page') {
+            html += '<p class="text-sm" style="color:var(--text-primary);">Fetching: ' + esc((lp.title || '').slice(0, 60)) + '</p>';
+            html += '<p class="text-xs mt-1 font-mono break-all" style="color:var(--text-muted);">' + esc((lp.url || '').slice(0, 80)) + '</p>';
+            html += '<p class="text-xs mt-1" style="color:var(--text-muted);">' + (lp.pagesSoFar ?? 0) + ' pages so far</p>';
+          } else if (lp.phase === 'build') {
+            html += '<p class="text-sm" style="color:var(--text-primary);">Section ' + (lp.pageIndex || '?') + '/' + (lp.totalPages || '?') + ': ' + esc((lp.title || '').slice(0, 50)) + '</p>';
+            html += '<p class="text-xs mt-1" style="color:var(--text-muted);">' + (lp.remaining ?? '?') + ' sections remaining</p>';
+          } else if (lp.phase === 'extract') {
+            html += '<p class="text-sm" style="color:var(--text-primary);">Chunk ' + (lp.current || '?') + '/' + (lp.total || '?') + ' · ' + (lp.remaining ?? '?') + ' remaining</p>';
+            if (lp.preview) html += '<p class="text-xs mt-1 font-mono italic" style="color:var(--text-muted);">' + esc(lp.preview) + '</p>';
+          }
+          html += '</div>';
+        }
+        html += '<div class="rounded-lg overflow-hidden" style="border:1px solid var(--border);">';
+        html += '<div class="px-3 py-2" style="background:var(--accent-08); border-bottom:1px solid var(--border);"><p class="text-xs font-semibold uppercase tracking-wider" style="color:var(--accent);">1. Search &amp; build document</p></div>';
+        html += '<div class="p-3" style="background:var(--bg-input);"><ol class="space-y-2 text-xs" style="list-style:none; padding-left:0;">';
+        html += '<li class="flex items-start gap-2">' + stepStatus(hasQueries, !!progress.web_queries_start && !hasQueries) + '<div><strong>Infer queries</strong><br><span style="color:var(--text-muted);">Batch-infer search queries from graph context</span><br>';
+        if (hasQueries && queries.length > 0) {
+          html += '<span class="font-mono mt-1 block" style="color:var(--text-primary);">' + queryCount + ' queries: ' + esc(queries.slice(0, 3).join(', ')) + (queries.length > 3 ? ' …' : '') + '</span>';
+        } else {
+          html += '<span class="font-mono mt-1" style="color:var(--text-primary);">' + (hasQueries ? queryCount + ' queries' : 'Inferring...') + '</span>';
+        }
+        html += '</div></li>';
+        html += '<li class="flex items-start gap-2">' + stepStatus(hasPages, !!progress.web_pages_fetched && !hasDoc) + '<div><strong>Fetch &amp; score</strong><br><span style="color:var(--text-muted);">Search DuckDuckGo, fetch pages, filter by fidelity</span><br>';
+        html += '<span class="font-mono mt-1" style="color:var(--text-primary);">' + (hasPages ? pagesCount + ' pages passed min fidelity' : 'Fetching...') + '</span>';
+        if (hasPages && pagesCount === 0) html += '<br><span style="color:var(--warning);">No pages passed. Try lowering min fidelity.</span>';
+        html += '</div></li>';
+        html += '<li class="flex items-start gap-2">' + stepStatus(hasDoc, !!progress.web_document_built && !hasPipeline) + '<div><strong>Build document</strong><br><span style="color:var(--text-muted);">Assemble Markdown from fetched content</span><br>';
+        html += '<span class="font-mono mt-1" style="color:var(--text-primary);">' + (hasDoc ? (docSkipped ? 'Skipped (no pages)' : (er.doc_path ? esc(er.doc_path) : 'Built')) : 'Building...') + '</span></div></li>';
+        html += '</ol></div></div>';
+        html += '<div class="rounded-lg overflow-hidden" style="border:1px solid var(--border);">';
+        html += '<div class="px-3 py-2" style="background:var(--accent-08); border-bottom:1px solid var(--border);"><p class="text-xs font-semibold uppercase tracking-wider" style="color:var(--accent);">2. Document processing</p></div>';
+        html += '<div class="p-3" style="background:var(--bg-input);"><ol class="space-y-2 text-xs" style="list-style:none; padding-left:0;">';
+        var pipelineSkipped = progress.web_pipeline_run && progress.web_pipeline_run.skipped;
+        html += '<li class="flex items-start gap-2">' + stepStatus(hasPipeline, !!progress.web_pipeline_run && !hasAnalysis && !pipelineSkipped) + '<span><strong>Load &amp; chunk</strong>: ' + (hasPipeline ? (pipelineSkipped ? 'Skipped' : 'Extract ontology from doc') : 'Pending') + '</span></li>';
+        var analysisSkipped = progress.web_analysis_done && progress.web_analysis_done.skipped;
+        const rel = analysis.reliability || {};
+        html += '<li class="flex items-start gap-2">' + stepStatus(hasAnalysis, !!progress.web_analysis_start && !hasThreshold && !analysisSkipped) + '<span><strong>Analyze</strong>: ' + (hasAnalysis ? (analysisSkipped ? 'Skipped' : ('Grade ' + (rel.grade || '—') + (rel.score != null ? ' · ' + Number(rel.score).toFixed(2) : ''))) : 'Pending') + '</span></li>';
+        html += '<li class="flex items-start gap-2">' + stepStatus(hasThreshold, !!progress.web_threshold_check && !hasMerge) + '<span><strong>Threshold</strong>: ' + (hasThreshold ? (mergeSkipped ? 'Skipped: ' + esc(skipReason) : 'Passed') : 'Pending') + '</span></li>';
+        var mergeDisplay = 'Merging...';
+        if (hasMerge) {
+          if (mergeSkipped) mergeDisplay = 'Skipped';
+          else {
+            const mergeData = { ...(progress.web_merge_done || {}), ...er };
+            const parts = [];
+            if (mergeData.nodes_added) parts.push('+' + mergeData.nodes_added + ' nodes');
+            if (mergeData.nodes_updated) parts.push(mergeData.nodes_updated + ' updated');
+            if (mergeData.edges_added) parts.push('+' + mergeData.edges_added + ' edges');
+            if (mergeData.axioms_added) parts.push('+' + mergeData.axioms_added + ' axioms');
+            if (mergeData.dp_added) parts.push('+' + mergeData.dp_added + ' data props');
+            mergeDisplay = parts.length ? parts.join(', ') : 'No new entities (all already in graph)';
+          }
+        }
+        html += '<li class="flex items-start gap-2">' + stepStatus(hasMerge, false) + '<span><strong>Merge into graph</strong>: ' + mergeDisplay + '</span></li>';
+        html += '</ol></div></div>';
+        if (er.doc_path) {
+          html += '<div class="rounded-lg p-3" style="background:var(--bg-input); border:1px solid var(--border);">';
+          html += '<p class="text-xs font-medium uppercase tracking-wider mb-2" style="color:var(--text-muted);">Output document</p>';
+          html += '<p class="text-xs font-mono break-all" style="color:var(--text-primary);">' + esc(er.doc_path) + '</p></div>';
+        }
+        html += '<div class="flex justify-end"><button type="button" class="enrich-modal-close-btn px-4 py-2 rounded-lg text-sm font-medium transition-all" style="background:var(--accent-15); color:var(--accent); border:1px solid var(--accent-4);">Close</button></div>';
+        if (jobDetailCancelBtn) {
+          if (job.status === 'running') {
+            jobDetailCancelBtn.classList.remove('hidden');
+            jobDetailCancelBtn.onclick = () => { logClick('job-cancel', 'modal', job.localId); cancelJob(job); hideJobDetailModal(); };
+          } else {
+            jobDetailCancelBtn.classList.add('hidden');
+            jobDetailCancelBtn.onclick = null;
+          }
+        }
+        jobDetailContent.innerHTML = html;
+        jobDetailModal.classList.remove('hidden');
+        return;
+      }
       const report = job.pipeline_report || {};
       const progress = job.progress || {};
       const live = job.liveMetrics || {};
@@ -2007,6 +2178,9 @@
 
     document.getElementById('job-detail-close')?.addEventListener('click', hideJobDetailModal);
     jobDetailModal?.querySelector('.modal-backdrop')?.addEventListener('click', hideJobDetailModal);
+    jobDetailContent?.addEventListener('click', (e) => {
+      if (e.target.closest('.enrich-modal-close-btn')) hideJobDetailModal();
+    });
 
     function setJobStatus(job, status, label) {
       job.status = status;
@@ -2237,6 +2411,153 @@
       }
     }
 
+    async function doEnrich(kbId, minFidelity, maxQueries) {
+      const activeKb = _kbData.find(k => k.id === kbId);
+      const kbName = activeKb ? activeKb.name : kbId;
+      const job = {
+        localId: Date.now(),
+        title: 'Web Enrichment: ' + kbName,
+        description: 'Fetching web content',
+        status: 'running',
+        serverJobId: null,
+        abortController: new AbortController(),
+        card: null,
+        kbId: kbId,
+        jobType: 'enrich',
+      };
+      jobs.push(job);
+      job.card = createJobCard(job);
+      if (jobQueue) jobQueue.insertBefore(job.card, jobQueue.firstChild);
+      if (jobQueueSection) jobQueueSection.classList.remove('collapsed');
+      persistJobs();
+      updateRunningJobIndicator();
+      setStatusBadge('processing');
+      tabDocuments?.click();
+      if (_kbData && _kbData.length) renderKbList(_kbData, _activeKbId);
+
+      const params = new URLSearchParams({ min_fidelity: String(minFidelity || 0.3) });
+      if (maxQueries) params.set('max_queries', String(maxQueries));
+      try {
+        const res = await fetch(API + '/knowledge-bases/' + kbId + '/enrich_stream?' + params.toString(), {
+          method: 'POST',
+          signal: job.abortController.signal,
+        });
+        if (!res.ok) {
+          const text = await res.text().catch(() => '');
+          const data = (() => { try { return JSON.parse(text); } catch { return text ? { detail: text } : {}; } })();
+          const msg = parseError(data) || res.statusText;
+          console.error('[Enrich]', res.status, msg, text ? text.slice(0, 500) : '(no body)');
+          throw new Error(msg);
+        }
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = '';
+        let result = null;
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          buffer += decoder.decode(value, { stream: true });
+          const parts = buffer.split('\n\n');
+          buffer = parts.pop() || '';
+          for (const part of parts) {
+            const line = part.split('\n').find(l => l.startsWith('data: '));
+            if (!line) continue;
+            try {
+              const ev = JSON.parse(line.slice(6));
+              if (ev.type === 'job_started') { job.serverJobId = ev.job_id; continue; }
+              if (ev.type === 'error') throw new Error(ev.message || 'Enrichment failed');
+              if (ev.type === 'complete') { result = ev; job.pipeline_report = ev.pipeline_report; job.enrichment_report = ev.enrichment_report; break; }
+              if (ev.step) updateJobStage(job, ev);
+            } catch (e) {
+              if (e instanceof SyntaxError) continue;
+              throw e;
+            }
+          }
+          if (result) break;
+        }
+        if (result) {
+          setJobStatus(job, 'done', 'Complete');
+          const sl = job.card?.querySelector('.stage-label');
+          if (sl) sl.textContent = 'Complete';
+          const metricsEl = job.card?.querySelector('.job-metrics');
+          if (metricsEl && job.enrichment_report) {
+            const er = job.enrichment_report;
+            const mp = [(er.pages_fetched ?? 0) + ' pages'];
+            if (er.nodes_added) mp.push('+' + er.nodes_added + ' nodes');
+            if (er.nodes_updated) mp.push(er.nodes_updated + ' updated');
+            if (er.edges_added) mp.push('+' + er.edges_added + ' edges');
+            if (er.axioms_added) mp.push('+' + er.axioms_added + ' axioms');
+            if (er.dp_added) mp.push('+' + er.dp_added + ' data props');
+            metricsEl.textContent = mp.join(' · ');
+          }
+          await loadKBs();
+          if (result.kb_id) setActiveKbId(result.kb_id);
+        }
+      } catch (e) {
+        if (e.name === 'AbortError') {
+          setJobStatus(job, 'cancelled', 'Cancelled');
+        } else {
+          setJobStatus(job, 'error', e.message);
+        }
+      } finally {
+        const hasRunning = jobs.some(j => j.status === 'running');
+        if (!hasRunning) setStatusBadge(getActiveKbId() ? 'ready' : 'empty');
+        hideWebEnrichmentModal();
+      }
+    }
+
+    // Web Enrichment modal
+    const webEnrichmentModal = document.getElementById('web-enrichment-modal');
+    const webEnrichmentKbSelect = document.getElementById('web-enrichment-kb-select');
+    const webEnrichmentFidelity = document.getElementById('web-enrichment-fidelity');
+    const webEnrichmentFidelityValue = document.getElementById('web-enrichment-fidelity-value');
+    const webEnrichmentMaxQueries = document.getElementById('web-enrichment-max-queries');
+    const webEnrichmentForm = document.getElementById('web-enrichment-form');
+    const webEnrichmentProgress = document.getElementById('web-enrichment-progress');
+    const webEnrichmentStage = document.getElementById('web-enrichment-stage');
+    const webEnrichmentMetrics = document.getElementById('web-enrichment-metrics');
+
+    function showWebEnrichmentModal() {
+      if (!webEnrichmentKbSelect) return;
+      webEnrichmentKbSelect.innerHTML = '<option value="">Select a KB</option>';
+      _kbData.forEach(kb => {
+        const opt = document.createElement('option');
+        opt.value = kb.id;
+        opt.textContent = kb.name || kb.id;
+        if (kb.id === getActiveKbId()) opt.selected = true;
+        webEnrichmentKbSelect.appendChild(opt);
+      });
+      webEnrichmentForm?.classList.remove('hidden');
+      webEnrichmentProgress?.classList.add('hidden');
+      webEnrichmentModal?.classList.remove('hidden');
+    }
+
+    function hideWebEnrichmentModal() {
+      webEnrichmentModal?.classList.add('hidden');
+    }
+
+    document.getElementById('web-enrichment-btn')?.addEventListener('click', () => {
+      logClick('web-enrichment', 'open');
+      showWebEnrichmentModal();
+    });
+
+    webEnrichmentFidelity?.addEventListener('input', () => {
+      if (webEnrichmentFidelityValue) webEnrichmentFidelityValue.textContent = Number(webEnrichmentFidelity.value).toFixed(2);
+    });
+
+    document.getElementById('web-enrichment-cancel')?.addEventListener('click', hideWebEnrichmentModal);
+    webEnrichmentModal?.querySelector('.modal-backdrop')?.addEventListener('click', hideWebEnrichmentModal);
+
+    document.getElementById('web-enrichment-start')?.addEventListener('click', async () => {
+      const kbId = webEnrichmentKbSelect?.value;
+      if (!kbId) { alert('Please select a knowledge base'); return; }
+      const minFidelity = parseFloat(webEnrichmentFidelity?.value || '0.3');
+      const maxQueries = webEnrichmentMaxQueries?.value ? parseInt(webEnrichmentMaxQueries.value, 10) : null;
+      logClick('web-enrichment', 'start');
+      hideWebEnrichmentModal();
+      doEnrich(kbId, minFidelity, maxQueries);
+    });
+
     // Suggestion button hover effect
     document.querySelectorAll('.suggestion-btn').forEach(btn => {
       btn.addEventListener('mouseenter', () => {
@@ -2295,6 +2616,12 @@
     });
     sidebarToggle?.addEventListener('click', () => { logClick('sidebar', 'toggle'); sidebar?.classList.toggle('open'); });
     document.getElementById('sidebar-overlay')?.addEventListener('click', () => sidebar?.classList.remove('open'));
+    currentOntologyName?.addEventListener('click', () => {
+      const kbId = getActiveKbId();
+      if (kbId) {
+        window.location.href = window.location.origin + API + '/graph/viewer?kb_id=' + encodeURIComponent(kbId);
+      }
+    });
 
     if (window.matchMedia('(min-width: 769px)').matches) {
       sidebar?.classList.add('open');

@@ -77,6 +77,11 @@ def generate_chat_ui_html(api_base: str = "/api/v1") -> str:
         </div>
         <input type="file" id="file-input" class="sr-only" accept=".pdf,.docx,.txt,.md" multiple tabindex="-1">
       </label>
+      <button type="button" id="web-enrichment-btn" class="w-full rounded-lg px-3 py-2.5 text-sm font-medium border transition-all flex items-center justify-center gap-2 mt-3"
+        style="background: var(--accent-08); color: var(--accent); border-color: var(--accent-4);">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"/></svg>
+        Web Enrichment
+      </button>
       <div id="job-queue-section" class="job-queue-section mt-3">
         <button type="button" id="job-queue-toggle" class="job-queue-toggle w-full flex items-center justify-between py-2 text-xs font-medium" style="color: var(--text-muted);">
           <span class="flex items-center gap-2">
@@ -338,6 +343,48 @@ def generate_chat_ui_html(api_base: str = "/api/v1") -> str:
     </div>
   </div>
 
+  <!-- Web Enrichment modal -->
+  <div id="web-enrichment-modal" class="fixed inset-0 z-50 hidden" aria-hidden="true">
+    <div class="modal-backdrop absolute inset-0 bg-black/60 backdrop-blur-sm" onclick="hideWebEnrichmentModal()"></div>
+    <div class="modal-content modal-enter absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-lg rounded-xl p-6 shadow-2xl" style="background: var(--bg-card); border: 1px solid var(--border);" onclick="event.stopPropagation()">
+      <div class="flex items-center gap-3 mb-4">
+        <div class="w-10 h-10 rounded-lg flex items-center justify-center shrink-0" style="background: var(--accent-12);">
+          <svg class="w-5 h-5" style="color: var(--accent);" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"/></svg>
+        </div>
+        <div>
+          <h3 class="font-semibold text-base" style="color: var(--text-primary);">Web Enrichment</h3>
+          <p class="text-xs mt-0.5" style="color: var(--text-muted);">Fetch web content and merge into the ontology</p>
+        </div>
+      </div>
+      <div id="web-enrichment-form" class="space-y-4">
+        <div>
+          <label class="block text-xs font-medium mb-1.5" style="color: var(--text-muted);">Knowledge base</label>
+          <select id="web-enrichment-kb-select" class="w-full rounded-lg px-3 py-2.5 text-sm border transition-all" style="background: var(--bg-input); color: var(--text-primary); border-color: var(--border);">
+            <option value="">Select a KB</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-xs font-medium mb-1.5" style="color: var(--text-muted);">Min. fidelity <span id="web-enrichment-fidelity-value" class="font-mono">0.30</span></label>
+          <input type="range" id="web-enrichment-fidelity" min="0.15" max="1" step="0.05" value="0.3" class="w-full h-2 rounded-lg accent-pink-500" style="background: var(--bg-input);">
+          <p class="text-xs mt-0.5" style="color: var(--text-muted);">Drop sources below this score (academic=1.0, docs=0.85, forums=0.30)</p>
+        </div>
+        <div>
+          <label class="block text-xs font-medium mb-1.5" style="color: var(--text-muted);">Max queries (optional)</label>
+          <input type="number" id="web-enrichment-max-queries" min="1" max="50" placeholder="Auto" class="w-full rounded-lg px-3 py-2.5 text-sm border transition-all" style="background: var(--bg-input); color: var(--text-primary); border-color: var(--border);">
+        </div>
+      </div>
+      <div id="web-enrichment-progress" class="hidden mt-4 space-y-2 rounded-lg p-3" style="background: var(--bg-input); border: 1px solid var(--border);">
+        <p class="text-xs font-medium" style="color: var(--text-muted);">Progress</p>
+        <p id="web-enrichment-stage" class="text-sm font-mono" style="color: var(--text-primary);">Starting...</p>
+        <p id="web-enrichment-metrics" class="text-xs font-mono" style="color: var(--text-muted);"></p>
+      </div>
+      <div class="flex gap-3 justify-end mt-5">
+        <button type="button" id="web-enrichment-cancel" class="px-4 py-2.5 rounded-lg text-sm transition-all" style="background: var(--bg-input); color: var(--text-muted); border: 1px solid var(--border);">Cancel</button>
+        <button type="button" id="web-enrichment-start" class="px-5 py-2.5 rounded-lg text-sm font-medium text-white transition-all btn-send">Start Enrichment</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Main chat area -->
   <main class="flex-1 flex flex-col min-h-0 overflow-hidden">
     <!-- Header -->
@@ -351,7 +398,7 @@ def generate_chat_ui_html(api_base: str = "/api/v1") -> str:
         <div id="current-ontology-pill" class="hidden flex items-center gap-3 flex-wrap pl-3 ml-1" style="border-left: 1px solid var(--border);">
           <div class="flex items-center gap-2">
             <div class="w-1.5 h-1.5 rounded-full shrink-0" style="background: var(--accent);"></div>
-            <span id="current-ontology-name" class="text-xs font-medium" style="color: var(--text-primary);"></span>
+            <span id="current-ontology-name" class="text-xs font-medium cursor-pointer hover:opacity-80 transition-opacity" style="color: var(--text-primary);" title="Open graph viewer"></span>
           </div>
           <span id="current-ontology-status-badge" class="text-xs font-medium px-2 py-0.5 rounded-full hidden" style="background: var(--border-subtle); color: var(--text-muted);"></span>
           <span class="text-xs" style="color: var(--border);">|</span>

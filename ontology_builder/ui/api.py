@@ -35,6 +35,7 @@ from ontology_builder.storage.graph_store import (
     clear_last_active_kb,
     get_current_kb_id,
     get_export,
+    get_export_for_api,
     get_graph,
     get_ontology_graphs_dir,
     get_subject,
@@ -46,7 +47,12 @@ from ontology_builder.storage.graph_store import (
     set_graph,
 )
 from core.config import get_settings
-from ontology_builder.ui.graph_viewer import generate_visjs_html, visualize
+from ontology_builder.ui.graph_viewer import (
+    _persist_vis_data,
+    generate_visjs_html,
+    render_vis_from_file,
+    visualize,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -253,14 +259,12 @@ async def build_ontology(
         if graph is None or not all_reports:
             raise HTTPException(500, "Pipeline produced no result")
 
-        set_graph(graph, document_subject=None)
-        await asyncio.to_thread(build_qa_index, graph, False)
-
         kb_id = uuid.uuid4().hex
         first_stem = Path(doc_names[0]).stem if doc_names else ""
         name = (title or first_stem or f"ontology-{kb_id[:8]}").strip() or f"ontology-{kb_id[:8]}"
         saved_path = _ONTOLOGY_GRAPHS / f"{kb_id}.json"
         _ONTOLOGY_GRAPHS.mkdir(parents=True, exist_ok=True)
+        set_graph(graph, document_subject=None)
         save_to_path_with_metadata(
             saved_path,
             name=name,
@@ -270,6 +274,8 @@ async def build_ontology(
             ontology_language=ontology_language or "en",
         )
         set_current_kb_id(kb_id)
+        await asyncio.to_thread(_persist_vis_data, saved_path, graph)
+        await asyncio.to_thread(build_qa_index, graph, False, saved_path)
 
         last_report_dict = all_reports[-1]
         export = graph.export()
@@ -569,14 +575,12 @@ async def build_ontology_stream(
                 if graph is None or not all_reports:
                     raise ValueError("Pipeline produced no result")
 
-                set_graph(graph, document_subject=None)
-                build_qa_index(graph, False)
-
                 kb_id = uuid.uuid4().hex
                 first_stem = Path(doc_names[0]).stem if doc_names else ""
                 name = (title or first_stem or f"ontology-{kb_id[:8]}").strip() or f"ontology-{kb_id[:8]}"
                 saved_path = _ONTOLOGY_GRAPHS / f"{kb_id}.json"
                 _ONTOLOGY_GRAPHS.mkdir(parents=True, exist_ok=True)
+                set_graph(graph, document_subject=None)
                 save_to_path_with_metadata(
                     saved_path,
                     name=name,
@@ -586,6 +590,8 @@ async def build_ontology_stream(
                     ontology_language=ontology_language or "en",
                 )
                 set_current_kb_id(kb_id)
+                _persist_vis_data(saved_path, graph)
+                build_qa_index(graph, False, saved_path)
 
                 last_report_dict = all_reports[-1]
                 export = graph.export()
@@ -626,11 +632,12 @@ async def build_ontology_stream(
 
         pipeline_task = asyncio.create_task(asyncio.to_thread(run_pipeline))
 
+        pipeline_timeout = get_settings().pipeline_timeout_seconds
         while True:
             try:
                 item = await asyncio.wait_for(
                     loop.run_in_executor(None, progress_queue.get),
-                    timeout=300.0,
+                    timeout=pipeline_timeout,
                 )
             except asyncio.TimeoutError:
                 yield _sse_event({"type": "error", "message": "Pipeline timeout"})
@@ -799,7 +806,6 @@ async def extend_kb_stream(
                     all_reports.append(report.to_dict())
 
                 set_graph(existing_graph, document_subject=None)
-                build_qa_index(existing_graph, False)
 
                 saved_path = _ONTOLOGY_GRAPHS / f"{kb_id}.json"
                 save_to_path_with_metadata(
@@ -811,6 +817,8 @@ async def extend_kb_stream(
                     merge_documents=True,
                 )
                 set_current_kb_id(kb_id)
+                _persist_vis_data(saved_path, existing_graph)
+                build_qa_index(existing_graph, False, saved_path)
 
                 last_report_dict = all_reports[-1] if all_reports else {}
                 export = existing_graph.export()
@@ -851,11 +859,12 @@ async def extend_kb_stream(
 
         pipeline_task = asyncio.create_task(asyncio.to_thread(run_extend))
 
+        pipeline_timeout = get_settings().pipeline_timeout_seconds
         while True:
             try:
                 item = await asyncio.wait_for(
                     loop.run_in_executor(None, progress_queue.get),
-                    timeout=300.0,
+                    timeout=pipeline_timeout,
                 )
             except asyncio.TimeoutError:
                 yield _sse_event({"type": "error", "message": "Pipeline timeout"})
@@ -887,6 +896,170 @@ async def extend_kb_stream(
         media_type="text/event-stream",
         headers=_streaming_sse_headers(),
     )
+
+
+@router.post("/knowledge-bases/{kb_id}/enrich_stream")
+async def enrich_kb_stream(
+    kb_id: str,
+    request: Request,
+    max_queries: int | None = Query(None, description="Override auto-computed query cap"),
+    min_fidelity: float = Query(0.3, description="Drop results below this fidelity score (0–1)"),
+    use_llm_content_score: bool = Query(True, description="Batch-score pages via LLM for objective relevance+quality"),
+):
+    """Run web enrichment on a knowledge base: infer queries from graph, fetch web pages, build doc, merge into graph. Streams progress via SSE."""
+    try:
+        kb_path = _ONTOLOGY_GRAPHS / f"{kb_id}.json"
+        if not kb_path.exists():
+            raise HTTPException(404, f"Knowledge base '{kb_id}' not found.")
+
+        from ontology_builder.enrichment import enrich_graph
+
+        logger.info("[EnrichKBStream] kb_id=%s max_queries=%s min_fidelity=%s", kb_id, max_queries, min_fidelity)
+
+        progress_queue: Queue = Queue()
+        cancel_event = threading.Event()
+
+        def progress_callback(step: str, data: dict) -> None:
+            progress_queue.put({"step": step, "data": data})
+
+        async def watch_disconnect() -> None:
+            try:
+                while True:
+                    message = await request.receive()
+                    if message.get("type") == "http.disconnect":
+                        logger.info("[EnrichKBStream] Client disconnected")
+                        cancel_event.set()
+                        break
+            except (asyncio.CancelledError, Exception):
+                pass
+
+        async def generate() -> Any:
+            loop = asyncio.get_event_loop()
+            result_holder: dict | None = None
+            error_holder: str | None = None
+            job_id = uuid.uuid4().hex
+            _active_pipelines[job_id] = cancel_event
+
+            yield _sse_event({
+                "type": "job_started",
+                "job_id": job_id,
+                "job_type": "enrich",
+            })
+
+            disconnect_task = asyncio.create_task(watch_disconnect())
+
+            def run_enrich() -> None:
+                nonlocal result_holder, error_holder
+                try:
+                    graph = load_from_path(kb_path)
+                    set_graph(graph, document_subject=None)
+                    set_current_kb_id(kb_id)
+                    report = enrich_graph(
+                        graph,
+                        kb_path=kb_path,
+                        max_queries=max_queries,
+                        min_fidelity=min_fidelity,
+                        use_llm_content_score=use_llm_content_score,
+                        verbose=True,
+                        progress_callback=progress_callback,
+                        cancel_check=cancel_event.is_set,
+                    )
+                    set_graph(graph, document_subject=None)
+                    _persist_vis_data(kb_path, graph)
+                    build_qa_index(graph, False, kb_path)
+
+                    export = graph.export()
+                    try:
+                        health_result = compute_graph_health(graph, kb_id=kb_id)
+                    except Exception:
+                        health_result = None
+
+                    pr = report.pipeline_report
+                    result_holder = {
+                        "type": "complete",
+                        "graph": export,
+                        "kb_id": kb_id,
+                        "enrichment_report": {
+                            "queries": report.queries,
+                            "queries_count": len(report.queries),
+                            "pages_fetched": report.pages_fetched,
+                            "doc_path": str(report.doc_path),
+                            "nodes_added": pr.nodes_added,
+                            "nodes_updated": pr.nodes_updated,
+                            "edges_added": pr.edges_added,
+                            "axioms_added": pr.axioms_added,
+                            "dp_added": pr.dp_added,
+                            "merge_skipped": pr.merge_skipped,
+                            "skip_reason": pr.skip_reason,
+                            "analysis": pr.analysis,
+                        },
+                        "pipeline_report": _build_report_dict(
+                            {},
+                            "",
+                            totals=export.get("stats", {}),
+                            document_display=str(report.doc_path),
+                            health=health_result,
+                        ),
+                    }
+                except PipelineCancelledError:
+                    logger.info("[EnrichKBStream] Enrichment cancelled")
+                    error_holder = "Cancelled by user"
+                except Exception as e:
+                    logger.exception("Web enrichment failed")
+                    error_holder = str(e)
+                finally:
+                    _active_pipelines.pop(job_id, None)
+                    progress_queue.put({"type": "end"})
+
+            pipeline_task = asyncio.create_task(asyncio.to_thread(run_enrich))
+
+            pipeline_timeout = get_settings().pipeline_timeout_seconds
+            while True:
+                try:
+                    item = await asyncio.wait_for(
+                        loop.run_in_executor(None, progress_queue.get),
+                        timeout=pipeline_timeout,
+                    )
+                except asyncio.TimeoutError:
+                    yield _sse_event({"type": "error", "message": "Enrichment timeout"})
+                    break
+
+                if item.get("type") == "end":
+                    break
+
+                yield _sse_event({"step": item["step"], "data": item["data"]})
+
+            disconnect_task.cancel()
+            try:
+                await disconnect_task
+            except asyncio.CancelledError:
+                pass
+
+            try:
+                await pipeline_task
+            except Exception as e:
+                logger.exception("Enrich pipeline task failed")
+                error_holder = str(e)
+
+            if error_holder:
+                yield _sse_event({"type": "error", "message": error_holder})
+            elif result_holder:
+                yield _sse_event(result_holder)
+
+        async def body() -> Any:
+            async for chunk in generate():
+                yield chunk
+
+        return StreamingResponse(
+            body(),
+            media_type="text/event-stream",
+            headers=_streaming_sse_headers(),
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception("Enrich stream setup failed")
+        raise HTTPException(500, f"Enrichment failed: {e}") from e
 
 
 @router.post("/cancel_job/{job_id}")
@@ -940,7 +1113,7 @@ async def activate_kb(kb_id: str):
         graph = load_from_path(path)
         set_graph(graph, document_subject=None)
         set_current_kb_id(kb_id)
-        await asyncio.to_thread(build_qa_index, graph, False)
+        await asyncio.to_thread(build_qa_index, graph, False, path)
         return {"status": "ok", "active_id": kb_id}
     except Exception as e:
         logger.exception("Failed to load knowledge base %s", kb_id)
@@ -974,14 +1147,22 @@ async def update_kb(kb_id: str, req: KBUpdateRequest):
 
 @router.delete("/knowledge-bases/{kb_id}")
 async def delete_kb(kb_id: str):
-    """Delete a knowledge base entirely: graph JSON, metadata, and in-memory state."""
+    """Delete a knowledge base entirely: graph JSON, metadata, QA index, and in-memory state."""
     path = _ONTOLOGY_GRAPHS / f"{kb_id}.json"
     meta_path = _ONTOLOGY_GRAPHS / f"{kb_id}.meta.json"
+    index_path = _ONTOLOGY_GRAPHS / f"{kb_id}_index.npz"
+    index_path_legacy = _ONTOLOGY_GRAPHS / f"{kb_id}.qa_index.npz"
+    records_path = _ONTOLOGY_GRAPHS / f"{kb_id}.qa_records.json"
+    vis_path = _ONTOLOGY_GRAPHS / f"{kb_id}.vis.json"
     if not path.exists():
         raise HTTPException(404, f"Knowledge base '{kb_id}' not found.")
     try:
         path.unlink(missing_ok=True)
         meta_path.unlink(missing_ok=True)
+        index_path.unlink(missing_ok=True)
+        index_path_legacy.unlink(missing_ok=True)
+        records_path.unlink(missing_ok=True)
+        vis_path.unlink(missing_ok=True)
         if get_current_kb_id() == kb_id:
             clear_graph_store()
             clear_qa_index()
@@ -1062,12 +1243,13 @@ async def repair_kb(kb_id: str):
                 report = repair_graph(graph, config=config, progress_callback=progress, kb_id=kb_id)
                 set_graph(graph, document_subject=None)
                 set_current_kb_id(kb_id)
-                build_qa_index(graph, False)
+                build_qa_index(graph, False, path)
                 if meta_path.exists():
                     meta = json.loads(meta_path.read_text(encoding="utf-8"))
                     save_to_path_with_metadata(path, name=meta.get("name", kb_id), kb_id=kb_id, description=meta.get("description", ""), documents=meta.get("documents"))
                 else:
                     save_to_path(path)
+                _persist_vis_data(path, graph)
                 yield f"data: {json.dumps({'type': 'done', 'edges_added': report.edges_added})}\n\n"
             for chunk in sync_gen():
                 yield chunk
@@ -1104,6 +1286,7 @@ def _run_evaluation_sync(
         num_questions=num_questions,
         reports_dir=str(reports_dir),
         progress_callback=None,
+        kb_path=path,
     )
     return record.to_dict()
 
@@ -1268,31 +1451,32 @@ async def qa_ask(
         graph = await asyncio.to_thread(load_from_path, path)
         set_graph(graph, document_subject=None)
         set_current_kb_id(kb_id)
-        await asyncio.to_thread(build_qa_index, graph, False)
+        await asyncio.to_thread(build_qa_index, graph, False, path)
         logger.info("[QA] Activated ontology %s for query", kb_id)
     graph = get_graph()
     if graph is None:
         raise HTTPException(503, "No ontology graph. Select one from the sidebar or build one first.")
 
-    if retrieval_mode == "hyperedges":
-        context_snippets = await asyncio.to_thread(
-            retrieve_hyperedges,
-            req.question,
-            10,
-            5,
-        )
-        source_refs = [f"he:{i}" for i in range(len(context_snippets))]
-        onto_ctx = ""
-    elif retrieval_mode == "context":
-        result = await asyncio.to_thread(retrieve_with_context, req.question, 10)
-        context_snippets = result.facts
-        source_refs = result.source_refs
-        onto_ctx = result.ontological_context
-    else:
-        result = await asyncio.to_thread(retrieve_with_context, req.question, 10)
-        context_snippets = result.facts
-        source_refs = result.source_refs
-        onto_ctx = ""
+    def _retrieve():
+        if retrieval_mode == "hyperedges":
+            snippets = retrieve_hyperedges(req.question, 10, 5)
+            return snippets, [f"he:{i}" for i in range(len(snippets))], ""
+        result = retrieve_with_context(req.question, 10)
+        onto = result.ontological_context if retrieval_mode == "context" else ""
+        return result.facts, result.source_refs, onto
+
+    context_snippets, source_refs, onto_ctx = await asyncio.to_thread(_retrieve)
+
+    # If index is empty but we have a graph, the background build may not have finished.
+    # Building the index for large graphs (1000+ nodes) can take 1-3 minutes — don't block the request.
+    if not context_snippets and graph is not None and graph.get_graph().number_of_nodes() > 0:
+        kb_path = _ONTOLOGY_GRAPHS / f"{get_current_kb_id()}.json" if get_current_kb_id() else None
+        if kb_path is None or kb_path.exists():
+            asyncio.create_task(asyncio.to_thread(build_qa_index, graph, False, kb_path))
+            raise HTTPException(
+                503,
+                "QA index is building. For large graphs this takes 1-2 minutes. Please wait and try again.",
+            )
 
     if not context_snippets:
         raise HTTPException(503, "QA index is empty. Rebuild the ontology.")
@@ -1325,8 +1509,8 @@ async def qa_ask(
 
 @router.get("/graph", response_model=GraphExportResponse)
 async def get_current_graph():
-    """Return the current graph export with class/instance/edge/axiom counts."""
-    data = get_export()
+    """Return the current graph export with class/instance/edge/axiom counts (no embeddings)."""
+    data = get_export_for_api()
     if data is None:
         raise HTTPException(404, "No ontology graph. Build one first via POST /build_ontology.")
     return GraphExportResponse(
@@ -1346,7 +1530,9 @@ async def reasoning_apply():
     reasoning_result = await asyncio.to_thread(apply_reasoning, graph, subject)
 
     set_graph(graph, document_subject=subject)
-    await asyncio.to_thread(build_qa_index, graph, False)
+    kb_id = get_current_kb_id()
+    kb_path = _ONTOLOGY_GRAPHS / f"{kb_id}.json" if kb_id else None
+    await asyncio.to_thread(build_qa_index, graph, False, kb_path)
 
     return ReasoningResponse(
         inferred_edges=reasoning_result.inferred_edges,
@@ -1381,12 +1567,23 @@ async def graph_viewer(
     debug: bool = Query(False, description="Enable console logging for layout debugging."),
 ):
     """Interactive vis.js graph viewer (standalone HTML page)."""
-    graph = get_graph()
     if kb_id:
         path = _ONTOLOGY_GRAPHS / f"{kb_id}.json"
+        vis_path = _ONTOLOGY_GRAPHS / f"{kb_id}.vis.json"
         if not path.exists():
             raise HTTPException(404, f"Knowledge base '{kb_id}' not found.")
-        graph = await asyncio.to_thread(load_from_path, path)
+        if vis_path.exists() and vis_path.stat().st_mtime >= path.stat().st_mtime:
+            html = await asyncio.to_thread(
+                render_vis_from_file, vis_path, pre_select_node=node, depth=depth, debug=debug
+            )
+            return HTMLResponse(content=html)
+        graph = await asyncio.to_thread(load_from_path, path, False)
+        html = await asyncio.to_thread(
+            generate_visjs_html, graph, node, depth, debug,
+        )
+        await asyncio.to_thread(_persist_vis_data, path, graph)
+        return HTMLResponse(content=html)
+    graph = get_graph()
     if graph is None:
         raise HTTPException(404, "No ontology graph. Select one from the sidebar or build one first.")
     html = generate_visjs_html(graph, pre_select_node=node, depth=depth, debug=debug)
