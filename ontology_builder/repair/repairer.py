@@ -45,6 +45,7 @@ class RepairConfig:
     small_component_threshold: int | None = None
     bridge_similarity_threshold: float | None = None
     add_root_concept: bool = True
+    root_concept_name: str | None = None  # If set, use this; else infer domain-aware root
     run_reasoning_after: bool = True
     repair_incremental: bool = True
     repair_llm_batch_size: int = 20
@@ -55,6 +56,9 @@ class RepairConfig:
     enrich_hierarchy_if_low_quality: bool = True
     boost_population_if_sparse: bool = True
     auto_resolve_critical: bool = False
+    repair_internet_definitions: bool = False
+    repair_iterations: int = 1
+    min_fidelity: float = 0.3  # Confidence threshold for web definitions (0–1); filters low-quality sources
 
 
 def _compute_health_report(graph: OntologyGraph, config: RepairConfig) -> GraphHealthReport:
@@ -96,11 +100,15 @@ class RepairReport:
     orphans_linked: int = 0
     components_bridged: int = 0
     missing_relations_added: int = 0
+    gaps_repaired: int = 0
+    iterations_completed: int = 0
     health_before: dict[str, Any] = field(default_factory=dict)
     health_after: dict[str, Any] = field(default_factory=dict)
     health_report_before: GraphHealthReport | None = None
     health_report_after: GraphHealthReport | None = None
     inferred_edges: list[tuple[str, str, str]] = field(default_factory=list)
+    definitions_added: dict[str, str] = field(default_factory=dict)
+    iteration_summaries: list[dict[str, Any]] = field(default_factory=list)
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -108,9 +116,13 @@ class RepairReport:
             "orphans_linked": self.orphans_linked,
             "components_bridged": self.components_bridged,
             "missing_relations_added": self.missing_relations_added,
+            "gaps_repaired": self.gaps_repaired,
+            "iterations_completed": self.iterations_completed,
             "health_before": self.health_before,
             "health_after": self.health_after,
-            "inferred_edges": self.inferred_edges,
+            "inferred_edges": [list(e) for e in self.inferred_edges],
+            "definitions_added": self.definitions_added,
+            "iteration_summaries": self.iteration_summaries,
         }
 
 
@@ -382,32 +394,50 @@ def _bridge_components(
     report.components_bridged = bridged
 
 
+def _infer_root_concept_name(graph: OntologyGraph, kb_path: str | None = None) -> str:
+    """Infer a domain-aware root concept name from the graph and KB metadata."""
+    try:
+        from ontology_builder.enrichment.query_planner import _infer_domain_hint
+        domain = _infer_domain_hint(graph, kb_path)
+        if domain:
+            safe = domain.replace(" ", "").replace("'", "")[:30]
+            return f"{safe}Root" if safe else "DomainRoot"
+    except Exception:
+        pass
+    return "DomainRoot"
+
+
 def _add_root_concept(
     graph: OntologyGraph,
     progress_callback: Callable[[str, str, dict], None] | None,
+    root_name: str | None = None,
+    kb_path: str | None = None,
 ) -> int:
-    """Add Thing root and link orphan classes to it."""
+    """Add domain-aware root concept and link orphan classes to it.
+    Uses root_name if provided, else infers from graph (e.g. PokemonRoot for Pokémon ontology)."""
     g = graph.get_graph()
-    if "Thing" not in g:
-        graph.add_class("Thing", description="Root concept")
+    root = root_name or _infer_root_concept_name(graph, kb_path)
+    desc = f"Root concept for this ontology" if root == "DomainRoot" else f"Root concept for {root.replace('Root','')} domain"
+    if root not in g:
+        graph.add_class(root, description=desc)
     orphan_classes = [
         n for n in g.nodes()
-        if g.nodes[n].get("kind") == "class" and g.degree(n) == 0 and n != "Thing"
+        if g.nodes[n].get("kind") == "class" and g.degree(n) == 0 and n != root
     ]
     if not orphan_classes:
         return 0
 
     if progress_callback:
-        progress_callback("root_concept", "Adding root concept (Thing)", {"orphan_classes": len(orphan_classes)})
+        progress_callback("root_concept", f"Linking orphan classes to {root}", {"orphan_classes": len(orphan_classes), "root": root})
 
     added = 0
     for node in orphan_classes:
-        if not graph.has_edge(node, "Thing", "subClassOf"):
+        if not graph.has_edge(node, root, "subClassOf"):
             graph.add_relation(
-                node, "subClassOf", "Thing",
+                node, "subClassOf", root,
                 confidence=DEFAULT_CONFIDENCE,
                 source_document="inferred",
-                provenance={"origin": "repair", "rule": "root_concept"},
+                provenance={"origin": "repair", "rule": "root_concept", "root": root},
             )
             added += 1
     return added
@@ -423,10 +453,78 @@ def repair_graph_incremental(
     """
     cfg = config or RepairConfig()
     report = RepairReport()
-    root_added = _add_root_concept(graph, None)
+    root_added = _add_root_concept(graph, None, root_name=cfg.root_concept_name)
     report.edges_added += root_added
     _link_orphans(graph, cfg, report, None)
     return report
+
+
+def _run_one_repair_iteration(
+    graph: OntologyGraph,
+    cfg: RepairConfig,
+    report: RepairReport,
+    iteration: int,
+    total_iterations: int,
+    progress_callback: Callable[[str, str, dict], None] | None,
+    kb_id: str | None,
+    kb_path: str | None,
+) -> None:
+    """Run one repair iteration: gap repair, root, orphans, bridges, reasoning, optional pass2."""
+    from pathlib import Path
+
+    def _prog(step: str, msg: str, data: dict | None = None):
+        d = dict(data or {})
+        d["iteration"] = iteration
+        d["iteration_total"] = total_iterations
+        if progress_callback:
+            progress_callback(step, msg, d)
+
+    def _wrapped_progress(step: str, msg: str, details: dict) -> None:
+        _prog(step, msg, details)
+
+    # 0. Internet definition repair
+    if cfg.repair_internet_definitions:
+        from ontology_builder.repair.gap_repair import detect_gaps_in_graph, reify_definitions_from_web
+        gaps = detect_gaps_in_graph(graph, kb_path=Path(kb_path) if kb_path else None)
+        if gaps:
+            _prog("gap_repair", f"Searching web for {len(gaps)} missing definitions", {"count": len(gaps)})
+            gap_report = reify_definitions_from_web(
+                graph,
+                gaps,
+                kb_path=Path(kb_path) if kb_path else None,
+                min_fidelity=cfg.min_fidelity,
+                progress_callback=lambda s, m, d: _prog("gap_repair", m, d),
+                cancel_check=None,
+            )
+            report.gaps_repaired += gap_report.gaps_repaired
+            report.definitions_added.update(gap_report.definitions_added)
+            logger.info("[Repair] Iter %d: %d definitions added", iteration, gap_report.gaps_repaired)
+        else:
+            _prog("gap_repair", "No gaps (all concepts have descriptions)", {})
+
+    # 1. Root concept (domain-aware)
+    root_name = cfg.root_concept_name or _infer_root_concept_name(graph, kb_path)
+    _prog("root_concept", f"Linking orphans to {root_name}", {})
+    root_added = _add_root_concept(graph, _wrapped_progress, root_name=root_name, kb_path=kb_path)
+    report.edges_added += root_added
+
+    # 2. Orphan linking
+    _link_orphans(graph, cfg, report, _wrapped_progress)
+
+    # 3. Component bridging
+    _bridge_components(graph, cfg, report, _wrapped_progress)
+
+    # 4. Reasoning
+    if cfg.run_reasoning_after and report.edges_added > 0:
+        _prog("reasoning", "Running OWL 2 RL inference", {})
+        result = run_inference(graph)
+        report.edges_added += result.inferred_edges
+
+    # 5. Second pass if targets not met
+    health_after = _compute_health_report(graph, cfg)
+    if not health_after.repair_target_met and health_after.orphan_count > 0:
+        _prog("repair_pass2", "Second pass (orphans)", {})
+        _link_orphans(graph, cfg, report, _wrapped_progress)
 
 
 def repair_graph(
@@ -435,78 +533,82 @@ def repair_graph(
     dry_run: bool = False,
     progress_callback: Callable[[str, str, dict], None] | None = None,
     kb_id: str | None = None,
+    kb_path: str | None = None,
 ) -> RepairReport:
-    """Repair graph: root concept, orphan linking, component bridging, optional reasoning.
+    """Repair graph iteratively: optional internet definition fill, root, orphans, bridges, reasoning.
 
-    Computes GraphHealthReport before/after; if repair_target_met is False after first pass,
-    runs a second pass (orphan linking only, cap 2 total passes). Logs health at INFO.
+    When repair_iterations > 1, runs multiple passes. After each iteration rescans the graph
+    (health + gaps) to assess the new state. Logs health at INFO.
     """
     cfg = config or RepairConfig()
     report = RepairReport()
+    iterations = max(1, min(cfg.repair_iterations, 5))
 
-    if progress_callback:
-        progress_callback("health_before", "Computing health before repair", {})
+    def _prog(step: str, msg: str, data: dict | None = None):
+        if progress_callback:
+            progress_callback(step, msg, data or {})
 
+    _prog("health_before", "Computing health before repair", {})
     report.health_before = compute_graph_health(graph, kb_id=kb_id)
     report.health_report_before = _compute_health_report(graph, cfg)
 
     if dry_run:
         return report
 
-    # 1. Root concept
-    root_added = _add_root_concept(graph, progress_callback)
-    report.edges_added += root_added
+    for it in range(1, iterations + 1):
+        _prog("iteration_start", f"Iteration {it}/{iterations}", {"iteration": it, "iteration_total": iterations})
+        logger.info("[Repair] Starting iteration %d/%d", it, iterations)
 
-    # 2. Orphan linking
-    _link_orphans(graph, cfg, report, progress_callback)
+        _run_one_repair_iteration(
+            graph, cfg, report, it, iterations,
+            progress_callback, kb_id, kb_path,
+        )
 
-    # 3. Component bridging
-    _bridge_components(graph, cfg, report, progress_callback)
-
-    # 4. Reasoning
-    if cfg.run_reasoning_after and report.edges_added > 0:
-        if progress_callback:
-            progress_callback("reasoning", "Running OWL 2 RL inference", {})
-        result = run_inference(graph)
-        report.edges_added += result.inferred_edges
-
-    if progress_callback:
-        progress_callback("health_after", "Computing health after repair", {})
-
-    report.health_after = compute_graph_health(graph, kb_id=kb_id)
-    report.health_report_after = _compute_health_report(graph, cfg)
-
-    # Second pass if targets not met (orphan linking only, cap 2 passes)
-    if not report.health_report_after.repair_target_met and report.health_report_after.orphan_count > 0:
-        if progress_callback:
-            progress_callback("repair_pass2", "Second repair pass (orphans)", {})
-        prev_edges = report.edges_added
-        _link_orphans(graph, cfg, report, progress_callback)
+        report.health_after = compute_graph_health(graph, kb_id=kb_id)
         report.health_report_after = _compute_health_report(graph, cfg)
-        if report.edges_added > prev_edges:
-            report.health_after = compute_graph_health(graph, kb_id=kb_id)
-            logger.info(
-                "[Repair] Second pass added %d edges | orphan_ratio=%.2f components=%d target_met=%s",
-                report.edges_added - prev_edges,
-                report.health_report_after.orphan_ratio,
-                report.health_report_after.component_count,
-                report.health_report_after.repair_target_met,
-            )
+
+        # Rescan: gaps after this iteration
+        from ontology_builder.repair.gap_repair import detect_gaps_in_graph
+        from pathlib import Path
+        gaps_after = detect_gaps_in_graph(graph, kb_path=Path(kb_path) if kb_path else None, max_gaps=20)
+        summary = {
+            "iteration": it,
+            "health": report.health_after,
+            "gaps_remaining": len(gaps_after),
+            "gaps_sample": gaps_after[:5],
+            "edges_added_so_far": report.edges_added,
+            "gaps_repaired_so_far": report.gaps_repaired,
+        }
+        report.iteration_summaries.append(summary)
+        report.iterations_completed = it
+
+        _prog("rescan", f"Rescan: {report.health_report_after.total_nodes} nodes, {len(gaps_after)} gaps remaining", {
+            "iteration": it,
+            "iteration_total": iterations,
+            "rescan": summary,
+        })
+        logger.info(
+            "[Repair] Iter %d done: nodes=%d edges=%d orphans=%d gaps_remaining=%d",
+            it,
+            report.health_report_after.total_nodes,
+            report.health_report_after.total_edges,
+            report.health_report_after.orphan_count,
+            len(gaps_after),
+        )
 
     logger.info(
-        "[Repair] Health before: nodes=%d edges=%d orphans=%d components=%d target_met=%s",
+        "[Repair] Health before: nodes=%d edges=%d orphans=%d components=%d",
         report.health_report_before.total_nodes if report.health_report_before else 0,
         report.health_report_before.total_edges if report.health_report_before else 0,
         report.health_report_before.orphan_count if report.health_report_before else 0,
         report.health_report_before.component_count if report.health_report_before else 0,
-        report.health_report_before.repair_target_met if report.health_report_before else False,
     )
     logger.info(
-        "[Repair] Health after: nodes=%d edges=%d orphans=%d components=%d target_met=%s",
+        "[Repair] Health after: nodes=%d edges=%d orphans=%d components=%d iterations=%d",
         report.health_report_after.total_nodes if report.health_report_after else 0,
         report.health_report_after.total_edges if report.health_report_after else 0,
         report.health_report_after.orphan_count if report.health_report_after else 0,
         report.health_report_after.component_count if report.health_report_after else 0,
-        report.health_report_after.repair_target_met if report.health_report_after else False,
+        report.iterations_completed,
     )
     return report

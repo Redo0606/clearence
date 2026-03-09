@@ -7,6 +7,11 @@ from ontology_builder.repair.repairer import (
     repair_graph,
     repair_graph_incremental,
 )
+from ontology_builder.repair.gap_repair import (
+    GapRepairReport,
+    detect_gaps_in_graph,
+    reify_definitions_from_web,
+)
 
 __all__ = [
     "GraphHealthReport",
@@ -14,4 +19,7 @@ __all__ = [
     "RepairReport",
     "repair_graph",
     "repair_graph_incremental",
+    "GapRepairReport",
+    "detect_gaps_in_graph",
+    "reify_definitions_from_web",
 ]
