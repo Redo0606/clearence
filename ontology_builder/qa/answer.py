@@ -12,7 +12,12 @@ from dataclasses import dataclass, field
 
 from core.config import get_settings
 from ontology_builder.llm.client import complete, complete_batch
-from ontology_builder.qa.prompts import QA_SYSTEM, build_qa_user_prompt
+from ontology_builder.qa.prompts import (
+    AGENT_QA_SYSTEM,
+    QA_SYSTEM,
+    build_agent_qa_user_prompt,
+    build_qa_user_prompt,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -63,6 +68,7 @@ def answer_question(
     source_refs: list[str] | None = None,
     ontological_context: str = "",
     answer_language: str | None = None,
+    agent_mode: bool = False,
 ) -> QAResult:
     """Generate an answer from question and retrieved ontology facts.
 
@@ -92,14 +98,24 @@ def answer_question(
         logger.debug("[QA] Truncating context from %d to %d chars", len(context), max_context_chars)
         context = context[:max_context_chars] + "\n[... truncated ...]"
 
-    user = build_qa_user_prompt(
-        context, question, ontological_context, answer_language=answer_language
-    )
+    if agent_mode:
+        user = build_agent_qa_user_prompt(
+            context, question, ontological_context, answer_language=answer_language
+        )
+        system = AGENT_QA_SYSTEM
+        max_tokens = 3000
+    else:
+        user = build_qa_user_prompt(
+            context, question, ontological_context, answer_language=answer_language
+        )
+        system = QA_SYSTEM
+        max_tokens = 2000
+
     response_text = complete(
-        system=QA_SYSTEM,
+        system=system,
         user=user,
         temperature=0.2,
-        max_tokens=2000,
+        max_tokens=max_tokens,
         response_format={"type": "json_object"},
     )
     logger.info("[QA] Response generated | length=%d chars | facts=%d", len(response_text), len(context_snippets))

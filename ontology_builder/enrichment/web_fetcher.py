@@ -1,4 +1,4 @@
-"""Search each query via duckduckgo-search (Bing backend for Docker compatibility),
+"""Search each query via ddgs (Bing backend for Docker compatibility),
 then fetch page text and attach a fidelity score.
 
 Scoring:
@@ -12,12 +12,13 @@ from __future__ import annotations
 import re
 import time
 import logging
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass, field
 from urllib.parse import urlparse
 
 import requests
 from bs4 import BeautifulSoup
-from duckduckgo_search import DDGS
+from ddgs import DDGS
 from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception
 
 logger = logging.getLogger(__name__)
@@ -132,7 +133,7 @@ Score (0–1):"""
     return scores
 
 
-# ---------- search (duckduckgo-search with Bing backend for Docker) ----------
+# ---------- search (ddgs with Bing backend for Docker) ----------
 
 _HEADERS  = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
@@ -145,23 +146,23 @@ _MAX_RESULTS = 15
 
 def _web_search(query: str, max_results: int = _MAX_RESULTS) -> list[dict]:
     """
-    Search via duckduckgo-search. Uses Bing backend for reliable access from Docker/Mac.
+    Search via ddgs. Uses Bing backend for reliable access from Docker/Mac.
     Returns list of {url, title}.
     """
-    results = []
-    backends = ["bing", "lite", "html"]  # Bing first: works from Docker; lite/html as fallback
+    backends = ["bing", "duckduckgo", "brave"]  # Bing first: works from Docker; fallbacks
     for backend in backends:
         try:
             logger.info("[WebFetcher] Searching (%s) for '%s'", backend, query[:60])
-            with DDGS(timeout=20) as ddgs:
-                for r in ddgs.text(query, backend=backend, max_results=max_results):
-                    href = r.get("href") or r.get("url") or r.get("link", "")
-                    if not href.startswith("http"):
-                        continue
-                    title = r.get("title", "") or href
-                    results.append({"url": href, "title": title})
-                    if len(results) >= max_results:
-                        break
+            raw = DDGS(timeout=20).text(query, backend=backend, max_results=max_results)
+            results = []
+            for r in raw:
+                href = r.get("href") or r.get("url") or r.get("link", "")
+                if not href.startswith("http"):
+                    continue
+                title = r.get("title", "") or href
+                results.append({"url": href, "title": title})
+                if len(results) >= max_results:
+                    break
             if results:
                 logger.info("[WebFetcher] %s returned %d results for '%s'", backend, len(results), query[:50])
                 return results[:max_results]
@@ -338,4 +339,105 @@ def fetch_and_score(queries: list[str], min_fidelity: float = 0.3,
 
     pages.sort(key=lambda p: p.combined_score(), reverse=True)
     logger.info("[WebFetcher] Done: %d pages from %d queries (sorted by combined_score)", len(pages), total_queries)
+    return pages
+
+
+def fetch_and_score_parallel(
+    queries: list[str],
+    min_fidelity: float = 0.3,
+    results_per_query: int = 3,
+    max_search_workers: int = 6,
+    max_fetch_workers: int = 8,
+    progress_callback=None,
+    cancel_check=None,
+) -> list[WebPage]:
+    """
+    Parallel variant: run all searches concurrently, then all page fetches concurrently.
+    Optimized for gap repair (no LLM content scoring, fewer pages per query).
+    """
+    if not queries:
+        return []
+
+    def _progress(step: str, data: dict):
+        if progress_callback:
+            progress_callback(step, data)
+
+    # Phase 1: parallel search
+    _progress("web_fetch_query", {"query_index": 0, "total_queries": len(queries), "message": "Searching in parallel"})
+    search_results: list[tuple[str, list[dict]]] = []
+    with ThreadPoolExecutor(max_workers=min(max_search_workers, len(queries))) as ex:
+        futures = {ex.submit(_web_search, q, 10): q for q in queries}
+        for future in as_completed(futures):
+            if cancel_check and cancel_check():
+                break
+            query = futures[future]
+            try:
+                cands = future.result()
+                search_results.append((query, cands))
+            except Exception as e:
+                logger.warning("[WebFetcher] Parallel search failed for %s: %s", query[:50], e)
+                search_results.append((query, []))
+
+    # Build (query, url, title, fidelity) candidates, filter by fidelity
+    candidates: list[tuple[str, str, str, float]] = []
+    seen_urls: set[str] = set()
+    for query, cands in search_results:
+        for c in cands:
+            url = (c.get("href") or c.get("url") or c.get("link") or "").strip()
+            if not url.startswith("http") or url in seen_urls:
+                continue
+            score = fidelity_score(url)
+            if score < min_fidelity:
+                continue
+            seen_urls.add(url)
+            title = c.get("title", "") or url
+            candidates.append((query, url, title, score))
+            if len([x for x in candidates if x[0] == query]) >= results_per_query:
+                break
+
+    # Cap per-query
+    per_query: dict[str, int] = {}
+    filtered: list[tuple[str, str, str, float]] = []
+    for q, u, t, s in candidates:
+        per_query[q] = per_query.get(q, 0) + 1
+        if per_query[q] <= results_per_query:
+            filtered.append((q, u, t, s))
+
+    if not filtered:
+        if min_fidelity > _DEFAULT_FIDELITY:
+            return fetch_and_score_parallel(
+                queries, min_fidelity=_DEFAULT_FIDELITY,
+                results_per_query=results_per_query,
+                max_search_workers=max_search_workers,
+                max_fetch_workers=max_fetch_workers,
+                progress_callback=progress_callback,
+                cancel_check=cancel_check,
+            )
+        return []
+
+    # Phase 2: parallel page fetch
+    _progress("web_fetch_page", {"message": "Fetching pages in parallel", "count": len(filtered)})
+
+    def _fetch_one(item: tuple[str, str, str, float]) -> WebPage:
+        query, url, title, fidelity = item
+        try:
+            content = _fetch_page(url)
+        except Exception as e:
+            content = ""
+            logger.warning("[WebFetcher] Fetch failed %s: %s", url, e)
+        return WebPage(query=query, url=url, title=title, content=content, fidelity=fidelity)
+
+    pages: list[WebPage] = []
+    with ThreadPoolExecutor(max_workers=max_fetch_workers) as ex:
+        futures = {ex.submit(_fetch_one, item): item for item in filtered}
+        for future in as_completed(futures):
+            if cancel_check and cancel_check():
+                break
+            try:
+                pages.append(future.result())
+            except Exception as e:
+                logger.warning("[WebFetcher] Parallel fetch failed: %s", e)
+
+    pages.sort(key=lambda p: p.fidelity, reverse=True)
+    logger.info("[WebFetcher] Parallel done: %d pages from %d queries", len(pages), len(queries))
     return pages

@@ -87,11 +87,13 @@ class OntologyGraph:
                 existing.get("chunk_ids"),
                 chunk_ids or ([] if vote_count is None else list(range(vote_count))),
             )
-            merged_desc = max(
-                (attrs.get("description") or "").strip(),
-                (existing.get("description") or "").strip(),
-                key=len,
-            )
+            new_desc = (attrs.get("description") or "").strip()
+            existing_desc = (existing.get("description") or "").strip()
+            # Gap repair / web: prefer new if existing is empty or very short
+            if new_desc and len(existing_desc) < 20:
+                merged_desc = new_desc
+            else:
+                merged_desc = max(new_desc, existing_desc, key=len)
             attrs["chunk_ids"] = merged_chunk_ids
             attrs["vote_count"] = vote_count if vote_count is not None else len(merged_chunk_ids)
             if merged_desc:

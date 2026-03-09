@@ -456,6 +456,7 @@
 
     async function fetchEvalHealth(kbId) {
       if (!kbId) return;
+      if (document.getElementById('graph-health-card')) return;
       const statsEl = document.getElementById('eval-health-stats');
       const badgeEl = document.getElementById('eval-health-badge');
       const warningsEl = document.getElementById('eval-health-warnings');
@@ -494,6 +495,7 @@
     }
 
     async function fetchEvalRecords(kbId) {
+      if (document.getElementById('graph-health-card')) return;
       const listEl = document.getElementById('eval-records-list');
       if (!listEl) return;
       if (!kbId) {
@@ -530,8 +532,9 @@
             const acq = pq.answer_correctness != null ? (pq.answer_correctness * 100).toFixed(0) : '—';
             return '<tr><td class="py-1 pr-2 text-left" style="max-width:180px; overflow:hidden; text-overflow:ellipsis;" title="' + esc(pq.question || '') + '">' + esc(q) + '</td><td class="py-1 px-1 text-right">' + cr + '%</td><td class="py-1 px-1 text-right">' + er + '%</td><td class="py-1 px-1 text-right">' + acq + '%</td></tr>';
           }).join('');
-          const more = perQ.length > 50 ? '<p class="text-xs mt-1" style="color:var(--text-muted);">… and ' + (perQ.length - 50) + ' more</p>' : '';
-          return '<div class="rounded-lg border overflow-hidden" style="border-color:var(--border); background:var(--bg-input);"><button type="button" class="eval-record-header w-full px-3 py-2 flex items-center justify-between text-left hover:opacity-90 transition-opacity" data-id="' + id + '" data-detail="' + detailId + '"><div class="flex flex-col items-start"><span class="text-xs font-medium" style="color:var(--text-primary);">' + esc(ts) + '</span><span class="text-xs mt-0.5" style="color:var(--text-muted);">' + n + ' questions · avg ' + avg + '% · AC ' + ac + '%</span></div><svg class="eval-record-chevron w-4 h-4 shrink-0 transition-transform" style="color:var(--text-muted);" data-id="' + id + '" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg></button><div id="' + detailId + '" class="eval-record-detail hidden px-3 pb-3 pt-1 border-t" style="border-color:var(--border);"><div class="text-xs space-y-1 mb-2" style="color:var(--text-muted);">context_recall: ' + (scores.context_recall != null ? (scores.context_recall * 100).toFixed(1) : '—') + '% · entity_recall: ' + (scores.entity_recall != null ? (scores.entity_recall * 100).toFixed(1) : '—') + '% · answer_correctness: ' + (scores.answer_correctness != null ? (scores.answer_correctness * 100).toFixed(1) : '—') + '% · faithfulness: ' + (scores.faithfulness != null ? (scores.faithfulness * 100).toFixed(1) : '—') + '% · answer_relevancy: ' + (scores.answer_relevancy != null ? (scores.answer_relevancy * 100).toFixed(1) : '—') + '%</div><div class="overflow-x-auto max-h-[200px] overflow-y-auto"><table class="w-full text-xs" style="color:#8a8a94;"><thead><tr><th class="text-left py-1 pr-2">Question</th><th class="text-right py-1 px-1">CR</th><th class="text-right py-1 px-1">ER</th><th class="text-right py-1 px-1">AC</th></tr></thead><tbody>' + detailRows + '</tbody></table></div>' + more + '</div></div>';
+          const more = perQ.length > 50 ? '<p class="text-xs mt-2" style="color:var(--text-muted);">… and ' + (perQ.length - 50) + ' more</p>' : '';
+          const metricsBlock = '<div class="space-y-3"><div class="rounded-lg p-3" style="background:var(--bg-input); border:1px solid var(--border);"><p class="text-xs font-medium uppercase tracking-wider mb-2" style="color:var(--text-muted);">Metrics</p><div class="text-xs font-mono" style="color:var(--text-primary);">context_recall: ' + (scores.context_recall != null ? (scores.context_recall * 100).toFixed(1) : '—') + '% · entity_recall: ' + (scores.entity_recall != null ? (scores.entity_recall * 100).toFixed(1) : '—') + '% · answer_correctness: ' + (scores.answer_correctness != null ? (scores.answer_correctness * 100).toFixed(1) : '—') + '% · faithfulness: ' + (scores.faithfulness != null ? (scores.faithfulness * 100).toFixed(1) : '—') + '% · answer_relevancy: ' + (scores.answer_relevancy != null ? (scores.answer_relevancy * 100).toFixed(1) : '—') + '%</div></div><div class="rounded-lg p-3 overflow-hidden" style="background:var(--bg-input); border:1px solid var(--border);"><p class="text-xs font-medium uppercase tracking-wider mb-2" style="color:var(--text-muted);">Per-question scores</p><div class="overflow-x-auto max-h-[200px] overflow-y-auto"><table class="w-full text-xs font-mono" style="color:var(--text-primary);"><thead><tr style="color:var(--text-muted);"><th class="text-left py-1 pr-2">Question</th><th class="text-right py-1 px-1">CR</th><th class="text-right py-1 px-1">ER</th><th class="text-right py-1 px-1">AC</th></tr></thead><tbody>' + detailRows + '</tbody></table></div>' + more + '</div></div>';
+          return '<div class="rounded-lg border overflow-hidden" style="border-color:var(--border); background:var(--bg-card);"><button type="button" class="eval-record-header w-full px-3 py-2.5 flex items-center justify-between text-left hover:opacity-90 transition-opacity" data-id="' + id + '" data-detail="' + detailId + '" style="background:var(--bg-input);"><div class="flex flex-col items-start"><span class="text-xs font-medium" style="color:var(--text-primary);">' + esc(ts) + '</span><span class="text-xs mt-0.5" style="color:var(--text-muted);">' + n + ' questions · avg ' + avg + '% · AC ' + ac + '%</span></div><svg class="eval-record-chevron w-4 h-4 shrink-0 transition-transform" style="color:var(--text-muted);" data-id="' + id + '" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg></button><div id="' + detailId + '" class="eval-record-detail hidden p-3 border-t space-y-3" style="border-color:var(--border); background:var(--bg-body);">' + metricsBlock + '</div></div>';
         }).join('');
         listEl.querySelectorAll('.eval-record-header').forEach(btn => {
           btn.addEventListener('click', () => {
@@ -549,6 +552,68 @@
         });
       } catch (e) {
         console.error('[fetchEvalRecords]', e);
+        listEl.innerHTML = '<p class="text-xs" style="color:var(--error);">Error loading records</p>';
+      }
+    }
+
+    async function fetchRepairRecords(kbId) {
+      if (document.getElementById('graph-health-card')) return;
+      const listEl = document.getElementById('repair-records-list');
+      if (!listEl) return;
+      if (!kbId) {
+        listEl.innerHTML = '<p class="text-xs">Select a KB to view repair history</p>';
+        return;
+      }
+      listEl.innerHTML = '<p class="text-xs" style="color:var(--text-muted);">Loading records…</p>';
+      try {
+        const res = await fetch(API + '/knowledge-bases/' + encodeURIComponent(kbId) + '/repair-records');
+        if (!res.ok) {
+          listEl.innerHTML = '<p class="text-xs" style="color:var(--error);">Failed to load records</p>';
+          return;
+        }
+        const records = await res.json();
+        if (!records || !records.length) {
+          listEl.innerHTML = '<p class="text-xs">No repair records yet</p>';
+          return;
+        }
+        listEl.innerHTML = records.map((r, idx) => {
+          const ts = r.timestamp ? new Date(r.timestamp).toLocaleString() : '—';
+          const edges = r.edges_added ?? 0;
+          const gaps = r.gaps_repaired ?? 0;
+          const iters = r.iterations_completed ?? 1;
+          const conf = r.min_fidelity != null ? (r.min_fidelity * 100).toFixed(0) + '%' : '—';
+          const id = 'repair-record-' + idx;
+          const detailId = 'repair-record-detail-' + idx;
+          const summaries = (r.iteration_summaries || []).map((s, i) => {
+            const h = s.health?.structural || {};
+            const g = s.gaps_remaining ?? '—';
+            return '<div class="text-xs font-mono py-0.5" style="color:var(--text-primary);">Iter ' + (i + 1) + ': ' + (h.node_count ?? '—') + ' nodes · ' + g + ' gaps</div>';
+          }).join('');
+          const hb = r.health_before?.structural || {};
+          const ha = r.health_after?.structural || {};
+          const configBlock = '<div class="rounded-lg p-3" style="background:var(--bg-input); border:1px solid var(--border);"><p class="text-xs font-medium uppercase tracking-wider mb-2" style="color:var(--text-muted);">Config</p><div class="text-xs font-mono" style="color:var(--text-primary);">Internet defs ' + (r.repair_internet_definitions ? 'on' : 'off') + ' · iterations ' + (r.repair_iterations ?? 1) + ' · confidence ≥' + conf + '</div></div>';
+          const beforeBlock = '<div class="rounded-lg p-3" style="background:var(--bg-input); border:1px solid var(--border);"><p class="text-xs font-medium uppercase tracking-wider mb-2" style="color:var(--text-muted);">Before</p><div class="text-xs font-mono" style="color:var(--text-primary);">' + (hb.node_count ?? '—') + ' nodes · ' + (hb.edge_count ?? '—') + ' edges · ' + (hb.orphan_nodes ?? '—') + ' orphans</div></div>';
+          const afterBlock = '<div class="rounded-lg p-3" style="background:var(--bg-input); border:1px solid var(--border);"><p class="text-xs font-medium uppercase tracking-wider mb-2" style="color:var(--text-muted);">After</p><div class="text-xs font-mono" style="color:var(--text-primary);">' + (ha.node_count ?? '—') + ' nodes · ' + (ha.edge_count ?? '—') + ' edges · ' + (ha.orphan_nodes ?? '—') + ' orphans</div></div>';
+          const iterBlock = summaries ? '<div class="rounded-lg p-3" style="background:var(--bg-input); border:1px solid var(--border);"><p class="text-xs font-medium uppercase tracking-wider mb-2" style="color:var(--text-muted);">Iterations</p>' + summaries + '</div>' : '';
+          const detail = '<div class="space-y-3">' + configBlock + beforeBlock + afterBlock + iterBlock + '</div>';
+          return '<div class="rounded-lg border overflow-hidden" style="border-color:var(--border); background:var(--bg-card);"><button type="button" class="repair-record-header w-full px-3 py-2.5 flex items-center justify-between text-left hover:opacity-90 transition-opacity" data-id="' + id + '" data-detail="' + detailId + '" style="background:var(--bg-input);"><div class="flex flex-col items-start"><span class="text-xs font-medium" style="color:var(--text-primary);">' + esc(ts) + '</span><span class="text-xs mt-0.5" style="color:var(--text-muted);">+' + edges + ' edges · ' + gaps + ' definitions · ' + iters + ' iter(s) · conf ≥' + conf + '</span></div><svg class="repair-record-chevron w-4 h-4 shrink-0 transition-transform" style="color:var(--text-muted);" data-id="' + id + '" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg></button><div id="' + detailId + '" class="repair-record-detail hidden p-3 border-t space-y-3" style="border-color:var(--border); background:var(--bg-body);">' + detail + '</div></div>';
+        }).join('');
+        listEl.querySelectorAll('.repair-record-header').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const detailId = btn.getAttribute('data-detail');
+            const chevron = btn.querySelector('.repair-record-chevron');
+            const detail = document.getElementById(detailId);
+            if (detail?.classList.contains('hidden')) {
+              detail.classList.remove('hidden');
+              if (chevron) chevron.style.transform = 'rotate(180deg)';
+            } else {
+              detail?.classList.add('hidden');
+              if (chevron) chevron.style.transform = '';
+            }
+          });
+        });
+      } catch (e) {
+        console.error('[fetchRepairRecords]', e);
         listEl.innerHTML = '<p class="text-xs" style="color:var(--error);">Error loading records</p>';
       }
     }
@@ -604,7 +669,11 @@
       tabDocumentsContent?.classList.add('hidden');
       populateEvalKbSelector();
       const sel = document.getElementById('eval-kb-select');
-      if (sel?.value) { fetchEvalHealth(sel.value); fetchEvalRecords(sel.value); }
+      if (document.getElementById('graph-health-card') && typeof window.evalTabOnShow === 'function') {
+        window.evalTabOnShow(sel?.value);
+      } else if (sel?.value) {
+        fetchEvalHealth(sel.value); fetchEvalRecords(sel.value); fetchRepairRecords(sel.value);
+      }
     });
 
     jobQueueToggle?.addEventListener('click', () => { logClick('job-queue', 'toggle'); jobQueueSection?.classList.toggle('collapsed'); });
@@ -613,21 +682,30 @@
     document.getElementById('eval-kb-select')?.addEventListener('change', (e) => {
       const kbId = e.target?.value;
       logClick('eval-kb-select', kbId || 'none');
-      if (kbId) { fetchEvalHealth(kbId); fetchEvalRecords(kbId); }
+      if (document.getElementById('graph-health-card')) {
+        if (typeof window.evalTabOnKbChange === 'function') window.evalTabOnKbChange(kbId);
+        return;
+      }
+      if (kbId) { fetchEvalHealth(kbId); fetchEvalRecords(kbId); fetchRepairRecords(kbId); }
       else {
-        document.getElementById('eval-health-stats').innerHTML = 'Select a KB to view health';
-        document.getElementById('eval-health-badge').textContent = '—';
-        document.getElementById('eval-health-warnings').innerHTML = '';
-        fetchEvalRecords('');
+        const sh = document.getElementById('eval-health-stats');
+        const bh = document.getElementById('eval-health-badge');
+        const wh = document.getElementById('eval-health-warnings');
+        if (sh) sh.innerHTML = 'Select a KB to view health';
+        if (bh) bh.textContent = '—';
+        if (wh) wh.innerHTML = '';
+        fetchEvalRecords(''); fetchRepairRecords('');
       }
     });
-    document.getElementById('eval-refresh-btn')?.addEventListener('click', () => {
-      logClick('eval-refresh');
-      const kbId = document.getElementById('eval-kb-select')?.value;
-      if (kbId) fetchEvalHealth(kbId);
+    document.getElementById('eval-repair-btn')?.addEventListener('click', () => { logClick('eval-repair'); showRepairModal(); });
+    document.getElementById('eval-run-btn')?.addEventListener('click', () => {
+      logClick('eval-run');
+      if (document.getElementById('graph-health-card') && typeof window.evalTabRunEvaluation === 'function') {
+        window.evalTabRunEvaluation();
+        return;
+      }
+      runEvaluation();
     });
-    document.getElementById('eval-repair-btn')?.addEventListener('click', () => { logClick('eval-repair'); runRepair(); });
-    document.getElementById('eval-run-btn')?.addEventListener('click', () => { logClick('eval-run'); runEvaluation(); });
 
     async function runEvaluation() {
       const kbId = document.getElementById('eval-kb-select')?.value;
@@ -728,9 +806,125 @@
       }
     }
 
-    async function runRepair() {
-      const kbId = document.getElementById('eval-kb-select')?.value;
+    async function fetchRepairDiagnosis(kbId) {
+      const body = document.getElementById('repair-details-body');
+      if (!body) return;
+      body.innerHTML = '<span style="color:var(--text-muted);">Loading…</span>';
+      try {
+        const res = await fetch(API + '/knowledge-bases/' + encodeURIComponent(kbId) + '/repair-diagnosis');
+        if (!res.ok) {
+          body.innerHTML = '<span style="color:var(--error);">Failed to load diagnosis</span>';
+          return;
+        }
+        const d = await res.json();
+        const h = d.health || {};
+        const s = h.structural || {};
+        const sem = h.semantic || {};
+        const badge = h.badge || '—';
+        const score = h.overall_score ?? '—';
+        const gaps = d.gaps || [];
+        const recs = d.recommendations || [];
+        let html = '';
+        html += '<div class="space-y-2"><p class="font-medium" style="color:var(--text-primary);">Health</p>';
+        html += '<p>Score: <span class="font-mono">' + score + '</span> · Badge: <span class="font-mono">' + esc(badge) + '</span></p>';
+        html += '<p>Nodes: ' + (s.node_count ?? '—') + ' · Edges: ' + (s.edge_count ?? '—') + ' · Orphans: ' + (s.orphan_nodes ?? '—') + ' · Components: ' + (s.connected_components ?? '—') + '</p>';
+        html += '<p>Relation types: ' + (sem.unique_relation_types ?? '—') + ' · Facts/node: ' + (h.retrieval?.facts_per_node ?? '—') + '</p></div>';
+        if (gaps.length) {
+          html += '<div class="space-y-1"><p class="font-medium" style="color:var(--warning);">Missing definitions (' + gaps.length + ')</p>';
+          html += '<p class="font-mono text-[11px] break-words" style="color:var(--text-muted);">' + gaps.slice(0, 12).map(g => esc(g)).join(', ') + (gaps.length > 12 ? ' …' : '') + '</p>';
+          html += '<p class="text-[11px]" style="color:var(--text-muted);">Enable Internet definition repair to search the web for these concepts.</p></div>';
+        }
+        if (recs.length) {
+          html += '<div class="space-y-2"><p class="font-medium" style="color:var(--text-primary);">Recommendations</p>';
+          recs.forEach(r => {
+            html += '<div class="rounded p-2" style="background:var(--bg-input); border:1px solid var(--border);"><p class="font-medium text-[11px]" style="color:var(--accent);">' + esc(r.title || '') + '</p><p class="text-[11px] mt-0.5" style="color:var(--text-muted);">' + esc(r.desc || '') + '</p></div>';
+          });
+          html += '</div>';
+        }
+        html += '<div class="pt-1"><p class="font-medium text-[11px]" style="color:var(--text-muted);">What repair does</p><ul class="list-disc list-inside text-[11px] mt-0.5 space-y-0.5" style="color:var(--text-muted);"><li>Add root concept (Thing)</li><li>Link orphan nodes to similar nodes via embeddings</li><li>Bridge disconnected components</li><li>Run OWL 2 RL inference</li><li>Optionally: search web for missing definitions</li><li>With 2+ iterations: rescan graph after each pass, then repair again</li></ul></div>';
+        body.innerHTML = html;
+        const content = document.getElementById('repair-details-content');
+        const chevron = document.getElementById('repair-details-chevron');
+        if (content) { content.classList.remove('hidden'); }
+        if (chevron) chevron.style.transform = 'rotate(180deg)';
+      } catch (e) {
+        console.error('[fetchRepairDiagnosis]', e);
+        body.innerHTML = '<span style="color:var(--error);">Error loading diagnosis</span>';
+      }
+    }
+
+    function showRepairModal() {
+      const sel = document.getElementById('repair-kb-select');
+      if (!sel) return;
+      const items = _kbData || [];
+      const activeId = getActiveKbId();
+      sel.innerHTML = '<option value="">Select a KB</option>' + items.map(k => {
+        const docs = k.documents || [];
+        const label = k.name + (docs.length ? ' (' + docs.length + ')' : '');
+        return '<option value="' + esc(k.id) + '"' + (k.id === activeId ? ' selected' : '') + '>' + esc(label) + '</option>';
+      }).join('');
+      document.getElementById('repair-form')?.classList.remove('hidden');
+      document.getElementById('repair-progress')?.classList.add('hidden');
+      const detailsContent = document.getElementById('repair-details-content');
+      const detailsBody = document.getElementById('repair-details-body');
+      if (detailsContent) detailsContent.classList.add('hidden');
+      if (detailsBody) detailsBody.innerHTML = 'Select a KB to load graph health, gaps, and repair recommendations.';
+      const chevron = document.getElementById('repair-details-chevron');
+      if (chevron) chevron.style.transform = '';
+      const kbId = sel?.value;
+      if (kbId) fetchRepairDiagnosis(kbId);
+      const confWrap = document.getElementById('repair-confidence-wrap');
+      const confCb = document.getElementById('repair-internet-definitions');
+      if (confWrap && confCb) confWrap.classList.toggle('hidden', !confCb.checked);
+      document.getElementById('repair-modal')?.classList.remove('hidden');
+    }
+    function hideRepairModal() {
+      document.getElementById('repair-modal')?.classList.add('hidden');
+    }
+    document.getElementById('repair-internet-definitions')?.addEventListener('change', (e) => {
+      const wrap = document.getElementById('repair-confidence-wrap');
+      if (wrap) wrap.classList.toggle('hidden', !e.target?.checked);
+    });
+    document.getElementById('repair-kb-select')?.addEventListener('change', (e) => {
+      const kbId = e.target?.value;
+      if (kbId) fetchRepairDiagnosis(kbId);
+      else {
+        const body = document.getElementById('repair-details-body');
+        if (body) body.innerHTML = 'Select a KB to load graph health, gaps, and repair recommendations.';
+      }
+    });
+    document.getElementById('repair-details-toggle')?.addEventListener('click', () => {
+      const content = document.getElementById('repair-details-content');
+      const chevron = document.getElementById('repair-details-chevron');
+      if (content?.classList.contains('hidden')) {
+        content.classList.remove('hidden');
+        if (chevron) chevron.style.transform = 'rotate(180deg)';
+      } else {
+        content?.classList.add('hidden');
+        if (chevron) chevron.style.transform = '';
+      }
+    });
+    document.getElementById('repair-modal-cancel')?.addEventListener('click', hideRepairModal);
+    document.getElementById('repair-modal')?.querySelector('.modal-backdrop')?.addEventListener('click', hideRepairModal);
+    document.getElementById('repair-modal-start')?.addEventListener('click', () => {
+      const kbId = document.getElementById('repair-kb-select')?.value;
+      if (!kbId) { alert('Please select a knowledge base'); return; }
+      const repairInternetDefinitions = document.getElementById('repair-internet-definitions')?.checked ?? false;
+      const repairIterations = parseInt(document.getElementById('repair-iterations')?.value || '1', 10) || 1;
+      const minFidelity = parseFloat(document.getElementById('repair-min-fidelity')?.value || '0.3') || 0.3;
+      logClick('repair-modal', 'start');
+      hideRepairModal();
+      tabEvaluate?.click();
+      const evalSel = document.getElementById('eval-kb-select');
+      if (evalSel && evalSel.value !== kbId) evalSel.value = kbId;
+      runRepair(kbId, repairInternetDefinitions, repairIterations, minFidelity);
+    });
+
+    async function runRepair(kbIdOrUndefined, repairInternetDefinitions, repairIterations, minFidelity) {
+      const kbId = kbIdOrUndefined ?? document.getElementById('eval-kb-select')?.value;
       if (!kbId) return;
+      repairIterations = repairIterations ?? 1;
+      minFidelity = minFidelity ?? 0.3;
       const panelA = document.getElementById('eval-panel-state-a');
       const panelB = document.getElementById('eval-panel-state-b');
       const logFeed = document.getElementById('eval-log-feed');
@@ -744,16 +938,29 @@
       logFeed.innerHTML = '';
       errorBanner?.classList.add('hidden');
       if (repairBtn) repairBtn.disabled = true;
-      const steps = ['Loading graph', 'Adding root concept', 'Linking orphans', 'Bridging components', 'Running inference', 'Computing health', 'Saving', 'Rebuilding index', 'Done'];
       let stepIdx = 0;
-      function addLog(icon, msg) {
+      const totalSteps = 20;
+      function addLog(icon, msg, rescan) {
         const div = document.createElement('div');
         div.innerHTML = (icon || '▸') + ' ' + (msg || '');
         logFeed.appendChild(div);
+        if (rescan) {
+          const r = rescan;
+          const sum = document.createElement('div');
+          sum.className = 'ml-4 text-[11px] font-mono';
+          sum.style.cssText = 'color:var(--text-muted);';
+          sum.textContent = (r.health?.structural?.node_count ?? '—') + ' nodes · ' + (r.gaps_remaining ?? '—') + ' gaps remaining';
+          logFeed.appendChild(sum);
+        }
         logFeed.scrollTop = logFeed.scrollHeight;
       }
       try {
-        const res = await fetch(API + '/knowledge-bases/' + encodeURIComponent(kbId) + '/repair', { method: 'POST' });
+        const params = new URLSearchParams();
+        if (repairInternetDefinitions) params.set('repair_internet_definitions', 'true');
+        if (repairIterations > 1) params.set('repair_iterations', String(repairIterations));
+        params.set('min_fidelity', String(minFidelity));
+        const qs = params.toString() ? '?' + params.toString() : '';
+        const res = await fetch(API + '/knowledge-bases/' + encodeURIComponent(kbId) + '/repair' + qs, { method: 'POST' });
         if (!res.ok) {
           const err = await res.json().catch(() => ({}));
           throw new Error(parseError(err) || res.statusText);
@@ -773,16 +980,41 @@
                 try {
                   const data = JSON.parse(line.slice(6));
                   if (data.type === 'step') {
-                    stepIdx = Math.min(stepIdx + 1, steps.length - 1);
-                    stageLabel.textContent = data.message || steps[stepIdx];
-                    progressBar.style.width = (100 * stepIdx / (steps.length - 1)) + '%';
-                    addLog('✓', data.message || steps[stepIdx]);
+                    stepIdx = Math.min(stepIdx + 1, totalSteps - 1);
+                    stageLabel.textContent = data.message || 'Repairing...';
+                    progressBar.style.width = (100 * stepIdx / totalSteps) + '%';
+                    addLog('✓', data.message || '', data.rescan);
                   } else if (data.type === 'done') {
-                    stageLabel.textContent = 'Done' + (data.edges_added ? ' (' + data.edges_added + ' edges added)' : '');
+                    const parts = [];
+                    if (data.edges_added) parts.push(data.edges_added + ' edges');
+                    if (data.gaps_repaired) parts.push(data.gaps_repaired + ' definitions');
+                    if (data.iterations_completed > 1) parts.push(data.iterations_completed + ' iterations');
+                    stageLabel.textContent = 'Done' + (parts.length ? ' (' + parts.join(', ') + ')' : '');
                     progressBar.style.width = '100%';
                     addLog('✓', 'Repair complete');
-                    await fetchEvalHealth(kbId);
-                    populateEvalKbSelector();
+                    const defs = data.definitions_added || {};
+                    const edges = data.inferred_edges || [];
+                    const defKeys = Object.keys(defs);
+                    if (defKeys.length > 0 || edges.length > 0) {
+                      const summaryParts = [];
+                      if (defKeys.length > 0) {
+                        const defPreview = defKeys.length <= 5 ? defKeys.join(', ') : defKeys.slice(0, 3).join(', ') + '… (+' + (defKeys.length - 3) + ' more)';
+                        summaryParts.push(defKeys.length + ' definitions: ' + defPreview);
+                      }
+                      if (edges.length > 0) {
+                        const fmt = (e) => (e[0] || '') + '→' + (e[2] || '');
+                        const edgePreview = edges.length <= 5 ? edges.map(fmt).join(', ') : edges.slice(0, 3).map(fmt).join(', ') + '… (+' + (edges.length - 3) + ' more)';
+                        summaryParts.push(edges.length + ' edges: ' + edgePreview);
+                      }
+                      addLog('·', summaryParts.join(' · '));
+                    }
+                    if (document.getElementById('graph-health-card') && typeof window.evalTabOnRepairComplete === 'function') {
+                      window.evalTabOnRepairComplete(kbId);
+                    } else {
+                      await fetchEvalHealth(kbId);
+                      populateEvalKbSelector();
+                      fetchRepairRecords(kbId);
+                    }
                   } else if (data.type === 'error') {
                     errorBanner.textContent = data.message || 'Error';
                     errorBanner.classList.remove('hidden');
@@ -797,8 +1029,12 @@
           stageLabel.textContent = 'Done' + (data.report?.edges_added ? ' (' + data.report.edges_added + ' edges added)' : '');
           progressBar.style.width = '100%';
           addLog('✓', 'Repair complete');
-          await fetchEvalHealth(kbId);
-          populateEvalKbSelector();
+          if (document.getElementById('graph-health-card') && typeof window.evalTabOnRepairComplete === 'function') {
+            window.evalTabOnRepairComplete(kbId);
+          } else {
+            await fetchEvalHealth(kbId);
+            populateEvalKbSelector();
+          }
         }
       } catch (e) {
         errorBanner.textContent = e.message || 'Repair failed';
@@ -826,13 +1062,36 @@
       emptyStateReady.classList.remove('flex');
     }
 
+    function getMessagesInsertBefore() {
+      return messagesEl.querySelector('#loading-indicator') || messagesEl.querySelector('#empty-state-no-kb') || messagesEl.querySelector('#empty-state-ready');
+    }
+
+    function scrollMessagesToBottom() {
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          messagesEl.scrollTop = messagesEl.scrollHeight;
+        });
+      });
+    }
+
     function renderInlineMarkdown(value) {
       const text = esc(String(value || ''));
       return text
         .replace(/`([^`]+)`/g, '<code class="px-1 py-0.5 rounded text-xs font-mono" style="background:var(--bg-input);border:1px solid var(--border);color:var(--text-primary);">$1</code>')
-        .replace(/\\*\\*([^*]+)\\*\\*/g, '<strong>$1</strong>')
-        .replace(/\\*([^*]+)\\*/g, '<em>$1</em>')
-        .replace(/\[([a-zA-Z_][a-zA-Z0-9_\-]*:[^\]\n]+)\]/g, '<span class="px-1.5 py-0.5 rounded text-xs font-mono align-middle" style="background:var(--accent-15); color:var(--accent);">[$1]</span>');
+        .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+        .replace(/\*([^*]+)\*/g, '<em>$1</em>')
+        .replace(/\[([a-zA-Z_][a-zA-Z0-9_\-]*:[^\]\n]+)\]/g, '<span class="px-1.5 py-0.5 rounded text-xs font-mono align-middle" style="background:var(--accent-15); color:var(--accent);">[$1]</span>')
+        .replace(/\b(classes|object properties|datatype properties|relationships|taxonomy|ontology)\b/gi, '<span class="ai-keyword">$1</span>');
+    }
+
+    function parseFollowUpQuestions(body) {
+      const s = String(body || '').trim();
+      const questions = [];
+      s.split(/\n+/).forEach(line => {
+        const trimmed = line.replace(/^[-*•]\s*/, '').replace(/^\d+\.\s*/, '').trim();
+        if (trimmed.length > 10 && trimmed.length < 200) questions.push(trimmed);
+      });
+      return questions.slice(0, 6);
     }
 
     function renderAssistantGuide(content) {
@@ -845,7 +1104,8 @@
       function flushParagraph() {
         if (!paraParts.length) return;
         const p = document.createElement('p');
-        p.className = 'text-sm leading-relaxed';
+        p.className = 'leading-relaxed';
+        p.style.cssText = 'font-size:14px; line-height:1.7;';
         p.innerHTML = renderInlineMarkdown(paraParts.join(' '));
         wrapper.appendChild(p);
         paraParts = [];
@@ -869,8 +1129,8 @@
           flushParagraph();
           flushList();
           const h4 = document.createElement('h4');
-          h4.className = 'text-sm font-semibold mt-1';
-          h4.style.color = 'var(--text-primary)';
+          h4.className = 'font-semibold mt-2 mb-1';
+          h4.style.cssText = 'color:var(--text-primary); font-size:16px; line-height:1.4;';
           h4.innerHTML = renderInlineMarkdown(trimmed.slice(4));
           wrapper.appendChild(h4);
           return;
@@ -880,8 +1140,8 @@
           flushParagraph();
           flushList();
           const h3 = document.createElement('h3');
-          h3.className = 'text-base font-semibold mt-1';
-          h3.style.color = 'var(--accent)';
+          h3.className = 'font-semibold mt-2 mb-1';
+          h3.style.cssText = 'color:var(--accent); font-size:18px; line-height:1.4;';
           h3.innerHTML = renderInlineMarkdown(trimmed.slice(3));
           wrapper.appendChild(h3);
           return;
@@ -891,7 +1151,8 @@
           flushParagraph();
           if (!list) {
             list = document.createElement('ul');
-            list.className = 'text-sm leading-relaxed space-y-1 pl-5 list-disc';
+            list.className = 'leading-relaxed space-y-1.5 pl-5 list-disc';
+            list.style.fontSize = '14px';
           }
           const li = document.createElement('li');
           li.innerHTML = renderInlineMarkdown(trimmed.slice(2));
@@ -908,98 +1169,151 @@
       return wrapper;
     }
 
-    function buildMessageElement(role, content, sources, numFactsUsed, rawFacts, reasoning) {
+    function splitAnswerIntoParts(content) {
+      const s = String(content || '').trim();
+      const splitPattern = /##\s*You might also ask\s*:?\s*/i;
+      const parts = s.split(splitPattern);
+      if (parts.length >= 2) {
+        const result = [];
+        const p1 = parts[0].trim();
+        const p2 = parts.slice(1).join('').trim();
+        if (p1) result.push({ label: 'Answer', body: p1 });
+        if (p2) result.push({ label: 'You might also ask', body: p2 });
+        return result.length ? result : [{ label: 'Answer', body: s }];
+      }
+      return [{ label: 'Answer', body: s }];
+    }
+
+    function buildMessageElement(role, content, sources, numFactsUsed, rawFacts, reasoning, sessionId) {
       const hasRawFacts = role === 'assistant' && rawFacts && Array.isArray(rawFacts) && rawFacts.length > 0;
       const hasReasoning = role === 'assistant' && reasoning && typeof reasoning === 'string' && reasoning.trim().length > 0;
+      const hasSessionId = role === 'assistant' && sessionId && typeof sessionId === 'string' && sessionId.trim().length > 0;
       const div = document.createElement('div');
       div.dataset.chatMessage = '1';
       div.className = 'flex ' + (role === 'user' ? 'justify-end msg-enter-user' : 'justify-start msg-enter-assistant');
       const bubble = document.createElement('div');
-      bubble.className = 'msg-bubble max-w-[85%] rounded-xl px-4 py-3.5 ' +
-        (role === 'user' ? 'msg-user-bubble' : 'bubble-assistant');
-      bubble.style.background = role === 'user' ? 'var(--accent)' : 'var(--bg-card)';
+      bubble.className = 'msg-bubble max-w-[85%] ' +
+        (role === 'user' ? 'msg-user-bubble rounded-xl px-4 py-3.5' : 'ai-answer-card bubble-assistant');
       bubble.style.color = role === 'user' ? '#fff' : 'var(--text-primary)';
-      bubble.style.border = '1px solid ' + (role === 'user' ? 'var(--accent-7)' : 'var(--border)');
+      if (role === 'user') {
+        bubble.style.background = 'var(--accent)';
+        bubble.style.border = '1px solid var(--accent-7)';
+      }
 
       if (role === 'assistant') {
-        // Meta row
         const metaRow = document.createElement('div');
-        metaRow.className = 'flex items-center gap-2 mb-2.5';
-        const iconWrap = document.createElement('div');
-        iconWrap.className = 'w-5 h-5 rounded flex items-center justify-center shrink-0';
-        iconWrap.style.background = 'var(--accent-15)';
-        iconWrap.innerHTML = '<svg class="w-3 h-3" style="color:var(--accent);" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>';
-        metaRow.appendChild(iconWrap);
-        const metaLabel = document.createElement('span');
-        metaLabel.className = 'text-xs font-medium';
-        metaLabel.style.color = 'var(--accent)';
-        metaLabel.textContent = 'Clearence';
-        metaRow.appendChild(metaLabel);
-        if (numFactsUsed > 0) {
-          const factsBadge = document.createElement('span');
-          factsBadge.className = 'text-xs px-1.5 py-0.5 rounded font-mono';
-          factsBadge.style.cssText = 'background:var(--accent-15); color:var(--accent);';
-          factsBadge.textContent = numFactsUsed + ' facts';
-          metaRow.appendChild(factsBadge);
+        metaRow.className = 'ai-meta-bar';
+        const lightbulbSvg = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21h6M12 3a6 6 0 0 1 4.5 10H7.5A6 6 0 0 1 12 3z"/></svg>';
+        const robotSvg = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="10" rx="2"/><circle cx="8.5" cy="16.5" r="1.5"/><circle cx="15.5" cy="16.5" r="1.5"/><path d="M9 7h6M12 3v4"/></svg>';
+        const chartSvg = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="M7 16v-5M12 16V10M17 16v-3"/></svg>';
+        const brainSvg = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96.44 2.5 2.5 0 0 1-2.96-3.08 3 3 0 0 1 .34-5.58 2.5 2.5 0 0 1 1.32-4.24 2.5 2.5 0 0 1 1.98-3A2.5 2.5 0 0 1 9.5 2Z"/><path d="M14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96.44 2.5 2.5 0 0 0 2.96-3.08 3 3 0 0 0-.34-5.58 2.5 2.5 0 0 0-1.32-4.24 2.5 2.5 0 0 0-1.98-3A2.5 2.5 0 0 0 14.5 2Z"/></svg>';
+        const pill = (html, label, accent) => {
+          const el = document.createElement('span');
+          el.className = 'ai-meta-pill' + (accent ? ' ai-meta-pill-accent' : '');
+          el.innerHTML = html + ' <span>' + esc(label) + '</span>';
+          return el;
+        };
+        metaRow.appendChild(pill(lightbulbSvg, 'Clearence', true));
+        if (hasSessionId) metaRow.appendChild(pill(robotSvg, 'Agent', true));
+        if (numFactsUsed > 0) metaRow.appendChild(pill(chartSvg, numFactsUsed + ' facts', true));
+        if (hasSessionId) {
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          btn.className = 'ai-meta-pill ai-meta-pill-accent';
+          btn.innerHTML = brainSvg + ' <span>Show reasoning</span>';
+          btn.title = 'View exploration steps, reasoning graph, and ontology gaps';
+          btn.addEventListener('click', () => showReasoningModal(sessionId));
+          metaRow.appendChild(btn);
         }
-        bubble.appendChild(metaRow);
-
-        // Explainable reasoning: Raw facts (expandable)
-        if (hasRawFacts) {
-          const rawFactsDiv = document.createElement('details');
-          rawFactsDiv.className = 'mb-3 rounded-lg overflow-hidden';
-          rawFactsDiv.style.cssText = 'border:1px solid var(--border); background:var(--bg-input);';
-          const summary = document.createElement('summary');
-          summary.className = 'cursor-pointer px-3 py-2 text-xs font-medium flex items-center gap-2';
-          summary.style.color = 'var(--text-muted)';
-          summary.innerHTML = '<svg class="w-3 h-3 shrink-0" style="color:var(--accent);" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4"/></svg> Raw facts used';
-          rawFactsDiv.appendChild(summary);
-          const rawContent = document.createElement('div');
-          rawContent.className = 'px-3 pb-2.5 pt-1 space-y-2 text-xs font-mono';
-          rawContent.style.cssText = 'color:var(--text-muted); max-height:200px; overflow-y:auto;';
-          rawFacts.forEach((fact, i) => {
-            const p = document.createElement('p');
-            p.style.cssText = 'margin:0; padding:0.25rem 0; border-bottom:1px solid var(--border);';
-            p.textContent = '[' + (i + 1) + '] ' + (typeof fact === 'string' ? fact : String(fact));
-            rawContent.appendChild(p);
-          });
-          rawFactsDiv.appendChild(rawContent);
-          bubble.appendChild(rawFactsDiv);
-        }
-
-        // Reasoning: in-depth interpretation of the facts (expandable)
-        if (hasReasoning) {
-          const reasonDiv = document.createElement('details');
-          reasonDiv.className = 'mb-3 rounded-lg overflow-hidden';
-          reasonDiv.style.cssText = 'border:1px solid var(--border); background:var(--bg-input);';
-          const summary = document.createElement('summary');
-          summary.className = 'cursor-pointer px-3 py-2 text-xs font-medium flex items-center gap-2';
-          summary.style.color = 'var(--text-muted)';
-          summary.innerHTML = '<svg class="w-3 h-3 shrink-0" style="color:var(--accent);" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg> Reasoning';
-          reasonDiv.appendChild(summary);
-          const reasonContent = document.createElement('div');
-          reasonContent.className = 'px-3 pb-2.5 pt-1 text-sm leading-relaxed';
-          reasonContent.style.cssText = 'color:var(--text-muted); max-height:300px; overflow-y:auto; white-space:pre-wrap;';
-          reasonContent.appendChild(renderAssistantGuide(reasoning));
-          reasonDiv.appendChild(reasonContent);
-          bubble.appendChild(reasonDiv);
+        if (hasSessionId && !hasRawFacts && !hasReasoning) {
+          const hint = document.createElement('p');
+          hint.className = 'msg-hint text-xs mt-2';
+          hint.style.cssText = 'color:var(--text-muted); padding:0 16px 12px;';
+          hint.textContent = 'Click "Show reasoning" to view exploration steps and reasoning graph.';
+          bubble.appendChild(metaRow);
+          bubble.appendChild(hint);
+        } else {
+          bubble.appendChild(metaRow);
         }
       }
 
       const text = document.createElement('div');
-      text.className = 'whitespace-pre-wrap text-sm leading-relaxed';
+      text.className = 'msg-content';
       if (typeof content === 'string') {
         if (role === 'assistant') {
-          text.className = 'text-sm leading-relaxed';
-          if (hasRawFacts || hasReasoning) {
-            const explLabel = document.createElement('div');
-            explLabel.className = 'text-xs font-medium mb-2';
-            explLabel.style.color = 'var(--accent)';
-            explLabel.textContent = 'Answer';
-            text.appendChild(explLabel);
-          }
-          text.appendChild(renderAssistantGuide(content));
+          const parts = splitAnswerIntoParts(content);
+          parts.forEach((part, i) => {
+            if (part.label === 'Answer') {
+              const section = document.createElement('div');
+              section.className = 'ai-section';
+              const title = document.createElement('div');
+              title.className = 'ai-section-title';
+              title.textContent = 'Answer';
+              section.appendChild(title);
+              const bodyWrap = document.createElement('div');
+              bodyWrap.className = 'ai-section-body-wrap';
+              const body = document.createElement('div');
+              body.className = 'ai-section-body';
+              body.appendChild(renderAssistantGuide(part.body));
+              bodyWrap.appendChild(body);
+              section.appendChild(bodyWrap);
+              const actionsRow = document.createElement('div');
+              actionsRow.className = 'ai-actions-row';
+              const copyBtn = document.createElement('button');
+              copyBtn.type = 'button';
+              copyBtn.className = 'ai-btn-icon';
+              copyBtn.title = 'Copy answer';
+              copyBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>';
+              copyBtn.addEventListener('click', () => {
+                navigator.clipboard.writeText(part.body).then(() => {
+                  copyBtn.title = 'Copied!';
+                  setTimeout(() => { copyBtn.title = 'Copy answer'; }, 1500);
+                });
+              });
+              actionsRow.appendChild(copyBtn);
+              section.appendChild(actionsRow);
+              text.appendChild(section);
+            } else if (part.label === 'You might also ask') {
+              const questions = parseFollowUpQuestions(part.body);
+              if (questions.length > 0) {
+                const divider = document.createElement('div');
+                divider.className = 'ai-section-divider';
+                text.appendChild(divider);
+                const section = document.createElement('div');
+                const title = document.createElement('div');
+                title.className = 'ai-section-title';
+                title.style.padding = '0 20px';
+                title.textContent = 'You might also ask';
+                section.appendChild(title);
+                const grid = document.createElement('div');
+                grid.className = 'ai-followup-grid';
+                questions.forEach(q => {
+                  const card = document.createElement('button');
+                  card.type = 'button';
+                  card.className = 'ai-followup-card';
+                  card.innerHTML = '<span class="ai-followup-arrow">→</span><span>' + esc(q) + '</span>';
+                  card.addEventListener('click', () => fillPrompt(q));
+                  grid.appendChild(card);
+                });
+                section.appendChild(grid);
+                text.appendChild(section);
+              } else {
+                const section = document.createElement('div');
+                section.className = 'ai-section';
+                const title = document.createElement('div');
+                title.className = 'ai-section-title';
+                title.textContent = 'You might also ask';
+                section.appendChild(title);
+                const body = document.createElement('div');
+                body.className = 'ai-section-body';
+                body.appendChild(renderAssistantGuide(part.body));
+                section.appendChild(body);
+                text.appendChild(section);
+              }
+            }
+          });
         } else {
+          text.className = 'msg-content msg-content-user';
           text.textContent = content;
         }
       } else {
@@ -1007,14 +1321,13 @@
       }
       bubble.appendChild(text);
 
-      // Source tags
       if (sources && sources.length > 0 && role === 'assistant') {
         const srcDiv = document.createElement('div');
-        srcDiv.className = 'mt-3 pt-2.5 flex flex-wrap gap-1.5';
+        srcDiv.className = 'mt-0 pt-2.5 pb-3 px-5 flex flex-wrap gap-1.5';
         srcDiv.style.borderTop = '1px solid var(--border)';
         sources.slice(0, 5).forEach(ref => {
           const tag = document.createElement('span');
-          tag.className = 'px-2 py-0.5 rounded text-xs font-mono';
+          tag.className = 'px-2 py-0.5 rounded-full text-xs font-mono';
           tag.style.cssText = 'background:var(--accent-15); color:var(--accent);';
           tag.textContent = ref;
           srcDiv.appendChild(tag);
@@ -1157,7 +1470,7 @@
     function renderChatMessages(chat) {
       messagesEl.querySelectorAll('[data-chat-message]').forEach(el => el.remove());
       if (!chat || !chat.messages) return;
-      const insertBefore = messagesEl.querySelector('#empty-state-no-kb') || messagesEl.querySelector('#empty-state-ready');
+      const insertBefore = getMessagesInsertBefore();
       let lastOntologyTotals = null;
       chat.messages.forEach(m => {
         let el;
@@ -1166,27 +1479,26 @@
           const totals = m.report?.totals || {};
           lastOntologyTotals = { classes: totals.classes ?? 0, instances: totals.instances ?? 0, relations: totals.relations ?? totals.edges ?? 0, axioms: totals.axioms ?? 0, data_properties: totals.data_properties ?? 0 };
         } else {
-          el = buildMessageElement(m.role, m.content, m.sources, m.numFactsUsed, m.rawFacts, m.reasoning);
+          el = buildMessageElement(m.role, m.content, m.sources, m.numFactsUsed, m.rawFacts, m.reasoning, m.sessionId);
         }
         if (el) messagesEl.insertBefore(el, insertBefore);
       });
-      messagesEl.scrollTop = messagesEl.scrollHeight;
+      scrollMessagesToBottom();
     }
 
-    function appendMessage(role, content, sources, numFactsUsed, chatId, rawFacts, reasoning) {
+    function appendMessage(role, content, sources, numFactsUsed, chatId, rawFacts, reasoning, sessionId) {
       let chat = chatId ? getChatById(chatId) : getActiveChat();
       if (!chat) {
         if (chatId) return;
         if (!getActiveKbId()) return;
         chat = createNewChat();
       }
-      chat.messages.push({ role, content, sources, numFactsUsed, rawFacts, reasoning });
+      chat.messages.push({ role, content, sources, numFactsUsed, rawFacts, reasoning, sessionId });
       if (chat.id === _activeChatId) {
         hideEmptyStates();
-        const el = buildMessageElement(role, content, sources, numFactsUsed, rawFacts, reasoning);
-        const before = messagesEl.querySelector('#empty-state-no-kb') || messagesEl.querySelector('#empty-state-ready');
-        messagesEl.insertBefore(el, before);
-        messagesEl.scrollTop = messagesEl.scrollHeight;
+        const el = buildMessageElement(role, content, sources, numFactsUsed, rawFacts, reasoning, sessionId);
+        messagesEl.insertBefore(el, getMessagesInsertBefore());
+        scrollMessagesToBottom();
       }
       renderChatTabs();
     }
@@ -1200,20 +1512,133 @@
         hideEmptyStates();
         const el = buildOntologySummaryElement(report, lastReportTotals);
         if (el) {
-          const before = messagesEl.querySelector('#empty-state-no-kb') || messagesEl.querySelector('#empty-state-ready');
-          messagesEl.insertBefore(el, before);
+          messagesEl.insertBefore(el, getMessagesInsertBefore());
         }
         const totals = report.totals || {};
         const totalRel = totals.relations ?? totals.edges ?? 0;
         lastReportTotals = { classes: totals.classes ?? 0, instances: totals.instances ?? 0, relations: totalRel, axioms: totals.axioms ?? 0, data_properties: totals.data_properties ?? 0 };
-        messagesEl.scrollTop = messagesEl.scrollHeight;
+        scrollMessagesToBottom();
       }
       renderChatTabs();
     }
 
-    function showLoading(show) {
+    const reasoningStepsLog = document.getElementById('reasoning-steps-log');
+
+    function showLoading(show, agentMode) {
       loadingIndicator.classList.toggle('hidden', !show);
+      if (reasoningStepsLog) {
+        if (show && agentMode) {
+          reasoningStepsLog.classList.remove('hidden');
+          reasoningStepsLog.innerHTML = '';
+        } else {
+          reasoningStepsLog.classList.add('hidden');
+        }
+      }
+      if (show) scrollMessagesToBottom();
     }
+
+    function appendReasoningStep(stepNum, question) {
+      if (!reasoningStepsLog) return;
+      const line = document.createElement('div');
+      line.className = 'agent-step agent-step-single';
+      const num = document.createElement('span');
+      num.className = 'agent-step-num';
+      num.textContent = 'Step ' + stepNum + ': ';
+      const text = document.createElement('span');
+      text.className = 'agent-step-text';
+      text.textContent = (question || '').slice(0, 200) + (question && question.length > 200 ? '…' : '');
+      line.appendChild(num);
+      line.appendChild(text);
+      reasoningStepsLog.innerHTML = '';
+      reasoningStepsLog.appendChild(line);
+    }
+
+    async function showReasoningModal(sessionId) {
+      const modal = document.getElementById('reasoning-modal');
+      const content = document.getElementById('reasoning-modal-content');
+      if (!modal || !content) return;
+      content.innerHTML = '<div class="loading">Loading...</div>';
+      modal.classList.remove('hidden');
+      try {
+        const res = await fetch(API + '/qa/agent/reasoning/' + encodeURIComponent(sessionId));
+        if (!res.ok) throw new Error('Failed to load reasoning');
+        const log = await res.json();
+        let html = '<div class="space-y-4">';
+        html += '<div><p class="text-xs font-medium mb-1" style="color:var(--text-muted);">Query</p><p class="font-medium">' + esc(log.query || '') + '</p></div>';
+        if (log.steps && log.steps.length) {
+          html += '<div><p class="text-xs font-medium mb-2" style="color:var(--text-muted);">Exploration steps</p>';
+          log.steps.forEach((s, i) => {
+            html += '<div class="mb-3 p-3 rounded-lg" style="background:var(--bg-input); border:1px solid var(--border);">';
+            html += '<p class="text-xs font-semibold mb-1" style="color:var(--accent);">Step ' + (i + 1) + ': ' + esc(s.question || '') + '</p>';
+            html += '<p class="text-xs" style="color:var(--text-muted); white-space:pre-wrap;">' + esc((s.answer || '').substring(0, 400)) + '...</p></div>';
+          });
+          html += '</div>';
+        }
+        if (log.gaps && log.gaps.length) {
+          html += '<div><p class="text-xs font-medium mb-1" style="color:var(--text-muted);">Ontology gaps</p><ul class="list-disc pl-4 text-xs">';
+          log.gaps.forEach(g => { html += '<li>' + esc(g.description || JSON.stringify(g)) + '</li>'; });
+          html += '</ul></div>';
+        }
+        html += '<div><p class="text-xs font-medium mb-1" style="color:var(--text-muted);">Final answer</p><p class="whitespace-pre-wrap">' + esc(log.answer || '') + '</p></div>';
+        html += '</div>';
+        content.innerHTML = html;
+      } catch (e) {
+        content.innerHTML = '<p class="text-error">Error: ' + esc(e.message) + '</p>';
+      }
+    }
+
+    document.getElementById('reasoning-modal-close')?.addEventListener('click', () => document.getElementById('reasoning-modal')?.classList.add('hidden'));
+    document.getElementById('reasoning-modal')?.querySelector('.modal-backdrop')?.addEventListener('click', () => document.getElementById('reasoning-modal')?.classList.add('hidden'));
+
+    const modeSelector = document.getElementById('mode-selector');
+    const modeTag = document.getElementById('mode-tag');
+    const modeTagLabel = document.getElementById('mode-tag-label');
+    const modeToggleBar = document.getElementById('mode-toggle-bar');
+    const modeOptionOntology = document.getElementById('mode-option-ontology');
+    const modeOptionAgent = document.getElementById('mode-option-agent');
+    const modeAgentOptions = document.getElementById('mode-agent-options');
+    const assistantModeToggle = document.getElementById('assistant-mode-toggle');
+
+    let _agentMode = false;
+
+    function setAgentMode(on) {
+      _agentMode = on;
+      modeOptionOntology?.classList.toggle('mode-selected', !on);
+      modeOptionAgent?.classList.toggle('mode-selected', on);
+      modeTag?.classList.toggle('mode-active-agent', on);
+      if (modeAgentOptions) modeAgentOptions.classList.toggle('hidden', !on);
+      updateModeTagLabel();
+    }
+
+    function updateModeTagLabel() {
+      if (!modeTagLabel) return;
+      modeTagLabel.textContent = _agentMode ? 'Agent' : 'Ontology';
+    }
+
+    function collapseModeBar() {
+      modeToggleBar?.classList.add('hidden');
+      modeTag?.classList.remove('mode-expanded');
+    }
+
+    modeTag?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const isExpanded = modeToggleBar?.classList.contains('hidden');
+      if (isExpanded) {
+        modeToggleBar?.classList.remove('hidden');
+        modeTag?.classList.add('mode-expanded');
+      } else {
+        collapseModeBar();
+      }
+    });
+
+    modeOptionOntology?.addEventListener('click', () => { setAgentMode(false); collapseModeBar(); });
+    modeOptionAgent?.addEventListener('click', () => { setAgentMode(true); collapseModeBar(); });
+
+    document.addEventListener('click', (e) => {
+      if (modeSelector && !modeSelector.contains(e.target)) collapseModeBar();
+    });
+
+    setAgentMode(false);
 
     chatForm.addEventListener('submit', async (e) => {
       e.preventDefault();
@@ -1225,7 +1650,8 @@
       const submitChatId = getActiveChat().id;
       questionInput.value = '';
       appendMessage('user', q, null, null, submitChatId);
-      showLoading(true);
+      const agentMode = _agentMode;
+      showLoading(true, agentMode);
       setInputsEnabled(false);
       const controller = new AbortController();
       const qaTimeoutMs = 90000;
@@ -1233,20 +1659,77 @@
       try {
         const chat = getChatById(submitChatId);
         const kbId = (chat && chat.kbId) ? chat.kbId : getActiveKbId();
-        if (!kbId) { setInputsEnabled(true); return; }
-        const body = { question: q, kb_id: kbId };
-        const res = await fetch(API + '/qa/ask', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(body),
-          signal: controller.signal,
-        });
-        const data = await res.json().catch(() => ({}));
-        if (!res.ok) throw new Error(parseError(data) || res.statusText);
-        const sourceTags = (data.source_labels && data.source_labels.length) ? data.source_labels : (data.source_refs || []);
-        const rawFacts = data.sources || [];
-        const reasoning = data.reasoning || '';
-        appendMessage('assistant', data.answer, sourceTags, data.num_facts_used, submitChatId, rawFacts, reasoning);
+        if (!kbId) { setInputsEnabled(true); showLoading(false); return; }
+        const assistantMode = document.getElementById('assistant-mode-toggle')?.checked === true;
+        if (agentMode) {
+          const endpoint = '/qa/agent/ask/stream';
+          const body = { question: q, kb_id: kbId, assistant_mode: assistantMode };
+          const res = await fetch(API + endpoint, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body),
+            signal: controller.signal,
+          });
+          if (!res.ok) {
+            const data = await res.json().catch(() => ({}));
+            throw new Error(parseError(data) || res.statusText);
+          }
+          const reader = res.body.getReader();
+          const decoder = new TextDecoder();
+          let buffer = '';
+          let stepCount = 0;
+          let data = null;
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            buffer += decoder.decode(value, { stream: true });
+            const parts = buffer.split('\n\n');
+            buffer = parts.pop() || '';
+            for (const part of parts) {
+              const line = part.split('\n').find(l => l.startsWith('data: '));
+              if (!line) continue;
+              try {
+                const ev = JSON.parse(line.slice(6));
+                if (ev.type === 'step' && ev.step) {
+                  stepCount++;
+                  appendReasoningStep(stepCount, ev.step.question);
+                } else if (ev.type === 'done' && ev.result) {
+                  data = ev.result;
+                } else if (ev.type === 'error') {
+                  throw new Error(ev.message || 'Agent error');
+                }
+              } catch (err) {
+                if (err instanceof SyntaxError) continue;
+                throw err;
+              }
+            }
+          }
+          if (!data) throw new Error('No result from agent stream');
+          const sessionId = data.session_id || null;
+          const hideReasoning = assistantMode && agentMode;
+          const rawFacts = hideReasoning ? [] : (data.sources || []);
+          const reasoning = hideReasoning ? '' : (data.reasoning || '');
+          const sourceTags = (sessionId && agentMode)
+            ? []
+            : ((data.source_labels && data.source_labels.length) ? data.source_labels : (data.source_refs || []));
+          appendMessage('assistant', data.answer, sourceTags, data.num_facts_used, submitChatId, rawFacts, reasoning, sessionId);
+        } else {
+          const endpoint = '/qa/ask';
+          const body = { question: q, kb_id: kbId };
+          const res = await fetch(API + endpoint, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body),
+            signal: controller.signal,
+          });
+          const data = await res.json().catch(() => ({}));
+          if (!res.ok) throw new Error(parseError(data) || res.statusText);
+          const sessionId = data.session_id || null;
+          const rawFacts = data.sources || [];
+          const reasoning = data.reasoning || '';
+          const sourceTags = (data.source_labels && data.source_labels.length) ? data.source_labels : (data.source_refs || []);
+          appendMessage('assistant', data.answer, sourceTags, data.num_facts_used, submitChatId, rawFacts, reasoning, sessionId);
+        }
       } catch (e) {
         const msg = e && e.name === 'AbortError'
           ? 'Request timed out. The model may be overloaded; try again.'
@@ -1788,6 +2271,20 @@
     function showJobDetailModal(job) {
       _modalJob = job;
       jobDetailTitle.textContent = job.title || 'Job Details';
+      const subtitleEl = document.getElementById('job-detail-subtitle');
+      const iconEl = document.getElementById('job-detail-icon');
+      const typeLabels = { create: 'New ontology from documents', enrich: 'Web content fetch and merge', extend: 'Add documents to existing ontology' };
+      if (subtitleEl) subtitleEl.textContent = typeLabels[job.jobType] || 'Document processing and extraction';
+      if (iconEl) {
+        const icons = {
+          create: { bg: 'var(--teal-2)', color: 'var(--teal)', path: 'M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253' },
+          enrich: { bg: 'var(--accent-12)', color: 'var(--accent)', path: 'M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9' },
+          extend: { bg: 'var(--accent-secondary-15)', color: 'var(--accent-secondary)', path: 'M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12' }
+        };
+        const cfg = icons[job.jobType] || icons.create;
+        iconEl.style.background = cfg.bg;
+        iconEl.innerHTML = '<svg class="w-5 h-5" style="color:' + cfg.color + ';" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="' + cfg.path + '"/></svg>';
+      }
       if (job.jobType === 'enrich') {
         const er = job.enrichment_report || {};
         const progress = job.progress || {};
