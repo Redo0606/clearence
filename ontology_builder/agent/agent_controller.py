@@ -110,8 +110,23 @@ class KnowledgeAgent:
 
         # 4. Exploration loop
         while not graph.complete():
+            gaps_current = detect_gaps(query, graph)
+            gaps_serializable = [
+                {
+                    "gap_type": g.gap_type,
+                    "subject": g.subject,
+                    "relation": g.relation,
+                    "target": g.target,
+                    "description": g.description,
+                }
+                for g in gaps_current
+            ]
             questions = generate_exploration_questions(
-                query, graph, previous_questions=previous_questions
+                query,
+                graph,
+                previous_questions=previous_questions,
+                steps=steps,
+                gaps=gaps_serializable,
             )
             if not questions:
                 break

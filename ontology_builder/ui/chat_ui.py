@@ -713,6 +713,21 @@ def generate_chat_ui_html(api_base: str = "/api/v1") -> str:
               <button type="button" id="mode-option-ontology" class="mode-option flex-1 px-4 py-2.5 text-xs font-medium transition-all" style="color: var(--text-muted);">Ontology</button>
               <button type="button" id="mode-option-agent" class="mode-option flex-1 px-4 py-2.5 text-xs font-medium transition-all" style="color: var(--text-muted);">Agent</button>
             </div>
+            <div class="px-3 py-2.5" style="border-top: 1px solid var(--border);">
+              <label class="block text-xs font-medium mb-1" style="color: var(--text-muted);">Answer language</label>
+              <select id="answer-language-select" class="w-full rounded-lg px-2.5 py-1.5 text-xs border" style="background: var(--bg-input); color: var(--text-primary); border-color: var(--border);">
+                <option value="">Auto (same as question)</option>
+                <option value="en">English</option>
+                <option value="fr">French</option>
+                <option value="de">German</option>
+                <option value="es">Spanish</option>
+                <option value="it">Italian</option>
+                <option value="pt">Portuguese</option>
+                <option value="zh">Chinese</option>
+                <option value="ja">Japanese</option>
+                <option value="ko">Korean</option>
+              </select>
+            </div>
             <div id="mode-agent-options" class="hidden px-3 py-2.5" style="border-top: 1px solid var(--border);">
               <label class="flex items-center gap-2 cursor-pointer">
                 <input type="checkbox" id="assistant-mode-toggle" class="rounded border-2 w-3.5 h-3.5 accent-pink-500" style="border-color: var(--border); background: var(--bg-input);">

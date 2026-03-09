@@ -73,6 +73,8 @@ def _to_json_safe(obj: Any) -> Any:
     """Convert numpy and other non-JSON-serializable types to native Python for json.dumps."""
     if obj is None:
         return None
+    if hasattr(obj, "tolist"):  # numpy.ndarray
+        return _to_json_safe(obj.tolist())
     if hasattr(obj, "item"):  # numpy scalar (float32, int64, etc.)
         return obj.item()
     if isinstance(obj, dict):
@@ -276,19 +278,30 @@ def render_vis_from_file(
 ) -> str:
     """Render graph viewer HTML from pre-computed .vis.json (no graph load)."""
     vis_data = orjson.loads(vis_path.read_bytes())
+    # Defensive: support older .vis.json format missing clusters, isolated, hub_ids
+    nodes = vis_data.get("nodes", [])
+    edges = vis_data.get("edges", [])
+    edge_attrs = vis_data.get("edge_attrs", {})
+    node_attrs = vis_data.get("node_attrs", {})
+    relations = vis_data.get("relations", [])
+    hierarchy = vis_data.get("hierarchy", {})
+    clusters = vis_data.get("clusters", [])
+    isolated = vis_data.get("isolated", [])
+    has_cycles = vis_data.get("has_cycles", False)
+    stats_html = vis_data.get("stats_html", "")
     theme = get_theme()
     css_root = get_css_root_block()
     return _load_template().render(
-        nodes_json=json.dumps(vis_data["nodes"]),
-        edges_json=json.dumps(vis_data["edges"]),
-        edge_attrs_json=json.dumps(vis_data["edge_attrs"]),
-        node_attrs_json=json.dumps(vis_data["node_attrs"]),
-        relations_json=json.dumps(vis_data["relations"]),
-        hierarchy_json=json.dumps(vis_data["hierarchy"]),
-        clusters_json=json.dumps(vis_data["clusters"]),
-        isolated_json=json.dumps(vis_data["isolated"]),
-        has_cycles_json=json.dumps(vis_data["has_cycles"]),
-        stats_html=vis_data["stats_html"],
+        nodes_json=json.dumps(nodes),
+        edges_json=json.dumps(edges),
+        edge_attrs_json=json.dumps(edge_attrs),
+        node_attrs_json=json.dumps(node_attrs),
+        relations_json=json.dumps(relations),
+        hierarchy_json=json.dumps(hierarchy),
+        clusters_json=json.dumps(clusters),
+        isolated_json=json.dumps(isolated),
+        has_cycles_json=json.dumps(has_cycles),
+        stats_html=stats_html,
         sub_class_ratio_json=json.dumps(vis_data.get("sub_class_ratio", 0)),
         hub_ids_json=json.dumps(vis_data.get("hub_ids", [])),
         pre_select_node_json=json.dumps(pre_select_node),

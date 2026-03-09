@@ -1171,7 +1171,8 @@
 
     function splitAnswerIntoParts(content) {
       const s = String(content || '').trim();
-      const splitPattern = /##\s*You might also ask\s*:?\s*/i;
+      // Match "## You might also ask/look for/explore" (exact header for parsing; flexible for LLM variations)
+      const splitPattern = /##\s*You might also (?:ask|look for|explore)\s*:?\s*/i;
       const parts = s.split(splitPattern);
       if (parts.length >= 2) {
         const result = [];
@@ -1661,9 +1662,10 @@
         const kbId = (chat && chat.kbId) ? chat.kbId : getActiveKbId();
         if (!kbId) { setInputsEnabled(true); showLoading(false); return; }
         const assistantMode = document.getElementById('assistant-mode-toggle')?.checked === true;
+        const answerLanguage = document.getElementById('answer-language-select')?.value || null;
         if (agentMode) {
           const endpoint = '/qa/agent/ask/stream';
-          const body = { question: q, kb_id: kbId, assistant_mode: assistantMode };
+          const body = { question: q, kb_id: kbId, assistant_mode: assistantMode, answer_language: answerLanguage || undefined };
           const res = await fetch(API + endpoint, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -1715,7 +1717,7 @@
           appendMessage('assistant', data.answer, sourceTags, data.num_facts_used, submitChatId, rawFacts, reasoning, sessionId);
         } else {
           const endpoint = '/qa/ask';
-          const body = { question: q, kb_id: kbId };
+          const body = { question: q, kb_id: kbId, answer_language: answerLanguage || undefined };
           const res = await fetch(API + endpoint, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },

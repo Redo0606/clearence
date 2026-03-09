@@ -21,8 +21,8 @@ def _answer_language_instruction(answer_language: str | None) -> str:
     """Return instruction so the model answers in the user's language (not the ontology language)."""
     if answer_language:
         name = _ANSWER_LANGUAGE_NAMES.get(answer_language.lower(), answer_language)
-        return f"\n\nYou must respond in {name} only. Both the reasoning and answer must be in {name}."
-    return "\n\nYou must respond in the same language as the user's question. Use that language for both the reasoning and the answer."
+        return f"\n\nLANGUAGE: You MUST respond entirely in {name}. The reasoning, the answer body, and the follow-up questions must all be in {name}. Do not mix languages."
+    return "\n\nLANGUAGE: You MUST respond in the same language as the user's question. Detect the question language and use it for the reasoning, answer body, and follow-up questions. Do not default to English."
 
 
 QA_SYSTEM = """\
@@ -67,7 +67,15 @@ You must respond with valid JSON only, containing exactly two keys:
 - "answer": A detailed, natural, and comprehensive answer. Structure it so the user learns everything relevant:
   * Start with a direct answer to the question.
   * Add relevant details: related concepts, how they connect, practical implications.
-  * End with a "## You might also ask" section: 2–4 natural follow-up questions the user could ask to explore further (e.g., "What champions work well as midlaners?", "How does warding help a midlaner?", "What items should a midlaner build?"). Phrase these as friendly suggestions to guide exploration.
+  * End with a follow-up section. Use the EXACT header "## You might also ask" (in English, always) followed by 2–4 natural follow-up questions the user could ask to explore further. Format as a Markdown heading then a bullet list, e.g.:
+    ## You might also ask
+    - What champions work well as midlaners?
+    - How does warding help a midlaner?
+    - What items should a midlaner build?
+
+CRITICAL FORMATTING:
+- The follow-up section header MUST be exactly "## You might also ask" (in English) regardless of the answer language. The UI parses this header.
+- The answer body and follow-up questions must be in the requested answer language (or the question language if not specified).
 
 Rules:
 - Base BOTH reasoning and answer STRICTLY and ONLY on the provided facts. Do not infer, extrapolate, or add anything from your base knowledge.

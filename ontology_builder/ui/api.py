@@ -10,6 +10,7 @@ import json
 import logging
 import os
 import threading
+import traceback
 import uuid
 from pathlib import Path
 from queue import Queue
@@ -1770,29 +1771,38 @@ async def graph_viewer(
     debug: bool = Query(False, description="Enable console logging for layout debugging."),
 ):
     """Interactive vis.js graph viewer (standalone HTML page)."""
-    if kb_id:
-        path = _ONTOLOGY_GRAPHS / f"{kb_id}.json"
-        vis_path = _ONTOLOGY_GRAPHS / f"{kb_id}.vis.json"
-        if not path.exists():
-            raise HTTPException(404, f"Knowledge base '{kb_id}' not found.")
-        if vis_path.exists() and vis_path.stat().st_mtime >= path.stat().st_mtime:
+    try:
+        if kb_id:
+            path = _ONTOLOGY_GRAPHS / f"{kb_id}.json"
+            vis_path = _ONTOLOGY_GRAPHS / f"{kb_id}.vis.json"
+            if not path.exists():
+                raise HTTPException(404, f"Knowledge base '{kb_id}' not found.")
+            if vis_path.exists() and vis_path.stat().st_mtime >= path.stat().st_mtime:
+                html = await asyncio.to_thread(
+                    render_vis_from_file, vis_path, pre_select_node=node, depth=depth, debug=debug
+                )
+                return HTMLResponse(content=html)
+            graph = await asyncio.to_thread(load_from_path, path, False)
             html = await asyncio.to_thread(
-                render_vis_from_file, vis_path, pre_select_node=node, depth=depth, debug=debug
+                generate_visjs_html, graph, node, depth, debug,
             )
+            await asyncio.to_thread(_persist_vis_data, path, graph)
             return HTMLResponse(content=html)
-        graph = await asyncio.to_thread(load_from_path, path, False)
+        graph = get_graph()
+        if graph is None:
+            raise HTTPException(404, "No ontology graph. Select one from the sidebar or build one first.")
         html = await asyncio.to_thread(
             generate_visjs_html, graph, node, depth, debug,
         )
-        await asyncio.to_thread(_persist_vis_data, path, graph)
         return HTMLResponse(content=html)
-    graph = get_graph()
-    if graph is None:
-        raise HTTPException(404, "No ontology graph. Select one from the sidebar or build one first.")
-    html = await asyncio.to_thread(
-        generate_visjs_html, graph, node, depth, debug,
-    )
-    return HTMLResponse(content=html)
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception("Graph viewer failed: %s", e)
+        raise HTTPException(
+            500,
+            f"Graph viewer error: {type(e).__name__}: {e}. Check server logs for details.",
+        )
 
 
 # Include agent QA routes
