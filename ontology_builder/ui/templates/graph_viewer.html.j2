@@ -162,6 +162,7 @@
             <option value="force" selected>Force</option>
             <option value="hierarchical">Hierarchy</option>
             <option value="elk">ELK Layered</option>
+            <option value="galaxy">Galaxy</option>
           </select>
         </label>
         <div class="ctrl-sep"></div>
@@ -247,8 +248,8 @@
     var nodeCount = nodes.get().length;
     var showEdgeLabels = nodeCount < 400;
     var subClassRatio = {{ sub_class_ratio_json | default('0') | safe }};
-    var useHierarchicalByDefault = subClassRatio > 0.15 && !{{ has_cycles_json | safe }};
-    var defaultLayoutMode = (nodeCount > 1500 || useHierarchicalByDefault) ? "hierarchical" : "force";
+    var useHierarchicalByDefault = subClassRatio > 0.25 && !{{ has_cycles_json | safe }} && nodeCount < 800;
+    var defaultLayoutMode = useHierarchicalByDefault ? "hierarchical" : "force";
 
     var C = (function() {
       var s = getComputedStyle(document.documentElement);
@@ -479,22 +480,27 @@
       if (updates.length) nodes.update(updates);
     }
 
+    var applyStylesRaf = null;
     function applyStyles() {
-      var state = getState();
-      var allNodes = nodes.get();
-      var allEdges = edges.get();
-      var nodeUpdates = [];
-      var edgeUpdates = [];
-      for (var i = 0; i < allNodes.length; i++) {
-        var u = computeNodeStyle(allNodes[i], state);
-        if (Object.keys(u).length > 1) nodeUpdates.push(u);
-      }
-      for (var j = 0; j < allEdges.length; j++) {
-        var ev = computeEdgeStyle(allEdges[j], state);
-        if (Object.keys(ev).length > 1) edgeUpdates.push(ev);
-      }
-      if (nodeUpdates.length) nodes.update(nodeUpdates);
-      if (edgeUpdates.length) edges.update(edgeUpdates);
+      if (applyStylesRaf) return;
+      applyStylesRaf = requestAnimationFrame(function() {
+        applyStylesRaf = null;
+        var state = getState();
+        var allNodes = nodes.get();
+        var allEdges = edges.get();
+        var nodeUpdates = [];
+        var edgeUpdates = [];
+        for (var i = 0; i < allNodes.length; i++) {
+          var u = computeNodeStyle(allNodes[i], state);
+          if (Object.keys(u).length > 1) nodeUpdates.push(u);
+        }
+        for (var j = 0; j < allEdges.length; j++) {
+          var ev = computeEdgeStyle(allEdges[j], state);
+          if (Object.keys(ev).length > 1) edgeUpdates.push(ev);
+        }
+        if (nodeUpdates.length) nodes.update(nodeUpdates);
+        if (edgeUpdates.length) edges.update(edgeUpdates);
+      });
     }
 
     function applyEdgeLabelMode() {
@@ -508,11 +514,11 @@
       if (edgeLabelToggle) edgeLabelToggle.textContent = "Labels: " + (showEdgeLabels ? "ON" : "OFF");
     }
 
-    var physicsIters = nodeCount < 100 ? 1500 : nodeCount < 500 ? 1200 : nodeCount < 1000 ? 800 : 500;
-    var physicsEnabled = nodeCount <= 600;
+    var physicsIters = nodeCount < 100 ? 1200 : nodeCount < 300 ? 800 : nodeCount < 600 ? 600 : nodeCount < 1000 ? 400 : 300;
+    var physicsEnabled = nodeCount <= 1200;
     var physicsConfig = useHierarchicalByDefault
-      ? { enabled: physicsEnabled, hierarchicalRepulsion: { centralGravity: 0.0, springLength: 150, springConstant: 0.01, nodeDistance: 180, damping: 0.09 }, stabilization: { enabled: true, iterations: physicsIters, updateInterval: 25, fit: true } }
-      : { enabled: physicsEnabled, solver: "barnesHut", barnesHut: { gravitationalConstant: -9000, centralGravity: 0.08, springLength: 280, springConstant: 0.035, damping: 0.45, avoidOverlap: 1 }, stabilization: { enabled: true, iterations: physicsIters, updateInterval: 25, fit: true }, minVelocity: 0.75 };
+      ? { enabled: physicsEnabled, hierarchicalRepulsion: { centralGravity: 0.0, springLength: 150, springConstant: 0.01, nodeDistance: 180, damping: 0.09 }, stabilization: { enabled: true, iterations: physicsIters, updateInterval: 50, fit: true } }
+      : { enabled: physicsEnabled, solver: "barnesHut", barnesHut: { gravitationalConstant: -8000, centralGravity: 0.05, springLength: 220, springConstant: 0.04, damping: 0.5, avoidOverlap: 1 }, stabilization: { enabled: true, iterations: physicsIters, updateInterval: 50, fit: true }, minVelocity: 0.5 };
     var options = {
       autoResize: true,
       layout: {
@@ -521,16 +527,16 @@
           enabled: true,
           direction: "UD",
           sortMethod: "hubsize",
-          levelSeparation: 240,
-          nodeSpacing: 210,
-          treeSpacing: 280,
+          levelSeparation: 180,
+          nodeSpacing: 150,
+          treeSpacing: 220,
           blockShifting: true,
           edgeMinimization: true,
           parentCentralization: true
         } : { enabled: false }
       },
       physics: physicsConfig,
-      interaction: { hover: true, tooltipDelay: 999999, navigationButtons: false, keyboard: true, dragNodes: true, zoomView: true, dragView: true },
+      interaction: { hover: true, tooltipDelay: 200, navigationButtons: false, keyboard: true, dragNodes: true, zoomView: true, dragView: true },
       nodes: {
         shape: "box",
         shapeProperties: { borderRadius: 8 },
@@ -594,7 +600,7 @@
 
     function drawHullOverlay() {
       var hullCanvas = document.getElementById("hull-overlay");
-      if (!hullCanvas || !clusters || clusters.length === 0) return;
+      if (!hullCanvas || !clusters || clusters.length === 0 || nodeCount > 500) return;
       var ctx = hullCanvas.getContext("2d");
       var rect = hullCanvas.getBoundingClientRect();
       if (rect.width === 0 || rect.height === 0) return;
@@ -703,6 +709,11 @@
         selectedDepth = parseInt(depthSelect.value, 10) || 1;
         nhopCache.clear();
         applyStyles();
+        var fn = focusedNodeId || selectedNodeId;
+        if (fn) {
+          var related = getConnectedNodesNHop(fn, selectedDepth >= 999 ? 10 : selectedDepth);
+          network.fit({ nodes: Array.from(related), animation: { duration: 250, easingFunction: "easeInOutCubic" } });
+        }
       });
     }
 
@@ -861,6 +872,13 @@
       selectedNodeId = nodeId;
       applyStyles();
       showNodeDetail(nodeId);
+      var related = getConnectedNodesNHop(nodeId, selectedDepth >= 999 ? 10 : selectedDepth);
+      var relatedArr = Array.from(related);
+      if (relatedArr.length > 1) {
+        network.fit({ nodes: relatedArr, animation: { duration: 280, easingFunction: "easeInOutCubic" } });
+      } else {
+        network.focus(nodeId, { scale: 1.2, animation: { duration: 280, easingFunction: "easeInOutCubic" } });
+      }
     });
 
     network.on("hoverNode", function(params) {
@@ -928,7 +946,15 @@
       focusedNodeId = nodeId;
       selectedNodeId = nodeId;
       applyStyles();
-      network.focus(nodeId, { scale: 1.15, animation: { duration: 420, easingFunction: "easeInOutCubic" } });
+      var depth = selectedDepth >= 999 ? 10 : selectedDepth;
+      var related = getConnectedNodesNHop(nodeId, depth);
+      var relatedArr = Array.from(related);
+      if (relatedArr.length > 0) {
+        network.fit({ nodes: relatedArr, animation: { duration: 380, easingFunction: "easeInOutCubic" } });
+      } else {
+        network.focus(nodeId, { scale: 1.2, animation: { duration: 380, easingFunction: "easeInOutCubic" } });
+      }
+      applyLabelVisibility(nodeId);
     }
 
     function exitSpotlight() {
@@ -980,6 +1006,10 @@
       layoutSelect.addEventListener("change", function() {
         var newMode = layoutSelect.value || "force";
         if (simulationFrozen && layoutMode === newMode) return;
+        if (newMode === "galaxy") {
+          runGalaxyLayout();
+          return;
+        }
         if (newMode === "elk") {
           if (typeof ELK === "undefined") {
             if (DEBUG) debugLog("ELK not loaded, falling back to hierarchy");
@@ -993,7 +1023,7 @@
         var useHierarchy = newMode === "hierarchical";
         network.setOptions({
           layout: {
-            hierarchical: useHierarchy ? { enabled: true, direction: "UD", sortMethod: "hubsize", levelSeparation: 240, nodeSpacing: 210, treeSpacing: 280, blockShifting: true, edgeMinimization: true, parentCentralization: true } : { enabled: false }
+            hierarchical: useHierarchy ? { enabled: true, direction: "UD", sortMethod: "hubsize", levelSeparation: 180, nodeSpacing: 150, treeSpacing: 220, blockShifting: true, edgeMinimization: true, parentCentralization: true } : { enabled: false }
           },
           physics: {
             enabled: physicsEnabled,
@@ -1058,6 +1088,47 @@
         simulationFrozen = true;
         network.fit({ animation: { duration: 300, easingFunction: "easeInOutCubic" } });
       });
+    }
+
+    function runGalaxyLayout() {
+      var visibleNodes = nodes.get().filter(function(n) { return !n.hidden; });
+      var visibleEdges = edges.get().filter(function(e) { return !e.hidden; });
+      var nodeIds = new Set(visibleNodes.map(function(n) { return n.id; }));
+      var clusterMap = {};
+      var clusterList = [];
+      if (clusters && clusters.length > 0) {
+        clusters.forEach(function(c, idx) {
+          var members = (Array.isArray(c) ? c : []).filter(function(nid) { return nodeIds.has(nid); });
+          if (members.length > 0) {
+            members.forEach(function(nid) { clusterMap[nid] = clusterList.length; });
+            clusterList.push(members);
+          }
+        });
+      }
+      var unclustered = visibleNodes.filter(function(n) { return clusterMap[n.id] == null; });
+      if (unclustered.length > 0) clusterList.push(unclustered.map(function(n) { return n.id; }));
+      var totalClusters = clusterList.length;
+      var radiusBase = Math.max(350, Math.min(900, 100 + Math.sqrt(visibleNodes.length) * 25));
+      var pos = {};
+      var angleStep = (2 * Math.PI) / Math.max(1, totalClusters);
+      clusterList.forEach(function(members, clusterIdx) {
+        var cx = radiusBase * Math.cos(clusterIdx * angleStep);
+        var cy = radiusBase * Math.sin(clusterIdx * angleStep);
+        var memberAngle = (2 * Math.PI) / Math.max(1, members.length);
+        var r = 60 + Math.min(150, members.length * 4);
+        members.forEach(function(nid, mi) {
+          pos[nid] = { x: cx + r * Math.cos(mi * memberAngle), y: cy + r * Math.sin(mi * memberAngle) };
+        });
+      });
+      if (Object.keys(pos).length > 0) {
+        network.setPositions(pos);
+        network.setOptions({ physics: { enabled: false } });
+        simulationFrozen = true;
+        setLayout("galaxy");
+        network.fit({ animation: { duration: 350, easingFunction: "easeInOutCubic" } });
+      } else {
+        fallbackToForceLayout();
+      }
     }
 
     var viewModeSelect = document.getElementById("view-mode-select");
