@@ -1202,6 +1202,43 @@ async def get_kb_health(kb_id: str):
         raise HTTPException(500, f"Failed to compute health: {e}") from e
 
 
+@router.get("/knowledge-bases/{kb_id}/repair-diagnosis")
+async def get_repair_diagnosis(kb_id: str):
+    """Return graph health, gaps (missing definitions), and repair recommendations."""
+    path = _ONTOLOGY_GRAPHS / f"{kb_id}.json"
+    if not path.exists():
+        raise HTTPException(404, f"Knowledge base '{kb_id}' not found.")
+    try:
+        from ontology_builder.evaluation.graph_health import compute_graph_health
+        from ontology_builder.repair.gap_repair import detect_gaps_in_graph
+        graph = await asyncio.to_thread(load_from_path, path, False)
+        health = compute_graph_health(graph, kb_id=kb_id)
+        gaps = detect_gaps_in_graph(graph, kb_path=path, max_gaps=20)
+        s = health.get("structural", {})
+        orphans = s.get("orphan_nodes", 0)
+        components = s.get("connected_components", 1)
+        n = s.get("node_count", 0)
+        recommendations = []
+        if orphans > 0:
+            recommendations.append({"id": "orphans", "title": "Link orphan nodes", "desc": f"{orphans} nodes have no connections. Repair will link them to similar nodes via embeddings.", "action": "structural"})
+        if components > 1:
+            recommendations.append({"id": "components", "title": "Bridge disconnected components", "desc": f"Graph has {components} separate subgraphs. Repair will add bridges to the largest component.", "action": "structural"})
+        if gaps:
+            recommendations.append({"id": "gaps", "title": "Fill missing definitions", "desc": f"{len(gaps)} concepts lack descriptions. Enable Internet definition repair to search the web.", "action": "internet", "gaps": gaps[:10]})
+        if n > 0 and not recommendations:
+            recommendations.append({"id": "healthy", "title": "Graph looks healthy", "desc": "No major structural issues detected. Repair can still add root concept and run inference.", "action": "optional"})
+        return {
+            "kb_id": kb_id,
+            "health": health,
+            "gaps": gaps,
+            "gaps_count": len(gaps),
+            "recommendations": recommendations,
+        }
+    except Exception as e:
+        logger.exception("Failed to get repair diagnosis for kb_id=%s: %s", kb_id, e)
+        raise HTTPException(500, f"Failed: {e}") from e
+
+
 @router.get("/knowledge-bases/{kb_id}/evaluation-records")
 async def get_evaluation_records(kb_id: str):
     """Return list of evaluation records for a knowledge base (timestamp, scores, per-question details)."""
@@ -1219,28 +1256,108 @@ async def get_evaluation_records(kb_id: str):
         return []
 
 
-@router.post("/knowledge-bases/{kb_id}/repair")
-async def repair_kb(kb_id: str):
-    """Repair graph: link orphans, bridge components. Returns SSE stream."""
+@router.get("/knowledge-bases/{kb_id}/repair-records")
+async def get_repair_records(kb_id: str):
+    """Return list of repair records for a knowledge base (timestamp, edges, gaps, iterations, config)."""
     path = _ONTOLOGY_GRAPHS / f"{kb_id}.json"
     if not path.exists():
         raise HTTPException(404, f"Knowledge base '{kb_id}' not found.")
-    # Run repair in thread pool; SSE emits from generator
+    records_file = _REPORTS_DIR / f"repair-records-{kb_id}.json"
+    if not records_file.exists():
+        return []
+    try:
+        records = json.loads(records_file.read_text(encoding="utf-8"))
+        return records if isinstance(records, list) else []
+    except Exception as e:
+        logger.warning("Failed to load repair records for kb_id=%s: %s", kb_id, e)
+        return []
+
+
+def _save_repair_record(
+    kb_id: str,
+    kb_name: str,
+    repair_internet_definitions: bool,
+    repair_iterations: int,
+    min_fidelity: float,
+    report,
+) -> None:
+    """Persist repair record to repair-records-{kb_id}.json (same pattern as eval records)."""
+    import uuid
+    from datetime import datetime, timezone
+    record = {
+        "id": str(uuid.uuid4()),
+        "kb_id": kb_id,
+        "kb_name": kb_name,
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "repair_internet_definitions": repair_internet_definitions,
+        "repair_iterations": repair_iterations,
+        "min_fidelity": min_fidelity,
+        "edges_added": report.edges_added,
+        "gaps_repaired": report.gaps_repaired,
+        "iterations_completed": report.iterations_completed,
+        "iteration_summaries": report.iteration_summaries,
+        "health_before": report.health_before,
+        "health_after": report.health_after,
+        "definitions_added": getattr(report, "definitions_added", None) or {},
+        "inferred_edges": [list(e) for e in getattr(report, "inferred_edges", [])],
+    }
+    _REPORTS_DIR.mkdir(parents=True, exist_ok=True)
+    records_file = _REPORTS_DIR / f"repair-records-{kb_id}.json"
+    records: list[dict] = []
+    if records_file.exists():
+        try:
+            records = json.loads(records_file.read_text(encoding="utf-8"))
+        except Exception:
+            pass
+    records.insert(0, record)
+    records = records[:50]
+    records_file.write_text(json.dumps(records, indent=2), encoding="utf-8")
+
+
+@router.post("/knowledge-bases/{kb_id}/repair")
+async def repair_kb(
+    kb_id: str,
+    repair_internet_definitions: bool = Query(False, description="Search web for missing concept definitions"),
+    repair_iterations: int = Query(1, ge=1, le=5, description="Number of repair iterations (1–5)"),
+    min_fidelity: float = Query(0.3, ge=0.0, le=1.0, description="Confidence threshold for web definitions (0–1); filters low-quality sources"),
+):
+    """Repair graph: optional internet definition fill, link orphans, bridge components. Returns SSE stream."""
+    path = _ONTOLOGY_GRAPHS / f"{kb_id}.json"
+    if not path.exists():
+        raise HTTPException(404, f"Knowledge base '{kb_id}' not found.")
+
     def gen():
         import traceback
-        try:
-            from ontology_builder.repair import RepairConfig, repair_graph
-            graph = load_from_path(path)
-            meta_path = _ONTOLOGY_GRAPHS / f"{kb_id}.meta.json"
+        from queue import Queue, Empty
+        import threading
 
-            def progress(step: str, message: str, details: dict) -> None:
-                pass
+        queue: Queue = Queue()
+        result_holder: dict | None = None
+        error_holder: str | None = None
 
-            def sync_gen():
-                for msg in ["Loading graph", "Computing health before", "Adding root concept", "Linking orphans", "Bridging components", "Running inference", "Computing health after"]:
-                    yield f"data: {json.dumps({'type': 'step', 'message': msg})}\n\n"
-                config = RepairConfig(run_reasoning_after=True)
-                report = repair_graph(graph, config=config, progress_callback=progress, kb_id=kb_id)
+        def run_repair():
+            nonlocal result_holder, error_holder
+            try:
+                from ontology_builder.repair import RepairConfig, repair_graph
+                graph = load_from_path(path)
+                meta_path = _ONTOLOGY_GRAPHS / f"{kb_id}.meta.json"
+
+                def progress(step: str, message: str, details: dict) -> None:
+                    queue.put({"type": "step", "step": step, "message": message, **details})
+
+                config = RepairConfig(
+                    run_reasoning_after=True,
+                    repair_internet_definitions=repair_internet_definitions,
+                    repair_iterations=repair_iterations,
+                    min_fidelity=min_fidelity,
+                )
+                report = repair_graph(
+                    graph,
+                    config=config,
+                    progress_callback=progress,
+                    kb_id=kb_id,
+                    kb_path=str(path),
+                )
                 set_graph(graph, document_subject=None)
                 set_current_kb_id(kb_id)
                 build_qa_index(graph, False, path)
@@ -1248,14 +1365,60 @@ async def repair_kb(kb_id: str):
                     meta = json.loads(meta_path.read_text(encoding="utf-8"))
                     save_to_path_with_metadata(path, name=meta.get("name", kb_id), kb_id=kb_id, description=meta.get("description", ""), documents=meta.get("documents"))
                 else:
+                    meta = {}
                     save_to_path(path)
                 _persist_vis_data(path, graph)
-                yield f"data: {json.dumps({'type': 'done', 'edges_added': report.edges_added})}\n\n"
-            for chunk in sync_gen():
-                yield chunk
-        except Exception as e:
-            logger.exception("Repair failed for kb_id=%s", kb_id)
-            yield f"data: {json.dumps({'type': 'error', 'message': str(e), 'traceback': traceback.format_exc()})}\n\n"
+                kb_name = meta.get("name", kb_id)
+                _save_repair_record(
+                    kb_id=kb_id,
+                    kb_name=kb_name,
+                    repair_internet_definitions=repair_internet_definitions,
+                    repair_iterations=repair_iterations,
+                    min_fidelity=min_fidelity,
+                    report=report,
+                )
+                result_holder = {
+                    "edges_added": report.edges_added,
+                    "gaps_repaired": report.gaps_repaired,
+                    "iterations_completed": report.iterations_completed,
+                    "iteration_summaries": report.iteration_summaries,
+                    "definitions_added": report.definitions_added,
+                    "inferred_edges": [list(e) for e in report.inferred_edges],
+                }
+            except Exception as e:
+                logger.exception("Repair failed for kb_id=%s", kb_id)
+                error_holder = str(e)
+            finally:
+                queue.put({"type": "_done"})
+
+        thread = threading.Thread(target=run_repair)
+        thread.start()
+
+        while True:
+            try:
+                item = queue.get(timeout=0.5)
+            except Empty:
+                if not thread.is_alive():
+                    break
+                continue
+            if item.get("type") == "_done":
+                break
+            if item.get("type") == "step":
+                msg = item.get("message", "")
+                it = item.get("iteration")
+                tot = item.get("iteration_total")
+                if it and tot and tot > 1:
+                    msg = f"[{it}/{tot}] {msg}"
+                rescan = item.get("rescan")
+                payload = {"type": "step", "message": msg, "step": item.get("step"), "iteration": it, "iteration_total": tot}
+                if rescan:
+                    payload["rescan"] = rescan
+                yield f"data: {json.dumps(payload)}\n\n"
+
+        if error_holder:
+            yield f"data: {json.dumps({'type': 'error', 'message': error_holder})}\n\n"
+        elif result_holder:
+            yield f"data: {json.dumps({'type': 'done', **result_holder})}\n\n"
 
     return StreamingResponse(
         gen(),
@@ -1588,3 +1751,9 @@ async def graph_viewer(
         raise HTTPException(404, "No ontology graph. Select one from the sidebar or build one first.")
     html = generate_visjs_html(graph, pre_select_node=node, depth=depth, debug=debug)
     return HTMLResponse(content=html)
+
+
+# Include agent QA routes
+from ontology_builder.ui.chat_agent_routes import router as agent_router
+
+router.include_router(agent_router)
