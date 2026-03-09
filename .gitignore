@@ -39,16 +39,8 @@ Thumbs.db
 # IDE
 .continue/
 
-# Temporary uploads
-documents/raw/*.pdf
-documents/raw/*.docx
-documents/raw/*.txt
-documents/raw/*.md
-documents/ontology_graphs/
-
-# Generated reports and caches
-documents/reports/
-documents/enrichment/web_enrichment_*.md
+# Documents (uploads, reports, enrichment, generated content)
+documents/
 
 # Agent reasoning logs (runtime)
 ontology_builder/storage/reasoning_logs/
