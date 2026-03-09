@@ -49,6 +49,7 @@ def ingest_document(
     cancel_check: Callable[[], bool] | None = None,
     min_nodes_to_merge: int = DEFAULT_MIN_NODES_TO_MERGE,
     min_quality_score: float = DEFAULT_MIN_QUALITY_SCORE,
+    ontology_language: str | None = None,
 ) -> PipelineBridgeReport:
     """
     Process doc_path through the existing pipeline, analyze the enrichment graph,
@@ -62,6 +63,7 @@ def ingest_document(
         progress_callback : optional (step, data) for UI progress
         min_nodes_to_merge : skip merge if enrichment graph has fewer nodes
         min_quality_score  : skip merge if reliability score below this (0–1)
+        ontology_language  : str | None — ISO 639-1. Extracted content in this language. From KB meta if omitted.
 
     Returns:
         PipelineBridgeReport
@@ -80,8 +82,19 @@ def ingest_document(
 
     report = PipelineBridgeReport()
 
+    # --- ontology language from param or KB metadata ---
+    lang = ontology_language or "en"
+    if ontology_language is None and kb_path is not None:
+        meta_path = Path(kb_path).with_suffix(".meta.json")
+        if meta_path.exists():
+            try:
+                meta = orjson.loads(meta_path.read_bytes())
+                lang = meta.get("ontology_language", "en") or "en"
+            except (orjson.JSONDecodeError, OSError):
+                pass
+
     # --- run pipeline on enrichment doc ---
-    logger.info("[Bridge] Processing enrichment doc: %s", doc_path)
+    logger.info("[Bridge] Processing enrichment doc: %s (lang=%s)", doc_path, lang)
     _progress("web_pipeline_run", {"message": "Running extraction pipeline", "doc_path": str(doc_path)})
     try:
         enrich_graph, _pipeline_report = process_document(
@@ -89,6 +102,7 @@ def ingest_document(
             verbose=verbose,
             progress_callback=progress_callback,
             cancel_check=cancel_check,
+            ontology_language=lang,
         )
     except Exception as e:
         report.errors.append(f"process_document failed: {e}")

@@ -83,6 +83,21 @@ def get_current_kb_id() -> str | None:
     return _current_kb_id
 
 
+def get_ontology_language_for_kb(kb_id: str | None) -> str:
+    """Return the ontology language for a KB from its metadata. Defaults to 'en' if not found."""
+    if not kb_id:
+        return "en"
+    base_dir = get_ontology_graphs_dir()
+    meta_path = base_dir / f"{kb_id}.meta.json"
+    if not meta_path.exists():
+        return "en"
+    try:
+        meta = orjson.loads(meta_path.read_bytes())
+        return meta.get("ontology_language", "en") or "en"
+    except (orjson.JSONDecodeError, OSError):
+        return "en"
+
+
 def set_graph(graph: OntologyGraph, document_subject: str | None = None) -> None:
     """Set the current graph (and optional subject) after build."""
     global _current_graph, _current_export, _document_subject

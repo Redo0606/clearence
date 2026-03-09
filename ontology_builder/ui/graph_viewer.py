@@ -53,6 +53,7 @@ RELATION_SPRING_LENGTH: dict[str, int] = {
 
 HUB_DEGREE_THRESHOLD = 80  # Nodes with degree > this are hubs (Phase 2 Section 3)
 HUB_EDGE_CAP = 25  # Max edges shown for hubs until "show all"
+VIS_JSON_VERSION = 2  # Schema version; bump to invalidate stale .vis.json caches
 
 _EDGE_STYLES: dict[str, dict[str, Any]] = {
     "subClassOf": {"width": 2.2, "dashes": False, "color": "#b81365"},
@@ -67,6 +68,17 @@ _EDGE_STYLES: dict[str, dict[str, Any]] = {
 def _edge_id(u: str, v: str, rel: str) -> str:
     """Stable id for an edge so Python edge_attrs and JS use the same key."""
     return hashlib.md5(f"{u}\x00{v}\x00{rel}".encode()).hexdigest()[:12]
+
+
+def _assign_ring(degree: int) -> int:
+    """Assign ring level for node border styling: 0=hub, 1=high-degree, 2=standard, 3=leaf."""
+    if degree > HUB_DEGREE_THRESHOLD:
+        return 0
+    if degree >= 10:
+        return 1
+    if degree >= 2:
+        return 2
+    return 3
 
 
 def _to_json_safe(obj: Any) -> Any:
@@ -130,6 +142,7 @@ def _build_vis_data(graph: "OntologyGraph") -> dict[str, Any]:
             "mass": max(1.5, min(6, degree * 0.6)),
             "size": node_size,
             "cluster": cluster_id,
+            "ring": _assign_ring(degree),
         })
 
     hub_ids = {nid for nid, d in degree_map.items() if d > HUB_DEGREE_THRESHOLD}
@@ -210,6 +223,14 @@ def _build_vis_data(graph: "OntologyGraph") -> dict[str, Any]:
     sub_class_count = sum(1 for e in vis_edges if e.get("relation") == "subClassOf")
     sub_class_ratio = sub_class_count / len(vis_edges) if vis_edges else 0
 
+    # Pre-compute adjacency for large graphs (>200 nodes) to reduce JS parse time
+    adjacency: dict[str, list[dict[str, Any]]] = {}
+    if len(vis_nodes) > 200:
+        for edge in vis_edges:
+            u, v, eid = edge["from"], edge["to"], edge["id"]
+            adjacency.setdefault(u, []).append({"neighbourId": v, "edgeId": eid, "direction": "out"})
+            adjacency.setdefault(v, []).append({"neighbourId": u, "edgeId": eid, "direction": "in"})
+
     stats = graph.export().get("stats", {})
     rel_count = stats.get("relations")
     if rel_count is None:
@@ -227,7 +248,7 @@ def _build_vis_data(graph: "OntologyGraph") -> dict[str, Any]:
         + (f" | {isolated_info}" if isolated_info else "")
     )
 
-    return {
+    result: dict[str, Any] = {
         "nodes": vis_nodes,
         "edges": vis_edges,
         "edge_attrs": edge_attrs,
@@ -241,6 +262,9 @@ def _build_vis_data(graph: "OntologyGraph") -> dict[str, Any]:
         "sub_class_ratio": sub_class_ratio,
         "hub_ids": list(hub_ids),
     }
+    if adjacency:
+        result["adjacency"] = adjacency
+    return result
 
 
 def _load_template():
@@ -257,6 +281,7 @@ def _persist_vis_data(path: Path, graph: "OntologyGraph") -> None:
         # Ensure JSON-serializable (numpy types from graph edge data cause orjson to fail)
         vis_data = _to_json_safe(vis_data)
         out = {
+            "_v": VIS_JSON_VERSION,
             "nodes": vis_data["nodes"],
             "edges": vis_data["edges"],
             "edge_attrs": vis_data["edge_attrs"],
@@ -270,11 +295,17 @@ def _persist_vis_data(path: Path, graph: "OntologyGraph") -> None:
             "sub_class_ratio": vis_data.get("sub_class_ratio", 0),
             "hub_ids": vis_data.get("hub_ids", []),
         }
+        if vis_data.get("adjacency"):
+            out["adjacency"] = vis_data["adjacency"]
         vis_path = path.parent / (path.stem + ".vis.json")
         vis_path.write_bytes(orjson.dumps(out))
         logger.debug("[GraphViewer] Persisted vis data to %s", vis_path.name)
     except Exception as e:
         logger.debug("[GraphViewer] Persist vis data failed: %s", e)
+
+
+class VisCacheStaleError(Exception):
+    """Raised when cached .vis.json has older schema version and must be regenerated."""
 
 
 def render_vis_from_file(
@@ -285,6 +316,8 @@ def render_vis_from_file(
 ) -> str:
     """Render graph viewer HTML from pre-computed .vis.json (no graph load)."""
     vis_data = orjson.loads(vis_path.read_bytes())
+    if vis_data.get("_v", 1) < VIS_JSON_VERSION:
+        raise VisCacheStaleError("vis cache schema outdated")
     # Defensive: support older .vis.json format missing clusters, isolated, hub_ids
     nodes = vis_data.get("nodes", [])
     edges = vis_data.get("edges", [])
@@ -298,6 +331,7 @@ def render_vis_from_file(
     stats_html = vis_data.get("stats_html", "")
     theme = get_theme()
     css_root = get_css_root_block()
+    adjacency = vis_data.get("adjacency")
     return _load_template().render(
         nodes_json=json.dumps(nodes),
         edges_json=json.dumps(edges),
@@ -311,6 +345,7 @@ def render_vis_from_file(
         stats_html=stats_html,
         sub_class_ratio_json=json.dumps(vis_data.get("sub_class_ratio", 0)),
         hub_ids_json=json.dumps(vis_data.get("hub_ids", [])),
+        adjacency_json=json.dumps(adjacency) if adjacency else "null",
         pre_select_node_json=json.dumps(pre_select_node),
         depth_json=json.dumps(depth),
         debug_json=json.dumps(debug),
@@ -392,6 +427,7 @@ def generate_visjs_html(
     vis_data = _to_json_safe(vis_data)
     theme = get_theme()
     css_root = get_css_root_block()
+    adjacency = vis_data.get("adjacency")
     return _load_template().render(
         nodes_json=json.dumps(vis_data["nodes"]),
         edges_json=json.dumps(vis_data["edges"]),
@@ -405,6 +441,7 @@ def generate_visjs_html(
         stats_html=vis_data["stats_html"],
         sub_class_ratio_json=json.dumps(vis_data.get("sub_class_ratio", 0)),
         hub_ids_json=json.dumps(vis_data.get("hub_ids", [])),
+        adjacency_json=json.dumps(adjacency) if adjacency else "null",
         pre_select_node_json=json.dumps(pre_select_node),
         depth_json=json.dumps(depth),
         debug_json=json.dumps(debug),

@@ -16,6 +16,7 @@ DuckDuckGo optimization: natural-language phrases ("definition", "concept",
 import json
 import logging
 import math
+from pathlib import Path
 
 from ontology_builder.llm.client import complete
 from ontology_builder.llm.json_repair import repair_json
@@ -27,6 +28,34 @@ _MAX_CONTEXT_CHARS = 12000  # larger context for high-confidence inference
 _RELATION_SUFFIX = " relationship"
 
 # Prompts use .format() — {{ and }} become literal braces in JSON examples
+# Language names for query-language instruction
+_QUERY_LANGUAGE_NAMES = {
+    "en": "English",
+    "fr": "French",
+    "de": "German",
+    "es": "Spanish",
+    "it": "Italian",
+    "pt": "Portuguese",
+    "nl": "Dutch",
+    "ar": "Arabic",
+    "zh": "Chinese",
+    "ja": "Japanese",
+    "ko": "Korean",
+    "ru": "Russian",
+}
+
+
+def _query_language_instruction(ontology_language: str | None) -> str:
+    """Return instruction so search queries match the ontology language."""
+    if not ontology_language or ontology_language.lower() == "en":
+        return ""
+    name = _QUERY_LANGUAGE_NAMES.get(ontology_language.lower(), ontology_language)
+    return (
+        f"\n\nLANGUAGE: The ontology is in {name}. Generate ALL search queries in {name} only. "
+        "This ensures web results and extracted content match the ontology language."
+    )
+
+
 QUERY_INFER_SYSTEM = """\
 You are an expert at generating web search queries that retrieve high-quality, authoritative content for ontology enrichment.
 
@@ -141,7 +170,12 @@ def _gather_node_context(nx_graph, node: str, data: dict, score: float) -> dict:
     }
 
 
-def _infer_queries_llm(contexts: list[dict], max_queries: int, domain_hint: str = "") -> list[str] | None:
+def _infer_queries_llm(
+    contexts: list[dict],
+    max_queries: int,
+    domain_hint: str = "",
+    ontology_language: str | None = None,
+) -> list[str] | None:
     """Batch-infer search queries via LLM. Returns None on failure."""
     try:
         context_json = json.dumps(contexts, indent=2)[:_MAX_CONTEXT_CHARS]
@@ -150,6 +184,8 @@ def _infer_queries_llm(contexts: list[dict], max_queries: int, domain_hint: str 
             if domain_hint
             else "4. If the ontology is clearly about a specific game, product, or domain, infer it and include it in every query."
         )
+        lang_instruction = _query_language_instruction(ontology_language)
+        system_prompt = QUERY_INFER_SYSTEM + lang_instruction
         user = QUERY_INFER_USER.format(
             max_queries=max_queries,
             domain_instruction=domain_instruction,
@@ -157,7 +193,7 @@ def _infer_queries_llm(contexts: list[dict], max_queries: int, domain_hint: str 
         )
 
         raw = complete(
-            system=QUERY_INFER_SYSTEM,
+            system=system_prompt,
             user=user,
             temperature=0.15,
             max_tokens=800,
@@ -220,13 +256,20 @@ def _plan_queries_rule_based(nx_graph, top_nodes: list[str], cap: int) -> list[s
     return queries[:cap]
 
 
-def plan_queries(graph, max_queries=None, use_llm: bool = True, kb_path=None):
+def plan_queries(
+    graph,
+    max_queries=None,
+    use_llm: bool = True,
+    kb_path=None,
+    ontology_language: str | None = None,
+):
     """
     Args:
-        graph      : OntologyGraph
-        max_queries: int | None — hard cap; defaults to min(ceil(sqrt(N)), 20)
-        use_llm    : bool — if True, batch-infer via LLM; else rule-based only
-        kb_path    : Path | str | None — if provided, used to infer domain from metadata
+        graph             : OntologyGraph
+        max_queries        : int | None — hard cap; defaults to min(ceil(sqrt(N)), 20)
+        use_llm             : bool — if True, batch-infer via LLM; else rule-based only
+        kb_path            : Path | str | None — if provided, used to infer domain from metadata
+        ontology_language  : str | None — ISO 639-1. Queries generated in this language. Overrides kb_path meta if set.
 
     Returns:
         list[str] — deduplicated, domain-specific search query strings
@@ -268,9 +311,26 @@ def plan_queries(graph, max_queries=None, use_llm: bool = True, kb_path=None):
     if domain_hint:
         logger.info("[QueryPlanner] Inferred domain: %s", domain_hint)
 
+    # --- ontology language from param or metadata ---
+    lang = ontology_language
+    if lang is None and kb_path:
+        p = Path(kb_path) if not isinstance(kb_path, Path) else kb_path
+        meta_path = p.with_suffix(".meta.json")
+        if meta_path.exists():
+            try:
+                import orjson
+
+                meta = orjson.loads(meta_path.read_bytes())
+                lang = meta.get("ontology_language", "en")
+            except (OSError, orjson.JSONDecodeError, TypeError):
+                pass
+    lang = lang or "en"
+
     # --- batch-infer via LLM or fallback ---
     if use_llm and contexts:
-        queries = _infer_queries_llm(contexts, cap, domain_hint=domain_hint)
+        queries = _infer_queries_llm(
+            contexts, cap, domain_hint=domain_hint, ontology_language=lang
+        )
         if queries:
             return queries
 

@@ -53,6 +53,7 @@ from ontology_builder.ui.graph_viewer import (
     generate_visjs_html,
     render_vis_from_file,
     visualize,
+    VisCacheStaleError,
 )
 
 logger = logging.getLogger(__name__)
@@ -953,9 +954,22 @@ async def enrich_kb_stream(
         if not kb_path.exists():
             raise HTTPException(404, f"Knowledge base '{kb_id}' not found.")
 
+        # Load ontology language from KB metadata so enrichment uses same language
+        meta_path = _ONTOLOGY_GRAPHS / f"{kb_id}.meta.json"
+        ontology_language = "en"
+        if meta_path.exists():
+            try:
+                meta = json.loads(meta_path.read_text(encoding="utf-8"))
+                ontology_language = meta.get("ontology_language", "en") or "en"
+            except (json.JSONDecodeError, OSError):
+                pass
+
         from ontology_builder.enrichment import enrich_graph
 
-        logger.info("[EnrichKBStream] kb_id=%s max_queries=%s min_fidelity=%s", kb_id, max_queries, min_fidelity)
+        logger.info(
+            "[EnrichKBStream] kb_id=%s max_queries=%s min_fidelity=%s ontology_language=%s",
+            kb_id, max_queries, min_fidelity, ontology_language,
+        )
 
         progress_queue: Queue = Queue()
         cancel_event = threading.Event()
@@ -1004,6 +1018,7 @@ async def enrich_kb_stream(
                         verbose=True,
                         progress_callback=progress_callback,
                         cancel_check=cancel_event.is_set,
+                        ontology_language=ontology_language,
                     )
                     set_graph(graph, document_subject=None)
                     _persist_vis_data(kb_path, graph)
@@ -1778,10 +1793,13 @@ async def graph_viewer(
             if not path.exists():
                 raise HTTPException(404, f"Knowledge base '{kb_id}' not found.")
             if vis_path.exists() and vis_path.stat().st_mtime >= path.stat().st_mtime:
-                html = await asyncio.to_thread(
-                    render_vis_from_file, vis_path, pre_select_node=node, depth=depth, debug=debug
-                )
-                return HTMLResponse(content=html)
+                try:
+                    html = await asyncio.to_thread(
+                        render_vis_from_file, vis_path, pre_select_node=node, depth=depth, debug=debug
+                    )
+                    return HTMLResponse(content=html)
+                except VisCacheStaleError:
+                    pass  # Fall through to regenerate with new schema
             graph = await asyncio.to_thread(load_from_path, path, False)
             html = await asyncio.to_thread(
                 generate_visjs_html, graph, node, depth, debug,

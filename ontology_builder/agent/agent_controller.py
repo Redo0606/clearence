@@ -17,7 +17,7 @@ from ontology_builder.agent.ontology_gap_detector import detect_gaps
 from ontology_builder.agent.ontology_questioner import generate_exploration_questions
 from ontology_builder.agent.reasoning_logger import log_reasoning
 from ontology_builder.qa.answer import QAResult
-from ontology_builder.storage.graph_store import get_current_kb_id
+from ontology_builder.storage.graph_store import get_current_kb_id, get_ontology_language_for_kb
 
 logger = logging.getLogger(__name__)
 
@@ -75,6 +75,7 @@ class KnowledgeAgent:
             AgentResult with answer, reasoning, session_id, steps, gaps.
         """
         sid = session_id or str(uuid.uuid4())
+        ontology_language = get_ontology_language_for_kb(self.kb_id)
 
         # 1. Extract concepts
         concepts = extract_concepts(query)
@@ -127,6 +128,7 @@ class KnowledgeAgent:
                 previous_questions=previous_questions,
                 steps=steps,
                 gaps=gaps_serializable,
+                ontology_language=ontology_language,
             )
             if not questions:
                 break

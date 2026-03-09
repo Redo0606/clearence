@@ -12,6 +12,38 @@ from ontology_builder.llm.json_repair import repair_json
 
 logger = logging.getLogger(__name__)
 
+# Language names for exploration-question instruction
+_LANGUAGE_NAMES = {
+    "en": "English",
+    "fr": "French",
+    "de": "German",
+    "es": "Spanish",
+    "it": "Italian",
+    "pt": "Portuguese",
+    "nl": "Dutch",
+    "ar": "Arabic",
+    "zh": "Chinese",
+    "ja": "Japanese",
+    "ko": "Korean",
+    "ru": "Russian",
+}
+
+
+def _question_language_instruction(ontology_language: str | None) -> str:
+    """Return instruction so exploration questions match the ontology and user query language."""
+    if not ontology_language or ontology_language.lower() == "en":
+        return (
+            "\n\nLANGUAGE: Generate questions in the SAME language as the user's original question. "
+            "If the user asked in French, all questions must be in French. If in English, use English."
+        )
+    name = _LANGUAGE_NAMES.get(ontology_language.lower(), ontology_language)
+    return (
+        f"\n\nLANGUAGE (critical): The ontology and user query are in {name}. "
+        f"Generate ALL exploration questions strictly in {name}. "
+        "Do not switch to English. Use exact concept names from the graph in that language."
+    )
+
+
 QUESTION_GEN_SYSTEM = """\
 You generate ontology exploration questions to gather knowledge from a knowledge base.
 
@@ -46,6 +78,7 @@ def generate_exploration_questions(
     previous_questions: list[str] | None = None,
     steps: list[dict[str, Any]] | None = None,
     gaps: list[dict[str, Any]] | None = None,
+    ontology_language: str | None = None,
 ) -> list[str]:
     """Generate exploration questions based on the current reasoning graph state.
 
@@ -55,6 +88,7 @@ def generate_exploration_questions(
         previous_questions: Questions already asked (to avoid duplicates).
         steps: Conversation context: list of {question, answer, concepts, relations} from prior steps.
         gaps: Detected ontology gaps (missing_concept, missing_relation) to address.
+        ontology_language: ISO 639-1 language of the KB. Questions are generated in this language.
 
     Returns:
         List of 1–4 exploration questions.
@@ -81,6 +115,9 @@ def generate_exploration_questions(
         elif gt == "missing_relation":
             gaps_summary.append(f"  - Missing relation: {g.get('subject', '')} → {g.get('relation', '')} → {g.get('target', '')}")
 
+    lang_instruction = _question_language_instruction(ontology_language)
+    system_prompt = QUESTION_GEN_SYSTEM + lang_instruction
+
     user_prompt = f"""Original question: {original_query}
 
 Current reasoning graph:
@@ -98,7 +135,7 @@ Generate 1–4 new exploration questions. Use exact concept names from the graph
 
     try:
         response = complete(
-            system=QUESTION_GEN_SYSTEM,
+            system=system_prompt,
             user=user_prompt,
             temperature=0.2,
             max_tokens=500,
@@ -106,7 +143,7 @@ Generate 1–4 new exploration questions. Use exact concept names from the graph
         )
     except Exception as e:
         logger.warning("[OntologyQuestioner] LLM failed: %s", e)
-        return _fallback_questions(graph, previous_questions)
+        return _fallback_questions(graph, previous_questions, ontology_language)
 
     try:
         parsed = json.loads(response)
@@ -114,7 +151,7 @@ Generate 1–4 new exploration questions. Use exact concept names from the graph
         try:
             parsed = json.loads(repair_json(response))
         except (json.JSONDecodeError, TypeError):
-            return _fallback_questions(graph, previous_questions)
+            return _fallback_questions(graph, previous_questions, ontology_language)
 
     questions = parsed.get("questions", [])
     if not isinstance(questions, list):
@@ -132,13 +169,38 @@ Generate 1–4 new exploration questions. Use exact concept names from the graph
     return result[:4]
 
 
-def _fallback_questions(graph: ReasoningGraph, previous: list[str]) -> list[str]:
+# Fallback question templates by language (used when LLM fails)
+_FALLBACK_TEMPLATES = {
+    "en": "What is {concept}?",
+    "fr": "Qu'est-ce que {concept} ?",
+    "de": "Was ist {concept}?",
+    "es": "¿Qué es {concept}?",
+    "it": "Cos'è {concept}?",
+    "pt": "O que é {concept}?",
+    "nl": "Wat is {concept}?",
+    "ar": "ما هو {concept}؟",
+    "zh": "{concept}是什么？",
+    "ja": "{concept}とは何ですか？",
+    "ko": "{concept}란 무엇인가요?",
+    "ru": "Что такое {concept}?",
+}
+
+
+def _fallback_questions(
+    graph: ReasoningGraph,
+    previous: list[str],
+    ontology_language: str | None = None,
+) -> list[str]:
     """Rule-based fallback when LLM fails."""
+    template = _FALLBACK_TEMPLATES.get(
+        (ontology_language or "en").lower()[:2],
+        _FALLBACK_TEMPLATES["en"],
+    )
     prev_set = {p.strip().lower() for p in previous}
     result = []
     for node in graph.nodes.values():
         if not node.definition:
-            q = f"What is {node.concept}?"
+            q = template.format(concept=node.concept)
             if q.lower() not in prev_set:
                 result.append(q)
                 prev_set.add(q.lower())

@@ -42,22 +42,26 @@ def test_build_vis_data_edge_attrs_keyed_correctly():
 
 
 def test_generate_visjs_html_valid_html():
-    """Output parses as HTML without syntax errors."""
+    """Output parses as HTML without syntax errors (modular or legacy format)."""
     g = OntologyGraph()
     g.add_class("X")
     html = generate_visjs_html(g)
     assert html.strip().startswith("<!DOCTYPE html>")
     assert "<html" in html
     assert "</html>" in html
-    assert "vis.DataSet" in html
-    # No unescaped {{ or }} that would break JS
-    assert "var nodes = new vis.DataSet(" in html
+    # Modular format: data injection + external main.js
+    has_modular = "window.__GRAPH_DATA__" in html and "viewer/js/main.js" in html
+    # Legacy format: inline vis.DataSet
+    has_legacy = "vis.DataSet" in html
+    assert has_modular or has_legacy, "Expected modular or legacy viewer format"
 
 
 def test_generate_visjs_html_pre_select_node():
-    """pre_select_node value appears in output JS."""
+    """pre_select_node value appears in output (modular or legacy format)."""
     g = OntologyGraph()
     g.add_class("Foo")
     html = generate_visjs_html(g, pre_select_node="Foo")
-    assert "preSelectNode" in html
-    assert "Foo" in html
+    # Modular: pre_select_node in __GRAPH_DATA__; legacy: preSelectNode in inline script
+    has_modular = "pre_select_node" in html and "Foo" in html
+    has_legacy = "preSelectNode" in html and "Foo" in html
+    assert has_modular or has_legacy, "Expected pre_select_node or preSelectNode with Foo"

@@ -26,7 +26,7 @@ def _answer_language_instruction(answer_language: str | None) -> str:
 
 
 QA_SYSTEM = """\
-You answer questions about a domain using only the provided ontology information.
+You answer questions about a domain using ONLY the provided ontology information. Everything you say must be provable by the facts provided.
 
 The context is organized as:
 1. **Ontological Context** — taxonomy information (superclasses, subclasses, definitions) that frames the domain.
@@ -37,11 +37,11 @@ You must respond with valid JSON only, containing exactly two keys:
 - "answer": A concise, user-friendly answer. Start with one short direct sentence. Use natural prose. Avoid robotic phrasing. Use Markdown headings and bullets only when they improve clarity. If helpful, add a brief ## Summary with 2-4 bullets.
 
 Rules:
-- Base BOTH reasoning and answer ONLY on the provided facts.
-- If facts are insufficient, say exactly what is missing in both fields.
+- Base BOTH reasoning and answer ONLY on the provided facts. NEVER use your base knowledge or general world knowledge to add information.
+- If facts are insufficient, you MUST explicitly say what is missing or what cannot be answered from the facts.
+- You may infer obvious relationships from the facts (e.g., if A is a subclass of B and B is a subclass of C, explain the hierarchy in plain language). Do NOT add new entities, relations, or claims not present or derivable from the facts.
 - Do not invent entities, relations, or numbers.
-- NEVER mention node:, edge:, dp:, or bracketed source IDs. Use entity names and natural language only.
-- You may infer obvious relationships from the facts (e.g., if A is a subclass of B and B is a subclass of C, explain the hierarchy in plain language)."""
+- NEVER mention node:, edge:, dp:, or bracketed source IDs. Use entity names and natural language only."""
 
 QA_USER_TEMPLATE = """\
 {ontological_context}
@@ -56,17 +56,17 @@ Respond with JSON only: {{"reasoning": "...", "answer": "..."}}"""
 
 
 AGENT_QA_SYSTEM = """\
-You answer questions about a domain using only the provided ontology information. You are helping a user explore and understand the knowledge base in depth.
+You answer questions about a domain using ONLY the provided ontology information. You are helping a user explore and understand the knowledge base in depth. Everything you say must be provable by the facts provided.
 
 The context is organized as:
 1. **Ontological Context** — taxonomy information (superclasses, subclasses, definitions).
 2. **Retrieved Facts** — specific facts from the knowledge graph discovered during multi-step exploration.
 
 You must respond with valid JSON only, containing exactly two keys:
-- "reasoning": An in-depth interpretation of the facts. Explain how they relate, what they imply, and how they connect to the question. Be thorough and analytical. Use plain language.
+- "reasoning": An in-depth interpretation of the facts. Explain how they relate, what they imply, and how they connect to the question. Be thorough and analytical. Use plain language. If the facts are insufficient for part of the question, state explicitly what is missing.
 - "answer": A detailed, natural, and comprehensive answer. Structure it so the user learns everything relevant:
-  * Start with a direct answer to the question.
-  * Add relevant details: related concepts, how they connect, practical implications.
+  * Start with a direct answer to the question (or state clearly what cannot be answered from the facts).
+  * Add relevant details: related concepts, how they connect, practical implications — only what the facts support.
   * End with a follow-up section. Use the EXACT header "## You might also ask" (in English, always) followed by 2–4 natural follow-up questions the user could ask to explore further. Format as a Markdown heading then a bullet list, e.g.:
     ## You might also ask
     - What champions work well as midlaners?
@@ -77,10 +77,11 @@ CRITICAL FORMATTING:
 - The follow-up section header MUST be exactly "## You might also ask" (in English) regardless of the answer language. The UI parses this header.
 - The answer body and follow-up questions must be in the requested answer language (or the question language if not specified).
 
-Rules:
-- Base BOTH reasoning and answer STRICTLY and ONLY on the provided facts. Do not infer, extrapolate, or add anything from your base knowledge.
-- The answer must be fully supported by the facts. If the facts do not address part of the question, do NOT mention that information is missing, insufficient, or unavailable. Simply answer based on what the facts DO support.
-- Use natural, conversational prose. Avoid robotic or list-heavy answers unless lists help clarity.
+CRITICAL RULES (factual, provable answers only):
+- Base BOTH reasoning and answer STRICTLY and ONLY on the provided facts. NEVER use your base knowledge, training data, or general world knowledge to infer, extrapolate, or add information.
+- Everything must be provable by the facts. If the facts do not contain information needed to answer part of the question, you MUST explicitly say so: e.g. "The facts do not provide information about X", "I do not know from the available facts", or "This aspect cannot be answered from the knowledge base."
+- You MAY infer relationships between existing facts (e.g. if A subClassOf B and B subClassOf C, you may explain the hierarchy; if facts imply a connection, you may describe it). Do NOT add new entities, relations, or claims not present or derivable from the facts.
+- Be detailed and thorough: explain how facts relate, what they imply, and what conclusions they support. Provide the most factual and helpful message possible.
 - Do not invent entities, relations, or numbers.
 - NEVER mention node:, edge:, dp:, or bracketed IDs. Use entity names and natural language only."""
 
