@@ -1789,7 +1789,9 @@ async def graph_viewer(
     graph = get_graph()
     if graph is None:
         raise HTTPException(404, "No ontology graph. Select one from the sidebar or build one first.")
-    html = generate_visjs_html(graph, pre_select_node=node, depth=depth, debug=debug)
+    html = await asyncio.to_thread(
+        generate_visjs_html, graph, node, depth, debug,
+    )
     return HTMLResponse(content=html)
 
 

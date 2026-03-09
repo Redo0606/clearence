@@ -69,6 +69,19 @@ def _edge_id(u: str, v: str, rel: str) -> str:
     return hashlib.md5(f"{u}\x00{v}\x00{rel}".encode()).hexdigest()[:12]
 
 
+def _to_json_safe(obj: Any) -> Any:
+    """Convert numpy and other non-JSON-serializable types to native Python for json.dumps."""
+    if obj is None:
+        return None
+    if hasattr(obj, "item"):  # numpy scalar (float32, int64, etc.)
+        return obj.item()
+    if isinstance(obj, dict):
+        return {k: _to_json_safe(v) for k, v in obj.items()}
+    if isinstance(obj, (list, tuple)):
+        return [_to_json_safe(v) for v in obj]
+    return obj
+
+
 def _build_vis_data(graph: "OntologyGraph") -> dict[str, Any]:
     """Build vis.js nodes/edges and metadata; edge_attrs keyed by same id as vis edges."""
     ng = normalize_graph(graph)
@@ -232,7 +245,8 @@ def _persist_vis_data(path: Path, graph: "OntologyGraph") -> None:
     """Persist pre-computed vis data to .vis.json for fast view loads."""
     try:
         vis_data = _build_vis_data(graph)
-        # Ensure JSON-serializable: clusters and isolated are already lists from _build_vis_data
+        # Ensure JSON-serializable (numpy types from graph edge data cause orjson to fail)
+        vis_data = _to_json_safe(vis_data)
         out = {
             "nodes": vis_data["nodes"],
             "edges": vis_data["edges"],
@@ -354,6 +368,8 @@ def generate_visjs_html(
 ) -> str:
     """Generate standalone HTML page with interactive vis.js graph viewer."""
     vis_data = _build_vis_data(graph)
+    # Ensure JSON-serializable (numpy types from graph edge data cause 500 on json.dumps)
+    vis_data = _to_json_safe(vis_data)
     theme = get_theme()
     css_root = get_css_root_block()
     return _load_template().render(
