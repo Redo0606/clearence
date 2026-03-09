@@ -100,6 +100,11 @@ def _build_vis_data(graph: "OntologyGraph") -> dict[str, Any]:
     NODE_HEIGHT = 50
     g_raw = graph.get_graph()
     degree_map = dict(g_raw.degree())
+    # Build node-to-cluster map for cluster-aware layout
+    node_to_cluster: dict[str, int] = {}
+    for idx, cluster in enumerate(ng.clusters):
+        for nid in cluster:
+            node_to_cluster[nid] = idx
     vis_nodes: list[dict[str, Any]] = []
     for n in ng.nodes:
         if n.id == "__root__":
@@ -110,6 +115,7 @@ def _build_vis_data(graph: "OntologyGraph") -> dict[str, Any]:
         is_hub = degree > HUB_DEGREE_THRESHOLD
         # Section 7: size = 20 + log(degree+1)*14, cap at 90
         node_size = min(90, 20 + math.log(degree + 1) * 14)
+        cluster_id = node_to_cluster.get(n.id, -1)
         vis_nodes.append({
             "id": n.id,
             "baseLabel": n.label,
@@ -123,6 +129,7 @@ def _build_vis_data(graph: "OntologyGraph") -> dict[str, Any]:
             "isHub": is_hub,
             "mass": max(1.5, min(6, degree * 0.6)),
             "size": node_size,
+            "cluster": cluster_id,
         })
 
     hub_ids = {nid for nid, d in degree_map.items() if d > HUB_DEGREE_THRESHOLD}

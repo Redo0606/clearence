@@ -159,7 +159,8 @@
         <label class="ctrl-item" style="display: flex; align-items: center; gap: 4px;">
           <span style="color: var(--text-muted); font-size: 10px;">Layout:</span>
           <select id="layout-select" class="text-xs font-mono">
-            <option value="force" selected>Force</option>
+            <option value="force">Force</option>
+            <option value="cluster">Cluster</option>
             <option value="hierarchical">Hierarchy</option>
             <option value="elk">ELK Layered</option>
             <option value="galaxy">Galaxy</option>
@@ -179,6 +180,7 @@
           <span style="color: var(--text-muted); font-size: 10px;">Edges:</span>
           <select id="edge-filter" class="text-xs font-mono" style="min-width: 100px;">
             <option value="all">All</option>
+            <option value="intraCluster">Intra-cluster only</option>
             <option value="subClassOf">subClassOf only</option>
             <option value="type">type only</option>
             <option value="other">Other relations</option>
@@ -248,8 +250,10 @@
     var nodeCount = nodes.get().length;
     var showEdgeLabels = nodeCount < 400;
     var subClassRatio = {{ sub_class_ratio_json | default('0') | safe }};
-    var useHierarchicalByDefault = subClassRatio > 0.25 && !{{ has_cycles_json | safe }} && nodeCount < 800;
-    var defaultLayoutMode = useHierarchicalByDefault ? "hierarchical" : "force";
+    var clusterCount = (clusters && clusters.length) ? clusters.length : 0;
+    var useHierarchicalByDefault = subClassRatio > 0.25 && !{{ has_cycles_json | safe }} && nodeCount < 800 && clusterCount <= 5;
+    var useClusterLayoutByDefault = clusterCount > 5 && clusterCount <= 200;
+    var defaultLayoutMode = useClusterLayoutByDefault ? "cluster" : (useHierarchicalByDefault ? "hierarchical" : "force");
 
     var C = (function() {
       var s = getComputedStyle(document.documentElement);
@@ -323,6 +327,52 @@
     var hubIds = new Set({{ hub_ids_json | default('[]') | safe }});
     var HUB_EDGE_CAP = 25;
     var clusterPalette = ["rgba(255,80,160,0.05)", "rgba(100,180,255,0.05)", "rgba(255,200,80,0.05)", "rgba(120,220,180,0.05)"];
+    var clusterBorderColors = ["#ff50a0", "#64b4ff", "#ffc850", "#78dcb4", "#c878ff", "#50d4a0", "#ff9064", "#64c8ff"];
+    function getClusterColor(clusterId) {
+      if (clusterId < 0) return C.border;
+      return clusterBorderColors[clusterId % clusterBorderColors.length];
+    }
+    function buildNodeClusterMap() {
+      var m = {};
+      nodes.get().forEach(function(n) { if (n.cluster != null && n.cluster >= 0) m[n.id] = n.cluster; });
+      if (Object.keys(m).length === 0 && clusters && clusters.length > 0) {
+        clusters.forEach(function(c, idx) { (Array.isArray(c) ? c : []).forEach(function(nid) { m[nid] = idx; }); });
+      }
+      return m;
+    }
+    var nodeClusterMap = buildNodeClusterMap();
+    if (DEBUG && clusters && clusters.length > 0) {
+      var clusterCounts = clusters.map(function(c) { return (Array.isArray(c) ? c : []).length; });
+      debugLog("Cluster distribution:", clusterCounts, "total clusters:", clusters.length);
+    }
+    function computeClusterPrePositions() {
+      var visibleNodes = nodes.get().filter(function(n) { return !n.hidden; });
+      var nodeIds = new Set(visibleNodes.map(function(n) { return n.id; }));
+      var clusterList = [];
+      if (clusters && clusters.length > 0) {
+        clusters.forEach(function(c) {
+          var members = (Array.isArray(c) ? c : []).filter(function(nid) { return nodeIds.has(nid); });
+          if (members.length > 0) clusterList.push(members);
+        });
+      }
+      var unclustered = visibleNodes.filter(function(n) { return !clusterList.some(function(c) { return c.indexOf(n.id) !== -1; }); });
+      if (unclustered.length > 0) clusterList.push(unclustered.map(function(n) { return n.id; }));
+      var totalClusters = clusterList.length;
+      if (totalClusters < 2) return null;
+      var radiusBase = Math.max(400, Math.min(1000, 150 + Math.sqrt(visibleNodes.length) * 30));
+      var angleStep = (2 * Math.PI) / totalClusters;
+      var pos = {};
+      clusterList.forEach(function(members, clusterIdx) {
+        var cx = radiusBase * Math.cos(clusterIdx * angleStep);
+        var cy = radiusBase * Math.sin(clusterIdx * angleStep);
+        var memberAngle = (2 * Math.PI) / Math.max(1, members.length);
+        var r = 80 + Math.min(180, members.length * 5);
+        members.forEach(function(nid, mi) {
+          pos[nid] = { x: cx + r * Math.cos(mi * memberAngle), y: cy + r * Math.sin(mi * memberAngle) };
+        });
+      });
+      return pos;
+    }
     var hasCycles = {{ has_cycles_json | safe }};
     var preSelectNode = {{ pre_select_node_json | safe }};
     var initialDepth = {{ depth_json | safe }};
@@ -414,12 +464,14 @@
       }
 
       var isHover = state.hoveredNodeId === n.id;
+      var clusterId = n.cluster != null ? n.cluster : nodeClusterMap[n.id];
+      var borderColor = (state.selectedNodeId && isRelated) || isHover ? accent : (clusterId != null && clusterId >= 0 ? getClusterColor(clusterId) : C.border);
       return {
         id: n.id,
         borderWidth: (state.selectedNodeId && isRelated) || isHover ? 2.4 : 1.2,
         color: {
           background: state.selectedNodeId ? (isRelated ? C.bgCard : "rgba(0,0,0,0.15)") : (isHover ? C.bgCardHover : C.bgCard),
-          border: state.selectedNodeId ? (isRelated ? accent : C.border) : (isHover ? accent : C.border),
+          border: state.selectedNodeId ? (isRelated ? accent : C.border) : (isHover ? accent : borderColor),
           highlight: { background: C.bgCardHover, border: accent },
           hover: { background: C.bgCardHover, border: accent }
         },
@@ -523,9 +575,14 @@
 
     var physicsIters = nodeCount < 100 ? 1200 : nodeCount < 300 ? 800 : nodeCount < 600 ? 600 : nodeCount < 1000 ? 400 : 300;
     var physicsEnabled = nodeCount <= 1200;
-    var physicsConfig = useHierarchicalByDefault
-      ? { enabled: physicsEnabled, hierarchicalRepulsion: { centralGravity: 0.0, springLength: 150, springConstant: 0.01, nodeDistance: 180, damping: 0.09 }, stabilization: { enabled: true, iterations: physicsIters, updateInterval: 50, fit: true } }
-      : { enabled: physicsEnabled, solver: "barnesHut", barnesHut: { gravitationalConstant: -8000, centralGravity: 0.05, springLength: 220, springConstant: 0.04, damping: 0.5, avoidOverlap: 1 }, stabilization: { enabled: true, iterations: physicsIters, updateInterval: 50, fit: true }, minVelocity: 0.5 };
+    var forceRepulsion = clusterCount > 5 ? -25000 : -12000;
+    var forceSpringLength = clusterCount > 5 ? 120 : 220;
+    var useClusterLayoutInitially = useClusterLayoutByDefault && clusterCount > 2;
+    var physicsConfig = useClusterLayoutInitially
+      ? { enabled: false }
+      : (useHierarchicalByDefault
+        ? { enabled: physicsEnabled, hierarchicalRepulsion: { centralGravity: 0.0, springLength: 150, springConstant: 0.01, nodeDistance: 180, damping: 0.09 }, stabilization: { enabled: true, iterations: physicsIters, updateInterval: 50, fit: true } }
+        : { enabled: physicsEnabled, solver: "barnesHut", barnesHut: { gravitationalConstant: forceRepulsion, centralGravity: 0.02, springLength: forceSpringLength, springConstant: 0.03, damping: 0.5, avoidOverlap: 1 }, stabilization: { enabled: true, iterations: physicsIters, updateInterval: 50, fit: true }, minVelocity: 0.5 });
     var options = {
       autoResize: true,
       layout: {
@@ -568,6 +625,19 @@
     };
 
     var network = new vis.Network(container, data, options);
+
+    (function applyInitialClusterLayout() {
+      if (defaultLayoutMode === "cluster" && clusterCount > 2) {
+        setTimeout(function() {
+          runClusterLayout();
+        }, 0);
+      } else if (defaultLayoutMode === "force" && clusterCount > 2) {
+        var prePos = computeClusterPrePositions();
+        if (prePos && Object.keys(prePos).length > 0) {
+          network.setPositions(prePos);
+        }
+      }
+    })();
 
     network.on("dragEnd", function() {
       if (simulationFrozen) {
@@ -640,7 +710,11 @@
     function computeEdgeHidden(e) {
       var rel = e.relation || "";
       var hideByFilter = false;
-      if (edgeFilter === "subClassOf") hideByFilter = rel !== "subClassOf";
+      if (edgeFilter === "intraCluster") {
+        var fromCluster = nodeClusterMap[e.from];
+        var toCluster = nodeClusterMap[e.to];
+        hideByFilter = (fromCluster == null) !== (toCluster == null) || (fromCluster != null && toCluster != null && fromCluster !== toCluster);
+      } else if (edgeFilter === "subClassOf") hideByFilter = rel !== "subClassOf";
       else if (edgeFilter === "type") hideByFilter = rel !== "type" && rel !== "instanceOf";
       else if (edgeFilter === "other") hideByFilter = rel === "subClassOf" || rel === "type" || rel === "instanceOf";
       var hierarchyRels = ["subClassOf"];
@@ -1013,6 +1087,10 @@
       layoutSelect.addEventListener("change", function() {
         var newMode = layoutSelect.value || "force";
         if (simulationFrozen && layoutMode === newMode) return;
+        if (newMode === "cluster") {
+          runClusterLayout();
+          return;
+        }
         if (newMode === "galaxy") {
           runGalaxyLayout();
           return;
@@ -1028,6 +1106,8 @@
           }
         }
         var useHierarchy = newMode === "hierarchical";
+        var repulsion = (typeof forceRepulsion !== "undefined") ? forceRepulsion : -12000;
+        var springLen = (typeof forceSpringLength !== "undefined") ? forceSpringLength : 220;
         network.setOptions({
           layout: {
             hierarchical: useHierarchy ? { enabled: true, direction: "UD", sortMethod: "hubsize", levelSeparation: 180, nodeSpacing: 150, treeSpacing: 220, blockShifting: true, edgeMinimization: true, parentCentralization: true } : { enabled: false }
@@ -1035,7 +1115,7 @@
           physics: {
             enabled: physicsEnabled,
             hierarchicalRepulsion: useHierarchy ? { centralGravity: 0.0, springLength: 150, springConstant: 0.01, nodeDistance: 180, damping: 0.09 } : undefined,
-            barnesHut: useHierarchy ? undefined : { gravitationalConstant: -9000, centralGravity: 0.08, springLength: 280, springConstant: 0.035, damping: 0.45, avoidOverlap: 1 },
+            barnesHut: useHierarchy ? undefined : { gravitationalConstant: repulsion, centralGravity: 0.02, springLength: springLen, springConstant: 0.03, damping: 0.45, avoidOverlap: 1 },
             stabilization: { enabled: true, iterations: physicsIters, updateInterval: 25, fit: true },
           },
         });
@@ -1054,8 +1134,10 @@
       if (hasCycles) {
         if (DEBUG) debugLog("Graph has cycles, falling back to force layout");
         setLayout("force");
+        var repulsion = (typeof forceRepulsion !== "undefined") ? forceRepulsion : -12000;
+        var springLen = (typeof forceSpringLength !== "undefined") ? forceSpringLength : 220;
         network.setOptions({ physics: { enabled: true }, layout: { hierarchical: { enabled: false } } });
-        network.setOptions({ physics: { barnesHut: { gravitationalConstant: -9000, centralGravity: 0.08, springLength: 280, springConstant: 0.035, damping: 0.45, avoidOverlap: 1 }, stabilization: { enabled: true, iterations: physicsIters, updateInterval: 25, fit: true } } });
+        network.setOptions({ physics: { barnesHut: { gravitationalConstant: repulsion, centralGravity: 0.02, springLength: springLen, springConstant: 0.03, damping: 0.45, avoidOverlap: 1 }, stabilization: { enabled: true, iterations: physicsIters, updateInterval: 25, fit: true } } });
         simulationFrozen = false;
         network.once("stabilizationIterationsDone", function() {
           network.setOptions({ physics: { enabled: false } });
@@ -1088,7 +1170,9 @@
 
     function fallbackToForceLayout() {
       setLayout("force");
-      network.setOptions({ layout: { hierarchical: { enabled: false } }, physics: { enabled: physicsEnabled, barnesHut: { gravitationalConstant: -9000, centralGravity: 0.08, springLength: 280, springConstant: 0.035, damping: 0.45, avoidOverlap: 1 }, stabilization: { enabled: true, iterations: physicsIters, updateInterval: 25, fit: true } } });
+      var repulsion = (typeof forceRepulsion !== "undefined") ? forceRepulsion : -12000;
+      var springLen = (typeof forceSpringLength !== "undefined") ? forceSpringLength : 220;
+      network.setOptions({ layout: { hierarchical: { enabled: false } }, physics: { enabled: physicsEnabled, barnesHut: { gravitationalConstant: repulsion, centralGravity: 0.02, springLength: springLen, springConstant: 0.03, damping: 0.45, avoidOverlap: 1 }, stabilization: { enabled: true, iterations: physicsIters, updateInterval: 25, fit: true } } });
       simulationFrozen = false;
       network.once("stabilizationIterationsDone", function() {
         network.setOptions({ physics: { enabled: false } });
@@ -1133,6 +1217,50 @@
         simulationFrozen = true;
         setLayout("galaxy");
         network.fit({ animation: { duration: 350, easingFunction: "easeInOutCubic" } });
+      } else {
+        fallbackToForceLayout();
+      }
+    }
+
+    function runClusterLayout() {
+      var visibleNodes = nodes.get().filter(function(n) { return !n.hidden; });
+      var nodeIds = new Set(visibleNodes.map(function(n) { return n.id; }));
+      var clusterList = [];
+      if (clusters && clusters.length > 0) {
+        clusters.forEach(function(c) {
+          var members = (Array.isArray(c) ? c : []).filter(function(nid) { return nodeIds.has(nid); });
+          if (members.length > 0) clusterList.push(members);
+        });
+      }
+      var unclustered = visibleNodes.filter(function(n) { return !clusterList.some(function(c) { return c.indexOf(n.id) !== -1; }); });
+      if (unclustered.length > 0) clusterList.push(unclustered.map(function(n) { return n.id; }));
+      var totalClusters = clusterList.length;
+      var radiusBase = Math.max(400, Math.min(1000, 150 + Math.sqrt(visibleNodes.length) * 30));
+      var angleStep = (2 * Math.PI) / Math.max(1, totalClusters);
+      var pos = {};
+      clusterList.forEach(function(members, clusterIdx) {
+        var cx = radiusBase * Math.cos(clusterIdx * angleStep);
+        var cy = radiusBase * Math.sin(clusterIdx * angleStep);
+        var memberAngle = (2 * Math.PI) / Math.max(1, members.length);
+        var r = 80 + Math.min(180, members.length * 5);
+        members.forEach(function(nid, mi) {
+          pos[nid] = { x: cx + r * Math.cos(mi * memberAngle), y: cy + r * Math.sin(mi * memberAngle) };
+        });
+      });
+      if (Object.keys(pos).length > 0) {
+        network.setPositions(pos);
+        network.setOptions({ physics: { enabled: false } });
+        simulationFrozen = true;
+        setLayout("cluster");
+        network.fit({ animation: { duration: 350, easingFunction: "easeInOutCubic" } });
+        if (progressBar) progressBar.style.width = "100%";
+        if (progressWrap) progressWrap.style.display = "none";
+        requestAnimationFrame(function() {
+          container.classList.add("ready");
+          applyLabelVisibility();
+          applyEdgeVisibility();
+          drawHullOverlay();
+        });
       } else {
         fallbackToForceLayout();
       }
