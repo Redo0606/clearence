@@ -1969,12 +1969,14 @@
       const parallel = _modalMode === 'extend'
         ? document.getElementById('modal-parallel-extend').checked
         : document.getElementById('modal-parallel').checked;
+      const minQualityGradeEl = document.getElementById('modal-min-quality-grade');
+      const minQualityGrade = (minQualityGradeEl && minQualityGradeEl.value) ? minQualityGradeEl.value : '';
       const files = pendingFiles.slice();
       hideCreateModal();
       if (_modalMode === 'extend') {
         const activeId = getActiveKbId();
         if (activeId) {
-          doExtend(files, activeId, parallel);
+          doExtend(files, activeId, parallel, minQualityGrade);
           return;
         }
       }
@@ -1983,7 +1985,7 @@
       const description = modalDescription.value.trim();
       const ontologyLanguageEl = document.getElementById('modal-ontology-language');
       const ontologyLanguage = (ontologyLanguageEl && ontologyLanguageEl.value) ? ontologyLanguageEl.value : 'en';
-      doUpload(files, title, description, parallel, ontologyLanguage);
+      doUpload(files, title, description, parallel, ontologyLanguage, minQualityGrade);
     });
 
     dropZone?.addEventListener('drop', (e) => {
@@ -2727,7 +2729,7 @@
       }, delay || 0);
     }
 
-    async function doUpload(files, title, description, parallel = true, ontologyLanguage = 'en') {
+    async function doUpload(files, title, description, parallel = true, ontologyLanguage = 'en', minQualityGrade = '') {
       const fileList = Array.isArray(files) ? files : [files];
       const first = fileList[0];
       const job = {
@@ -2758,6 +2760,7 @@
       if (title) fd.append('title', title);
       if (description) fd.append('description', description);
       fd.append('ontology_language', ontologyLanguage || 'en');
+      if (minQualityGrade) fd.append('min_quality_grade', minQualityGrade);
       try {
         const parallelParam = parallel ? 'true' : 'false';
         const res = await fetch(API + '/build_ontology_stream?run_inference=true&sequential=true&run_reasoning=true&parallel=' + parallelParam, {
@@ -2818,7 +2821,7 @@
       }
     }
 
-    async function doExtend(files, kbId, parallel = true) {
+    async function doExtend(files, kbId, parallel = true, minQualityGrade = '') {
       const fileList = Array.isArray(files) ? files : [files];
       const activeKb = _kbData.find(k => k.id === kbId);
       const kbName = activeKb ? activeKb.name : kbId;
@@ -2851,6 +2854,7 @@
       } else {
         fileList.forEach(f => fd.append('files', f));
       }
+      if (minQualityGrade) fd.append('min_quality_grade', minQualityGrade);
       try {
         const parallelParam = parallel ? 'true' : 'false';
         const res = await fetch(API + '/knowledge-bases/' + kbId + '/extend_stream?run_inference=true&sequential=true&run_reasoning=true&parallel=' + parallelParam, {
@@ -3116,7 +3120,7 @@
     currentOntologyName?.addEventListener('click', () => {
       const kbId = getActiveKbId();
       if (kbId) {
-        window.location.href = window.location.origin + API + '/graph/viewer?kb_id=' + encodeURIComponent(kbId);
+        window.open(window.location.origin + API + '/graph/viewer?kb_id=' + encodeURIComponent(kbId), '_blank', 'noopener,noreferrer');
       }
     });
 

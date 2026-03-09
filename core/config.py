@@ -91,6 +91,12 @@ class Settings(BaseSettings):
     embedding_openai_model: str = "text-embedding-3-small"
     embedding_openai_batch_size: int = 100
 
+    # Quality gate: skip merging extractions into the graph if reliability is below threshold.
+    # min_quality_grade: A|B|C|D|F — user-friendly; maps to score (A≥0.8, B≥0.6, C≥0.4, D≥0.2).
+    # min_quality_score: 0.0–1.0 — overrides grade when set. 0 or None = no gate (accept all).
+    min_quality_grade: str | None = None
+    min_quality_score: float | None = None
+
     # Batching for pipeline performance (aggregation, canonicalizer, graph writes, taxonomy).
     aggregation_batch_size: int = 80
     canonicalizer_batch_size: int = 64

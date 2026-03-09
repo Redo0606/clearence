@@ -42,6 +42,30 @@ from ontology_builder.storage.graphdb import OntologyGraph
 
 logger = logging.getLogger(__name__)
 
+# Grade (A–F) to minimum score for quality gate. A≥0.8, B≥0.6, C≥0.4, D≥0.2, F accepts all.
+_GRADE_TO_MIN_SCORE: dict[str, float] = {
+    "A": 0.8,
+    "B": 0.6,
+    "C": 0.4,
+    "D": 0.2,
+    "F": 0.0,
+}
+
+
+def _get_min_quality_threshold(
+    settings: Settings,
+    min_quality_grade: str | None = None,
+    min_quality_score: float | None = None,
+) -> float | None:
+    """Return minimum quality score (0–1) for gate, or None if no gate."""
+    score = min_quality_score if min_quality_score is not None else settings.min_quality_score
+    if score is not None and score > 0:
+        return float(score)
+    grade = (min_quality_grade or settings.min_quality_grade or "").strip().upper()
+    if grade and grade in _GRADE_TO_MIN_SCORE:
+        return _GRADE_TO_MIN_SCORE[grade]
+    return None
+
 
 def _aggregate_extractions(
     all_extractions: list[OntologyExtraction],
@@ -204,6 +228,8 @@ def process_document(
     progress_callback: Callable[[str, dict], None] | None = None,
     cancel_check: Callable[[], bool] | None = None,
     ontology_language: str = "en",
+    min_quality_grade: str | None = None,
+    min_quality_score: float | None = None,
 ) -> tuple[OntologyGraph, PipelineReport]:
     """Load document, chunk, extract, merge, build taxonomy, reason, optional repair.
 
@@ -218,6 +244,8 @@ def process_document(
         progress_callback: Optional callback(step, data) for real-time progress.
         cancel_check: Optional callable returning True if pipeline should stop.
         ontology_language: ISO 639-1 language code (e.g. en, fr). All ontology elements are extracted in this language.
+        min_quality_grade: Minimum reliability grade (A|B|C|D|F). If set, merge is skipped when extraction is below this.
+        min_quality_score: Minimum reliability score (0–1). Overrides min_quality_grade when set. 0 or None = no gate.
 
     Returns:
         Tuple of (OntologyGraph, PipelineReport).
@@ -272,12 +300,22 @@ def process_document(
             _extract_sequential(
                 chunks, graph, text, path, report, settings, verbose, parallel_extraction,
                 _progress, _check_cancel, ontology_language=ontology_language or "en",
+                min_quality_grade=min_quality_grade or settings.min_quality_grade,
+                min_quality_score=min_quality_score if min_quality_score is not None else settings.min_quality_score,
             )
         else:
             _extract_legacy(
                 chunks, graph, report, settings, verbose, parallel_extraction,
                 _progress, _check_cancel, ontology_language=ontology_language or "en",
+                min_quality_grade=min_quality_grade or settings.min_quality_grade,
+                min_quality_score=min_quality_score if min_quality_score is not None else settings.min_quality_score,
             )
+
+        if report.merge_skipped:
+            logger.warning("[Pipeline] Merge skipped: %s", report.merge_skip_reason)
+            _progress("merge_skipped", {"reason": report.merge_skip_reason})
+            report.elapsed_seconds = timer.elapsed
+            return graph, report
 
         logger.info(
             "[Pipeline] Step 4/6: Merge complete | nodes=%d edges=%d",
@@ -486,6 +524,8 @@ def _extract_sequential(
     progress_callback: Callable[[str, dict], None] | None = None,
     cancel_check: Callable[[], None] | None = None,
     ontology_language: str = "en",
+    min_quality_grade: str | None = None,
+    min_quality_score: float | None = None,
 ) -> None:
     """3-stage sequential extraction (Bakker B). Chunks processed in parallel or sequentially."""
     workers = settings.get_llm_parallel_workers()
@@ -574,6 +614,31 @@ def _extract_sequential(
             if cls.name in class_parent_map:
                 cls.parent = class_parent_map[cls.name]
     aggregated = _aggregate_extractions(all_extractions, class_parent_map)
+
+    min_threshold = _get_min_quality_threshold(settings, min_quality_grade, min_quality_score)
+    if min_threshold is not None and min_threshold > 0:
+        temp_graph = OntologyGraph()
+        update_graph_from_aggregated(temp_graph, aggregated, verbose=False)
+        repair_config = RepairConfig()
+        if getattr(repair_config, "repair_incremental", True):
+            repair_graph_incremental(temp_graph, config=repair_config)
+        metrics = compute_structural_metrics(temp_graph)
+        reliability = compute_reliability_score(metrics)
+        if reliability.score < min_threshold:
+            report.merge_skipped = True
+            report.merge_skip_reason = (
+                f"Quality score {reliability.score:.2f} (grade {reliability.grade}) "
+                f"below threshold {min_threshold:.2f}"
+            )
+            if progress_callback:
+                progress_callback("quality_gate_failed", {
+                    "grade": reliability.grade,
+                    "score": reliability.score,
+                    "threshold": min_threshold,
+                    "reason": report.merge_skip_reason,
+                })
+            return
+
     update_graph_from_aggregated(graph, aggregated, verbose=False)
     repair_config = RepairConfig()
     if getattr(repair_config, "repair_incremental", True):
@@ -590,6 +655,8 @@ def _extract_legacy(
     progress_callback: Callable[[str, dict], None] | None = None,
     cancel_check: Callable[[], None] | None = None,
     ontology_language: str = "en",
+    min_quality_grade: str | None = None,
+    min_quality_score: float | None = None,
 ) -> None:
     """Legacy single-shot extraction."""
     total = len(chunks)
@@ -641,8 +708,10 @@ def _extract_legacy(
     else:
         extractions = [_extract_with_progress(item) for item in chunk_iter]
     logger.info("[Pipeline] Step 3/6: Extraction complete | chunks=%d", len(extractions))
+
+    temp_graph = OntologyGraph()
     for idx, extraction in enumerate(extractions):
-        update_graph(graph, extraction, verbose=verbose)
+        update_graph(temp_graph, extraction, verbose=verbose)
         entities = extraction.get("entities", [])
         relations = extraction.get("relations", [])
         report.chunk_stats.append(ChunkStats(
@@ -651,6 +720,27 @@ def _extract_legacy(
             classes_extracted=len(entities),
             relations_extracted=len(relations),
         ))
+
+    min_threshold = _get_min_quality_threshold(settings, min_quality_grade, min_quality_score)
+    if min_threshold is not None and min_threshold > 0:
+        metrics = compute_structural_metrics(temp_graph)
+        reliability = compute_reliability_score(metrics)
+        if reliability.score < min_threshold:
+            report.merge_skipped = True
+            report.merge_skip_reason = (
+                f"Quality score {reliability.score:.2f} (grade {reliability.grade}) "
+                f"below threshold {min_threshold:.2f}"
+            )
+            if progress_callback:
+                progress_callback("quality_gate_failed", {
+                    "grade": reliability.grade,
+                    "score": reliability.score,
+                    "threshold": min_threshold,
+                    "reason": report.merge_skip_reason,
+                })
+            return
+
+    graph.merge_from(temp_graph)
 
 
 def _print_quality_summary(quality: OntologyQualityReport) -> None:

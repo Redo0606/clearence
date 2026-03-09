@@ -211,6 +211,19 @@ def generate_chat_ui_html(api_base: str = "/api/v1") -> str:
           Add to <span id="modal-mode-kb-name" class="truncate"></span>
         </button>
       </div>
+      <div id="modal-shared-options" class="space-y-4 mb-4">
+        <div>
+          <label class="block text-xs font-medium mb-1.5 uppercase tracking-wider" style="color: var(--text-muted);">Min quality grade <span style="color: #555;">(optional)</span></label>
+          <select id="modal-min-quality-grade" class="w-full rounded-lg px-3.5 py-2.5 text-sm border transition-all" style="background: var(--bg-input); color: var(--text-primary); border-color: var(--border);" title="Skip merge if extraction reliability is below this grade">
+            <option value="">Accept all (no gate)</option>
+            <option value="D">D — minimum</option>
+            <option value="C">C</option>
+            <option value="B">B</option>
+            <option value="A">A — strict</option>
+          </select>
+          <p class="text-xs mt-1" style="color: var(--text-muted);">Documents below this grade are not merged into the ontology.</p>
+        </div>
+      </div>
       <div id="modal-new-fields" class="space-y-4">
         <div>
           <label class="block text-xs font-medium mb-1.5 uppercase tracking-wider" style="color: var(--text-muted);">Title</label>

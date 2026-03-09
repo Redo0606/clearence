@@ -88,6 +88,8 @@ class PipelineReportResponse(BaseModel):
     ontology_name: str = Field("", description="Display name of the ontology")
     quality: dict[str, Any] | None = Field(None, description="OntologyQualityReport: structural metrics, reliability grade, recommended actions")
     health: dict[str, Any] | None = Field(None, description="Graph health: badge, overall_score, structural/semantic/retrieval metrics")
+    merge_skipped: bool = Field(False, description="True when merge was skipped due to quality gate")
+    merge_skip_reason: str = Field("", description="Reason when merge was skipped")
 
 
 class BuildOntologyResponse(BaseModel):
@@ -203,6 +205,8 @@ async def build_ontology(
     sequential: bool = Query(True, description="Use 3-stage sequential extraction (Bakker B)"),
     run_reasoning: bool = Query(True, description="Run OWL 2 RL reasoning after extraction"),
     parallel: bool = Query(True, description="Process chunks in parallel (4 workers); if False, sequential"),
+    min_quality_grade: str | None = Query(None, description="Min reliability grade (A|B|C|D|F). Skip merge if below."),
+    min_quality_score: float | None = Query(None, description="Min reliability score (0–1). Overrides grade. Skip merge if below."),
 ):
     """Upload one or more documents and run the theory-grounded ontology pipeline.
 
@@ -249,7 +253,13 @@ async def build_ontology(
                 run_reasoning=run_reasoning,
                 parallel_extraction=parallel,
                 ontology_language=ontology_language or "en",
+                min_quality_grade=min_quality_grade,
+                min_quality_score=min_quality_score,
             )
+            if report.merge_skipped:
+                logger.warning("[BuildOntology] Merge skipped for %s: %s", doc_name, report.merge_skip_reason)
+                all_reports.append(report.to_dict())
+                continue
             if graph is None:
                 graph = _graph
             else:
@@ -304,6 +314,8 @@ async def build_ontology(
                 chunk_stats=combined.get("chunk_stats", []),
                 ontology_name=name,
                 quality=combined.get("quality"),
+                merge_skipped=combined.get("merge_skipped", False),
+                merge_skip_reason=combined.get("merge_skip_reason", ""),
             ),
         )
     except FileNotFoundError as e:
@@ -415,6 +427,11 @@ def _build_report_dict(
             "ontology_name": ontology_name,
             "quality": last.get("quality"),
             "health": health,
+            "merge_skipped": any(r.get("merge_skipped") for r in all_reports),
+            "merge_skip_reason": next(
+                (r.get("merge_skip_reason", "") for r in all_reports if r.get("merge_skipped")),
+                "",
+            ),
         }
     return {
         "document_path": document_display or report_dict.get("document_path", ""),
@@ -429,6 +446,8 @@ def _build_report_dict(
         "ontology_name": ontology_name,
         "quality": report_dict.get("quality"),
         "health": health,
+        "merge_skipped": report_dict.get("merge_skipped", False),
+        "merge_skip_reason": report_dict.get("merge_skip_reason", ""),
     }
 
 
@@ -458,6 +477,8 @@ async def build_ontology_stream(
     sequential: bool = Query(True, description="Use 3-stage sequential extraction (Bakker B)"),
     run_reasoning: bool = Query(True, description="Run OWL 2 RL reasoning after extraction"),
     parallel: bool = Query(True, description="Process chunks in parallel; if False, sequential"),
+    min_quality_grade: str | None = Form(None, description="Min reliability grade (A|B|C|D|F). Skip merge if below."),
+    min_quality_score: float | None = Form(None, description="Min reliability score (0–1). Overrides grade. Skip merge if below."),
 ):
     """Upload one or more documents and run the pipeline, streaming progress via SSE.
 
@@ -565,7 +586,13 @@ async def build_ontology_stream(
                         progress_callback=progress_callback,
                         cancel_check=cancel_event.is_set,
                         ontology_language=ontology_language or "en",
+                        min_quality_grade=min_quality_grade,
+                        min_quality_score=min_quality_score,
                     )
+                    if report.merge_skipped:
+                        progress_queue.put({"step": "merge_skipped", "data": {"reason": report.merge_skip_reason}})
+                        all_reports.append(report.to_dict())
+                        continue
                     if graph is None:
                         graph = _graph
                     else:
@@ -573,6 +600,11 @@ async def build_ontology_stream(
                     all_reports.append(report.to_dict())
 
                 if graph is None or not all_reports:
+                    if all(r.get("merge_skipped") for r in all_reports):
+                        raise ValueError(
+                            "All documents failed the quality gate. "
+                            "Lower min_quality_grade or min_quality_score, or omit to accept all."
+                        )
                     raise ValueError("Pipeline produced no result")
 
                 kb_id = uuid.uuid4().hex
@@ -686,6 +718,8 @@ async def extend_kb_stream(
     sequential: bool = Query(True),
     run_reasoning: bool = Query(True),
     parallel: bool = Query(True),
+    min_quality_grade: str | None = Form(None, description="Min reliability grade (A|B|C|D|F). Skip merge if below."),
+    min_quality_score: float | None = Form(None, description="Min reliability score (0–1). Overrides grade. Skip merge if below."),
 ):
     """Upload one or more documents and merge their extracted ontologies into an existing KB, streaming progress via SSE."""
     kb_path = _ONTOLOGY_GRAPHS / f"{kb_id}.json"
@@ -801,7 +835,13 @@ async def extend_kb_stream(
                         progress_callback=progress_callback,
                         cancel_check=cancel_event.is_set,
                         ontology_language=kb_ontology_language,
+                        min_quality_grade=min_quality_grade,
+                        min_quality_score=min_quality_score,
                     )
+                    if report.merge_skipped:
+                        progress_queue.put({"step": "merge_skipped", "data": {"reason": report.merge_skip_reason}})
+                        all_reports.append(report.to_dict())
+                        continue
                     existing_graph.merge_from(new_graph)
                     all_reports.append(report.to_dict())
 
