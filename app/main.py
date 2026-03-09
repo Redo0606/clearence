@@ -47,9 +47,11 @@ async def lifespan(app: FastAPI):
         await asyncio.to_thread(preload_embedding_model)
     else:
         logger.info("Embeddings: OpenAI (no local BERT/SentenceTransformer loaded)")
+    # Ensure documents/ontology_graphs exists (created on demand when documents/ is gitignored)
+    graphs_dir = get_ontology_graphs_dir()
+    graphs_dir.mkdir(parents=True, exist_ok=True)
     last_id = get_last_active_kb()
     if last_id:
-        graphs_dir = get_ontology_graphs_dir()
         path = graphs_dir / f"{last_id}.json"
         if path.exists():
             try:
