@@ -147,8 +147,8 @@ def _build_vis_data(graph: "OntologyGraph") -> dict[str, Any]:
         # Edge length by relation type (Section 5); opacity by correctness (Section 12)
         edge_len = RELATION_SPRING_LENGTH.get(e.relation, 240)
         correctness = None
-        for _u, _v, data in g_raw.edges(e.source, e.target, data=True):
-            if data.get("relation") == e.relation:
+        for _u, _v, data in g_raw.edges(e.source, data=True):
+            if _v == e.target and data.get("relation") == e.relation:
                 correctness = data.get("correctness_score")
                 break
         opacity = 0.35 + (correctness * 0.6) if correctness is not None else 0.96
