@@ -62,7 +62,7 @@
       background-size: 100% 100%;
       background-repeat: no-repeat;
       background-position: center;
-      filter: blur(4px) brightness(0.18);
+      filter: blur(6px) brightness(0.08);
       transition: opacity 0.4s ease;
     }
     #spotlight-bg.active { opacity: 1; }
@@ -401,7 +401,7 @@
 
       if (isSpot) {
         if (!relatedNodes || !relatedNodes.has(n.id)) {
-          return { id: n.id, opacity: 0.15 };
+          return { id: n.id, opacity: 0.06 };
         }
         return {
           id: n.id,
@@ -466,15 +466,22 @@
       return { selectedNodeId: selectedNodeId, focusedNodeId: focusedNodeId, hoveredNodeId: hoveredNodeId, hoveredEdgeId: hoveredEdgeId, selectedDepth: selectedDepth, edgeFilter: edgeFilter, viewMode: viewMode };
     }
 
-    function applyLabelVisibility(focusNodeId) {
+    function applyLabelVisibility(focusNodeId, zoomScale) {
+      var scale = zoomScale != null ? zoomScale : currentZoomScale;
       var fn = focusNodeId || selectedNodeId || focusedNodeId;
       var related = fn ? getConnectedNodesNHop(fn, selectedDepth >= 999 ? 10 : selectedDepth) : null;
       var allNodes = nodes.get();
       var updates = [];
+      var showAllWhenZoomedIn = scale >= 0.75;
+      var showSomeWhenZoomed = scale >= 0.5;
       for (var i = 0; i < allNodes.length; i++) {
         var n = allNodes[i];
         if (n.hidden) continue;
-        var showLabel = n.id === fn || (related && related.has(n.id)) || (n.degree != null && n.degree > 20) || hoveredNodeId === n.id;
+        var showLabel = showAllWhenZoomedIn ||
+          n.id === fn ||
+          (related && related.has(n.id)) ||
+          (showSomeWhenZoomed && (n.degree != null && n.degree > 5)) ||
+          hoveredNodeId === n.id;
         updates.push({ id: n.id, label: showLabel ? (n.baseLabel || n.label || n.id) : "" });
       }
       if (updates.length) nodes.update(updates);
@@ -674,12 +681,12 @@
 
     network.on("zoom", function(params) {
       currentZoomScale = params.scale;
-      if (params.scale < 0.55) {
+      if (params.scale < 0.45) {
         var allNodes = nodes.get();
         var updates = allNodes.map(function(n) { return { id: n.id, label: "" }; });
         if (updates.length) nodes.update(updates);
       } else {
-        applyLabelVisibility(null);
+        applyLabelVisibility(null, params.scale);
       }
       applyEdgeVisibility();
       drawHullOverlay();
